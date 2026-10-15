@@ -1,0 +1,69 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: ado-work-item-creator
+  title: Create Azure DevOps Work Item
+  description: Use this template to create a Bug, Epic, Feature, Issue, Task, Test Case, or User Story directly in Azure DevOps Boards.
+  tags:
+    - azure-devops
+    - ado
+    - boards
+    - work-item
+spec:
+  owner: user:raghavendra-vam
+  type: service
+
+  parameters:
+    - title: Work Item Details
+      required:
+        - organization
+        - project
+        - type
+        - title
+      properties:
+        organization:
+          title: ADO Organization Name
+          type: string
+          description: e.g., 'my-org' in dev.azure.com/my-org
+          ui:autofocus: true
+        project:
+          title: ADO Project Name
+          type: string
+          description: Select the project from the dropdown
+          ui:field: AdoProjectPicker
+        type:
+          title: Work Item Type
+          type: string
+          enum: ['Bug', 'Epic', 'Feature', 'Issue', 'Task', 'Test Case', 'User Story']
+          default: 'Task'
+        parentId:
+          title: Parent Work Item
+          type: number
+          description: Select the parent work item to link this to (e.g. parent Epic for a Feature)
+          ui:field: AdoWorkItemPicker
+        title:
+          title: Title
+          type: string
+          description: The title of the work item
+        description:
+          title: Description
+          type: string
+          description: Optional details for the work item
+          ui:widget: textarea
+
+  steps:
+    - id: create-work-item
+      name: Create ADO Work Item
+      action: azure:workitem:create
+      input:
+        organization: ${{ parameters.organization }}
+        project: ${{ parameters.project }}
+        type: ${{ parameters.type }}
+        title: ${{ parameters.title }}
+        description: ${{ parameters.description }}
+        parentId: ${{ parameters.parentId }}
+
+  output:
+    links:
+      - title: View Work Item in ADO
+        url: ${{ steps['create-work-item'].output.workItemUrl }}

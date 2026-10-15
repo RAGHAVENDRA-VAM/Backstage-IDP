@@ -1,0 +1,90 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: enterprise-documentation
+  title: Enterprise Documentation
+  description: Onboards an existing GitHub repository to Backstage TechDocs by adding catalog-info.yaml and mkdocs.yml.
+  tags:
+    - github
+    - documentation
+    - techdocs
+    - enterprise
+spec:
+  owner: user:raghavendra-vam
+  type: other
+
+  parameters:
+
+    - title: Component Details
+      required:
+        - name
+        - description
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the component
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        ownerTeam:
+          title: Owning Team / Distribution List
+          type: string
+          default: 'platform-engineering'
+        costCenter:
+          title: Cost Center
+          type: string
+          default: 'CC-100'
+
+    - title: Enterprise Settings
+      required:
+        - criticality
+      properties:
+        criticality:
+          title: Business Criticality
+          type: string
+          enum: ['High', 'Medium', 'Low']
+          default: 'Medium'
+        deploymentStrategy:
+          title: Deployment Strategy
+          type: string
+          enum: ['Blue/Green', 'Canary', 'Rolling']
+          default: 'Rolling'
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          repoUrl: ${{ parameters.repoUrl }}
+
+    - id: publish
+      name: Publish Pull Request
+      action: publish:github:pull-request
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        title: Add Backstage TechDocs Setup
+        description: This PR adds the required files to onboard this repository into Backstage TechDocs.
+        branchName: add-techdocs
+
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['publish'].output.remoteUrl }}

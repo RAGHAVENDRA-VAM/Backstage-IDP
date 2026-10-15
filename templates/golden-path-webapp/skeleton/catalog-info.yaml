@@ -1,0 +1,31 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.name }}
+  description: Enterprise React App for ${{ values.project }}
+  annotations:
+    # 1. GitHub Actions (Already Working)
+    github.com/project-slug: ${{ values.repoUrl | projectSlug }}
+    
+    # 2. Datadog Observability
+    datadoghq.com/dashboard-url: 'REPLACE_WITH_DATADOG_DASHBOARD_URL'
+    
+    # 3. SonarQube Security Scanning
+    sonarqube.org/project-key: 'REPLACE_WITH_SONARQUBE_PROJECT_KEY'
+    
+    # 4. PagerDuty Incident Management
+    pagerduty.com/integration-key: 'REPLACE_WITH_PAGERDUTY_INTEGRATION_KEY'
+    pagerduty.com/service-id: 'REPLACE_WITH_PAGERDUTY_SERVICE_ID'
+    
+    # 5. Kubernetes Visibility (For future migration from Web Apps)
+    backstage.io/kubernetes-id: 'REPLACE_WITH_KUBERNETES_APP_LABEL'
+    
+    # TechDocs
+    backstage.io/techdocs-ref: dir:.
+    azure.com/app-service: ${{ values.name }}-app
+spec:
+  type: website
+  lifecycle: experimental
+  owner: user:raghavendra-vam
+  providesApis:
+    - REPLACE_WITH_API_NAME

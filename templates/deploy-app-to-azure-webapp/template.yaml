@@ -1,0 +1,59 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: deploy-app-to-azure-webapp
+  title: Deploy Application to Azure Web App
+  description: Deploy an existing application from a GitHub repository to an active Azure App Service / Web App.
+  tags:
+    - azure
+    - deployment
+    - github
+    - app-service
+    - cloud
+spec:
+  owner: user:raghavendra-vam
+  type: service
+
+  parameters:
+    - title: 1. Select Source Application
+      required:
+        - repoFullName
+      properties:
+        repoFullName:
+          title: GitHub Application Repository
+          type: string
+          description: Choose the repository containing your application code
+          ui:field: GitHubRepoPicker
+
+    - title: 2. Select Azure Cloud Destination
+      required:
+        - webAppName
+      properties:
+        resourceGroup:
+          title: Azure Resource Group
+          type: string
+          description: Choose the Azure Resource Group (optional filter)
+          ui:field: AzureResourceGroupPicker
+        webAppName:
+          title: Target Azure Web App
+          type: string
+          description: Choose the active Azure Web App where the application will be hosted
+          ui:field: AzureWebAppPicker
+
+  steps:
+    - id: deploy
+      name: Deploy Application to Azure Web App
+      action: azure:app:deploy
+      input:
+        repoFullName: ${{ parameters.repoFullName }}
+        webAppName: ${{ parameters.webAppName }}
+        resourceGroup: ${{ parameters.resourceGroup }}
+
+  output:
+    links:
+      - title: 🌐 View Live Azure Web App
+        url: ${{ steps['deploy'].output.webAppUrl }}
+        icon: dashboard
+      - title: 📦 View GitHub Repository
+        url: ${{ steps['deploy'].output.repoUrl }}
+        icon: github

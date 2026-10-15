@@ -1,0 +1,86 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: ado-dev-project-features
+  title: Work on Project, Features & User Stories
+  description: "Developer Life Cycle: Automate workspace setup for new projects, features, or user stories."
+  tags:
+    - azure-devops
+    - ado
+    - developer
+    - project
+    - features
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+
+    - title: Project Details
+      required:
+        - name
+        - description
+        - projectType
+        - ticketUrl
+      properties:
+        name:
+          title: Feature/Project Name
+          type: string
+          description: Unique name of the feature or project
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        projectType:
+          title: Project Type
+          type: string
+          enum: ['Microservice', 'Frontend', 'Library', 'Data Pipeline']
+          default: 'Microservice'
+        ticketUrl:
+          title: Azure Boards / Jira Ticket URL
+          type: string
+          format: uri
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - dev.azure.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          repoUrl: ${{ parameters.repoUrl }}
+
+    - id: publish
+      name: Publish to Azure DevOps
+      action: publish:azure
+      input:
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register in Backstage
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

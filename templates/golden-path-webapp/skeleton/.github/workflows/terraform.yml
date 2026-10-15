@@ -1,0 +1,41 @@
+name: 'Terraform Deploy'
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+    env:
+      ARM_CLIENT_ID: "${{ values.clientId }}"
+      ARM_CLIENT_SECRET: "${{ values.clientSecret }}"
+      ARM_SUBSCRIPTION_ID: "${{ values.subscriptionId }}"
+      ARM_TENANT_ID: "${{ values.tenantId }}"
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Plan
+      id: plan
+      run: terraform plan -out=tfplan
+
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      run: terraform apply -auto-approve tfplan

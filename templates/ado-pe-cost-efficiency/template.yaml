@@ -1,0 +1,84 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: ado-pe-cost-efficiency
+  title: Ensure Cost Efficiency
+  description: "Platform Engineer Life Cycle: Deploy cost-monitoring and resource optimization policies."
+  tags:
+    - azure-devops
+    - ado
+    - platform
+    - finops
+    - cost
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+
+    - title: FinOps Configuration
+      required:
+        - name
+        - description
+        - budgetLimit
+      properties:
+        name:
+          title: Cost Policy Name
+          type: string
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        budgetLimit:
+          title: Monthly Budget Limit (USD)
+          type: integer
+          default: 1000
+        actionOnExceed:
+          title: Action when Budget Exceeded
+          type: string
+          enum: ['Alert Only', 'Stop Non-Production Resources']
+          default: 'Alert Only'
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - dev.azure.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          repoUrl: ${{ parameters.repoUrl }}
+
+    - id: publish
+      name: Publish to Azure DevOps
+      action: publish:azure
+      input:
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register in Backstage
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

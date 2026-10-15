@@ -1,0 +1,100 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: valuemomentum
+  title: ValueMomentum
+  description: ValueMomentum Organization
+spec:
+  type: root
+  children: [platform-engineering, developers]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-engineering
+  title: Platform Engineering Team
+  description: The team responsible for Backstage, DevOps, and internal developer platforms.
+spec:
+  type: team
+  parent: valuemomentum
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: developers
+  title: Application Engineering Team
+  description: The core application development teams.
+spec:
+  type: team
+  parent: valuemomentum
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: raghavendra-vam
+  title: Raghavendra Lakkamaraju
+  description: Platform Engineer
+  annotations:
+    github.com/user-login: RAGHAVENDRA-VAM
+  links:
+    - url: mailto:Raghavendra.Lakkamaraju@valuemomentum.com
+      title: Email
+spec:
+  profile:
+    displayName: Raghavendra Lakkamaraju
+    email: Raghavendra.Lakkamaraju@valuemomentum.com
+  memberOf: [developers]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: shankar.vinjamuri
+  title: Shankar Vinjamuri
+  description: Director - Cloud Engineering
+  annotations:
+    github.com/user-login: shankar-vinjamuri
+  links:
+    - url: mailto:Shankar.Vinjamuri@valuemomentum.com
+      title: Email
+spec:
+  profile:
+    displayName: Shankar Vinjamuri
+    email: Shankar.Vinjamuri@valuemomentum.com
+  memberOf: [platform-engineering]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: vamsi.sapireddy
+  title: Vamsi Sapireddy
+  description: Software Engineer
+  annotations:
+    github.com/user-login: vamsi-sapireddy
+  links:
+    - url: mailto:Vamsi.Sapireddy@valuemomentum.com
+      title: Email
+spec:
+  profile:
+    displayName: Vamsi Sapireddy
+    email: Vamsi.Sapireddy@valuemomentum.com
+  memberOf: [developers]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: prayanka.gochipatula
+  title: Prayanka Gochipatula
+  description: Software Engineer
+  annotations:
+    github.com/user-login: prayanka-gochipatula
+  links:
+    - url: mailto:prayanka.gochipatula@valuemomentum.com
+      title: Email
+spec:
+  profile:
+    displayName: Prayanka Gochipatula
+    email: prayanka.gochipatula@valuemomentum.com
+  memberOf: [developers]

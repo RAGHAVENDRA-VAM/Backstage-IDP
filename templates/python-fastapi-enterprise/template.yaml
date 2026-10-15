@@ -1,0 +1,104 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: python-fastapi-enterprise
+  title: Python FastAPI Enterprise Application
+  description: Create a standardized FastAPI application repository with CI, security scanning, Docker support.
+  tags:
+    - github
+    - python
+    - fastapi
+    - backend
+    - api
+    - devsecops
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+
+    - title: Component Details
+      required:
+        - name
+        - description
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the component
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        ownerTeam:
+          title: Owning Team / Distribution List
+          type: string
+          default: 'platform-engineering'
+        costCenter:
+          title: Cost Center
+          type: string
+          default: 'CC-100'
+
+    - title: Python Specifications
+      required:
+        - pythonVersion
+      properties:
+        pythonVersion:
+          title: Python Version
+          type: string
+          enum: ['3.10', '3.11', '3.12']
+          default: '3.11'
+        packageManager:
+          title: Package/Dependency Manager
+          type: string
+          enum: ['pip', 'poetry', 'pipenv']
+          default: 'poetry'
+        includeLinting:
+          title: Include Black & Flake8
+          type: boolean
+          default: true
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          repoUrl: ${{ parameters.repoUrl }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register in Backstage
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

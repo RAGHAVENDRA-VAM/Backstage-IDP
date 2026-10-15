@@ -1,0 +1,113 @@
+app:
+  title: Any Insurance Company Developer Portal
+  baseUrl: http://localhost:3000
+  extensions:
+    - core:root-redirect:
+        config:
+          target: '/home'
+    - page:catalog/entity:
+        config:
+          groups:
+            - overview:
+                title: Overview
+            - '/jira':
+                title: Jira
+            - 'github-actions':
+                title: GitHub
+            - '/pull-requests':
+                title: Pull Requests
+            - '/azure':
+                title: Azure
+            - '/datadog':
+                title: Datadog
+            - documentation:
+                title: Docs
+          defaultContentOrder: natural
+
+organization:
+  name: Any Insurance Company
+
+backend:
+  baseUrl: http://localhost:7007
+  listen:
+    port: 7007
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+  cors:
+    origin: http://localhost:3000
+    methods: [GET, HEAD, PATCH, POST, PUT, DELETE, OPTIONS]
+    credentials: true
+
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+  azure:
+    - host: dev.azure.com
+      credentials:
+        - personalAccessToken: ${AZURE_TOKEN}
+  terraform:
+    token: ${TERRAFORM_TOKEN}
+
+proxy:
+  '/datadog':
+    target: 'https://api.datadoghq.com/api/v1'
+    changeOrigin: true
+    headers:
+      DD-API-KEY: ${DATADOG_API_KEY}
+      DD-APPLICATION-KEY: ${DATADOG_APP_KEY}
+  '/datadog-v2':
+    target: 'https://api.datadoghq.com/api/v2'
+    changeOrigin: true
+    headers:
+      DD-API-KEY: ${DATADOG_API_KEY}
+      DD-APPLICATION-KEY: ${DATADOG_APP_KEY}
+  '/jira/api':
+    target: ${JIRA_BASE_URL}
+    changeOrigin: true
+    headers:
+      Authorization: Basic ${JIRA_BASIC_AUTH_TOKEN}
+      Accept: 'application/json'
+      X-Atlassian-Token: 'no-check'
+      User-Agent: 'backstage-proxy'
+
+auth:
+  environment: development
+  providers:
+    github:
+      development:
+        clientId: ${AUTH_GITHUB_CLIENT_ID}
+        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+        signIn:
+          resolvers:
+            - resolver: enterpriseCustomResolver
+          dangerouslyAllowSignInWithoutUserInCatalog: true
+
+scaffolder:
+  # Any additional scaffolder config
+
+techdocs:
+  builder: 'local'
+  generator:
+    runIn: 'local'
+  publisher:
+    type: 'local'
+
+catalog:
+  import:
+    entityFilename: catalog-info.yaml
+    pullRequestBranchName: backstage-integration
+  rules:
+    - allow: [Component, System, API, Resource, Location]
+  locations:
+    - type: file
+      target: ../../examples/entities.yaml
+    - type: file
+      target: ../../org-data.yaml
+      rules:
+        - allow: [Group, User]
+    - type: file
+      target: ../../all-templates.yaml
+      rules:
+        - allow: [Template, Location]

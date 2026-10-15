@@ -1,0 +1,9 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: echo "ADO Persona Workflow configured"
+  displayName: 'Run a one-line script'

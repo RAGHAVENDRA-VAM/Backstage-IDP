@@ -1,0 +1,36 @@
+---
+# Guest user
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: guest
+spec:
+  memberOf:
+    - guests
+
+---
+# Guest group
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: guests
+spec:
+  type: team
+  children: []
+
+---
+# Raghavendra Vam
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: raghavendra-vam
+  description: Software Engineer
+  annotations:
+    github.com/user-id: "U_kgDODe6Bng"
+spec:
+  profile:
+    displayName: Raghavendra Vam
+    email: Raghavendra.Lakkamaraju@valuemomentum.com
+    picture: https://avatars.githubusercontent.com/raghavendra-vam
+  memberOf:
+    - guests

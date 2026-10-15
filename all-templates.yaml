@@ -1,0 +1,26 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: all-templates
+spec:
+  targets:
+    # 1. The Core Infrastructure & Deployments
+    - ./templates/golden-path-webapp/template.yaml
+    - ./templates/deploy-app-to-azure-webapp/template.yaml
+
+    # 2. Azure DevOps Integration
+    - ./templates/ado-work-item/template.yaml
+
+    # 3. The Frontend Path
+    - ./templates/react-web-app/template.yaml
+
+    # 4. The Backend Paths
+    - ./templates/node-express-microservice/template.yaml
+    - ./templates/java-springboot-enterprise/template.yaml
+    - ./templates/dotnet-webapi-enterprise/template.yaml
+
+    # 5. The AI Path
+    - ./templates/enterprise-rag-application/template.yaml
+
+    # 6. The Documentation Path
+    - ./templates/techdocs-onboarding/template.yaml

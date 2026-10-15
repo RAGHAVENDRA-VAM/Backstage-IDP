@@ -1,0 +1,84 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: ado-pe-standardization-tasks
+  title: Standardization and Automate Common Tasks
+  description: "Platform Engineer Life Cycle: Scaffold automated scripts/pipelines for common operational tasks."
+  tags:
+    - azure-devops
+    - ado
+    - platform
+    - automation
+    - standardization
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+
+    - title: Task Automation
+      required:
+        - name
+        - description
+        - runnerType
+      properties:
+        name:
+          title: Automation Task Name
+          type: string
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        runnerType:
+          title: Execution Runner
+          type: string
+          enum: ['Azure Pipeline (Cron)', 'Azure Function (Webhook)', 'GitHub Action']
+          default: 'Azure Pipeline (Cron)'
+        schedule:
+          title: Cron Schedule (if applicable)
+          type: string
+          default: '0 0 * * *'
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - dev.azure.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          repoUrl: ${{ parameters.repoUrl }}
+
+    - id: publish
+      name: Publish to Azure DevOps
+      action: publish:azure
+      input:
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register in Backstage
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

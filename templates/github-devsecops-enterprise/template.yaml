@@ -1,0 +1,105 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: github-devsecops-enterprise
+  title: Enterprise DevSecOps Application
+  description: Generate a standard security-enabled repository with SAST, SCA, and secret scanning.
+  tags:
+    - github
+    - devsecops
+    - security
+    - sast
+    - sca
+    - secrets
+    - container-security
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+
+    - title: Component Details
+      required:
+        - name
+        - description
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the component
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        ownerTeam:
+          title: Owning Team / Distribution List
+          type: string
+          default: 'platform-engineering'
+        costCenter:
+          title: Cost Center
+          type: string
+          default: 'CC-100'
+
+    - title: Security Integrations
+      required:
+        - sastTool
+      properties:
+        sastTool:
+          title: Static Application Security Testing (SAST)
+          type: string
+          enum: ['SonarQube', 'Checkmarx', 'Veracode', 'GitHub Advanced Security']
+          default: 'SonarQube'
+        scaTool:
+          title: Software Composition Analysis (SCA)
+          type: string
+          enum: ['Snyk', 'Mend (WhiteSource)', 'Dependabot']
+          default: 'Snyk'
+        containerScanning:
+          title: Enable Container Image Scanning
+          type: boolean
+          default: true
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          repoUrl: ${{ parameters.repoUrl }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register in Backstage
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

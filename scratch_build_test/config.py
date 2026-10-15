@@ -1,0 +1,10 @@
+TENANT_ID       = "5f3ec70f-0215-4f44-bdab-f5beda7cdd74"
+SUBSCRIPTION_ID = "46269e09-e1e1-4067-af90-78fd27b1b64d"
+RESOURCE_GROUP  = "hari_check1"
+LOCATION        = "eastus"
+APP_NAME        = "my-app07io97070v4"
+DEPLOY_TARGET   = "app_service"
+BRANCH          = "main"
+ENABLE_SAST     = True
+ENABLE_DAST     = False
+APP_SERVICE_SKU = "B1"

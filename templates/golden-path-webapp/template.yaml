@@ -1,0 +1,146 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: golden-path-webapp
+  title: Azure Web App Infrastructure (Terraform)
+  description: Scaffolds a dedicated Infrastructure-as-Code repository containing Terraform to deploy an Azure Web App. Includes a GitHub Actions pipeline to automatically run terraform apply.
+  tags:
+    - infrastructure
+    - terraform
+    - azure
+spec:
+  owner: user:raghavendra-vam
+  type: service
+
+  parameters:
+    - title: Azure Web App Details
+      required:
+        - name
+        - publishType
+        - runtimeStack
+        - os
+        - location
+        - pricingTier
+      properties:
+        name:
+          title: Web App Name
+          type: string
+          description: Unique name of the Azure Web App (e.g. claims-ui-infra)
+          ui:autofocus: true
+        location:
+          title: Azure Region
+          type: string
+          description: Which region do you want to deploy to?
+          default: "East US"
+          enum:
+            - "East US"
+            - "West US"
+            - "North Europe"
+            - "West Europe"
+        pricingTier:
+          title: App Service Plan Pricing Tier
+          type: string
+          description: Select the compute tier for your Web App
+          default: "B1"
+          enum:
+            - "F1"
+            - "B1"
+            - "S1"
+            - "P1v2"
+          enumNames:
+            - "Free (F1) - Dev/Test"
+            - "Basic (B1) - Dev/Test"
+            - "Standard (S1) - Production"
+            - "Premium V2 (P1v2) - Production"
+        publishType:
+          title: Publish
+          type: string
+          default: "Code"
+          enum:
+            - "Code"
+            - "Container"
+        runtimeStack:
+          title: Runtime stack
+          type: string
+          default: "python_312"
+          enum:
+            - "dotnet_8"
+            - "java_17"
+            - "node_24"
+            - "node_22"
+            - "php_83"
+            - "python_312"
+            - "python_311"
+          enumNames:
+            - ".NET 8 (LTS)"
+            - "Java 17"
+            - "Node 24 LTS"
+            - "Node 22 LTS"
+            - "PHP 8.3"
+            - "Python 3.12"
+            - "Python 3.11"
+        os:
+          title: Operating System
+          type: string
+          default: "Linux"
+          enum:
+            - "Linux"
+            - "Windows"
+
+    - title: Repository Location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: read-secrets
+      name: Securely Read Azure Credentials
+      action: azure:secrets:read
+
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          location: ${{ parameters.location }}
+          pricingTier: ${{ parameters.pricingTier }}
+          publishType: ${{ parameters.publishType }}
+          runtimeStack: ${{ parameters.runtimeStack }}
+          os: ${{ parameters.os }}
+          repoUrl: ${{ parameters.repoUrl }}
+          clientId: ${{ steps['read-secrets'].output.clientId }}
+          clientSecret: ${{ steps['read-secrets'].output.clientSecret }}
+          tenantId: ${{ steps['read-secrets'].output.tenantId }}
+          subscriptionId: ${{ steps['read-secrets'].output.subscriptionId }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: Terraform Infrastructure repository for ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: main
+
+    - id: register
+      name: Register in Backstage Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Open in GitHub
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in Backstage Catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

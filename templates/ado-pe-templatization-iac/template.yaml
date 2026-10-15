@@ -1,0 +1,85 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: ado-pe-templatization-iac
+  title: Templatization including IaC
+  description: "Platform Engineer Life Cycle: Create new reusable infrastructure-as-code modules and templates."
+  tags:
+    - azure-devops
+    - ado
+    - platform
+    - iac
+    - terraform
+spec:
+  owner: user:guest
+  type: other
+
+  parameters:
+
+    - title: IaC Module Config
+      required:
+        - name
+        - description
+        - iacTool
+      properties:
+        name:
+          title: Module Name
+          type: string
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        iacTool:
+          title: Infrastructure as Code Tool
+          type: string
+          enum: ['Terraform', 'Bicep', 'Pulumi', 'ARM Templates']
+          default: 'Terraform'
+        cloudProvider:
+          title: Cloud Provider Focus
+          type: string
+          enum: ['Azure', 'AWS', 'GCP', 'Agnostic']
+          default: 'Azure'
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - dev.azure.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          repoUrl: ${{ parameters.repoUrl }}
+
+    - id: publish
+      name: Publish to Azure DevOps
+      action: publish:azure
+      input:
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register in Backstage
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

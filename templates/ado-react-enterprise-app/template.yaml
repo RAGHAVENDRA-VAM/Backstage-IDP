@@ -1,0 +1,104 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: ado-react-enterprise-app
+  title: React Enterprise Application (ADO)
+  description: React application with Azure Pipelines YAML, tests, Dockerfile.
+  tags:
+    - azure-devops
+    - ado
+    - react
+    - frontend
+    - devsecops
+spec:
+  owner: user:guest
+  type: website
+
+  parameters:
+
+    - title: Component Details
+      required:
+        - name
+        - description
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name of the component
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+        ownerTeam:
+          title: Owning Team / Distribution List
+          type: string
+          default: 'platform-engineering'
+        costCenter:
+          title: Cost Center
+          type: string
+          default: 'CC-100'
+
+    - title: Frontend Specifications
+      required:
+        - nodeVersion
+      properties:
+        nodeVersion:
+          title: Node.js Version
+          type: string
+          enum: ['18.x', '20.x']
+          default: '20.x'
+        packageManager:
+          title: Package Manager
+          type: string
+          enum: ['npm', 'yarn', 'pnpm']
+          default: 'yarn'
+        testingFramework:
+          title: E2E Testing Framework
+          type: string
+          enum: ['Cypress', 'Playwright', 'None']
+          default: 'Playwright'
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - dev.azure.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          repoUrl: ${{ parameters.repoUrl }}
+
+    - id: publish
+      name: Publish to Azure DevOps
+      action: publish:azure
+      input:
+        description: This is ${{ parameters.name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register in Backstage
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
