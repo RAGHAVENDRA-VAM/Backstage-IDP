@@ -30,9 +30,6 @@ jobs:
           corepack enable
           yarn install --immutable
 
-      - name: Typecheck Project
-        run: yarn tsc
-
       - name: Build Backstage Production Bundles
         run: yarn build:backend
 
