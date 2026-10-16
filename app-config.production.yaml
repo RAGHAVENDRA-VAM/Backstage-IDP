@@ -33,12 +33,12 @@ catalog:
     - allow: [Component, System, API, Resource, Location]
   locations:
     - type: file
-      target: ./examples/entities.yaml
+      target: /app/examples/entities.yaml
     - type: file
-      target: ./org-data.yaml
+      target: /app/org-data.yaml
       rules:
         - allow: [Group, User]
     - type: file
-      target: ./all-templates.yaml
+      target: /app/all-templates.yaml
       rules:
         - allow: [Template, Location]
