@@ -227,7 +227,7 @@ const JiraLiveDashboardView = () => {
   const [domainFilter, setDomainFilter] = useState<'all' | 'claims' | 'risk'>('all');
 
   const { value, loading, error, retry } = useAsync(async () => {
-    const res = await fetch('http://localhost:7007/api/integrations-proxy/jira/issues');
+    const res = await fetch('/api/integrations-proxy/jira/issues');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   }, []);
@@ -436,7 +436,7 @@ const GitHubLiveDashboardView = () => {
     loading: loadingAllRepos,
     retry: retryAllRepos,
   } = useAsync(async () => {
-    const res = await fetch('http://localhost:7007/api/integrations-proxy/github/repos');
+    const res = await fetch('/api/integrations-proxy/github/repos');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   }, []);
@@ -450,7 +450,7 @@ const GitHubLiveDashboardView = () => {
     retry: retryDetail,
   } = useAsync(async () => {
     const res = await fetch(
-      `http://localhost:7007/api/integrations-proxy/github/overview?repo=${encodeURIComponent(
+      `/api/integrations-proxy/github/overview?repo=${encodeURIComponent(
         selectedRepo,
       )}`,
     );
@@ -466,7 +466,7 @@ const GitHubLiveDashboardView = () => {
   const handleRegisterComponent = async (targetRepo: any) => {
     setRegisteringRepo(targetRepo.fullName);
     try {
-      const res = await fetch('http://localhost:7007/api/integrations-proxy/github/register-component', {
+      const res = await fetch('/api/integrations-proxy/github/register-component', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -941,7 +941,7 @@ const DatadogLiveDashboardView = () => {
     loading: loadingDashboards,
     retry: retryDashboards,
   } = useAsync(async () => {
-    const res = await fetch('http://localhost:7007/api/integrations-proxy/datadog/dashboards');
+    const res = await fetch('/api/integrations-proxy/datadog/dashboards');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   }, []);
@@ -973,7 +973,7 @@ const DatadogLiveDashboardView = () => {
     loading: loadingMonitors,
     retry: retryMonitors,
   } = useAsync(async () => {
-    const res = await fetch('http://localhost:7007/api/integrations-proxy/datadog/monitors');
+    const res = await fetch('/api/integrations-proxy/datadog/monitors');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   }, []);

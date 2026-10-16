@@ -123,7 +123,7 @@ export const EntityJiraTabContent = () => {
 
   // Query real Jira issues directly for this specific projectKey
   const { value, loading, error, retry } = useAsync(async () => {
-    const res = await fetch(`http://localhost:7007/api/integrations-proxy/jira/issues?project=${encodeURIComponent(projectKey)}`);
+    const res = await fetch(`/api/integrations-proxy/jira/issues?project=${encodeURIComponent(projectKey)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     return data;

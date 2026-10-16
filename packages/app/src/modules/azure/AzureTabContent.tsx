@@ -221,14 +221,14 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
 
   // Fetch Web Apps / App Services
   const { value: webAppsData, loading: webAppsLoading, retry: retryWebApps } = useAsync(async () => {
-    const res = await fetch('http://localhost:7007/api/azure-deploy/web-apps');
+    const res = await fetch('/api/azure-deploy/web-apps');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   }, []);
 
   // Fetch All Azure Resources
   const { value: allResourcesData, loading: resourcesLoading, retry: retryResources } = useAsync(async () => {
-    const res = await fetch('http://localhost:7007/api/azure-deploy/resources');
+    const res = await fetch('/api/azure-deploy/resources');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   }, []);
@@ -237,7 +237,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
   const { value: appLogsData, loading: logsLoading, retry: retryLogs } = useAsync(async () => {
     if (!selectedApp) return null;
     const res = await fetch(
-      `http://localhost:7007/api/azure-deploy/app-service-logs?resourceGroup=${encodeURIComponent(
+      `/api/azure-deploy/app-service-logs?resourceGroup=${encodeURIComponent(
         selectedApp.resourceGroup,
       )}&appName=${encodeURIComponent(selectedApp.name)}`,
     );
@@ -288,7 +288,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
     setActionLoading(true);
     setActionMessage(null);
     try {
-      const res = await fetch('http://localhost:7007/api/azure-deploy/app-service-action', {
+      const res = await fetch('/api/azure-deploy/app-service-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
