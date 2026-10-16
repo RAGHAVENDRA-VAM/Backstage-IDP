@@ -50,7 +50,7 @@ RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
 RUN --mount=type=cache,target=/home/node/.cache/yarn,sharing=locked,uid=1000,gid=1000 \
     yarn workspaces focus --all --production && rm -rf "$(yarn cache clean)"
 
-# Copy templates and catalog entity files
+# Copy templates and catalog entity files to root
 COPY --chown=node:node examples ./examples
 COPY --chown=node:node templates ./templates
 COPY --chown=node:node org-data.yaml all-templates.yaml ./
@@ -58,5 +58,8 @@ COPY --chown=node:node org-data.yaml all-templates.yaml ./
 # Then copy the rest of the backend bundle, along with any other files we might want.
 COPY --chown=node:node packages/backend/dist/bundle.tar.gz app-config*.yaml ./
 RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
+
+# Ensure examples, templates, and yaml files exist in packages/backend as well
+RUN cp -r ./examples ./templates ./org-data.yaml ./all-templates.yaml ./packages/backend/ 2>/dev/null || true
 
 CMD ["node", "packages/backend", "--config", "app-config.yaml", "--config", "app-config.production.yaml"]

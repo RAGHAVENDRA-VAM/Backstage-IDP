@@ -30,8 +30,18 @@ auth:
 
 catalog:
   rules:
-    - allow: [Component, System, API, Resource, Location]
+    - allow: [Component, System, API, Resource, Location, Template, Group, User]
   locations:
+    - type: file
+      target: ./examples/entities.yaml
+    - type: file
+      target: ./org-data.yaml
+      rules:
+        - allow: [Group, User]
+    - type: file
+      target: ./all-templates.yaml
+      rules:
+        - allow: [Template, Location]
     - type: file
       target: /app/examples/entities.yaml
     - type: file
