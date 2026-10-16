@@ -32,16 +32,18 @@ catalog:
   rules:
     - allow: [Component, System, API, Resource, Location, Template, Group, User]
   locations:
-    - type: file
-      target: ./examples/entities.yaml
-    - type: file
-      target: ./org-data.yaml
+    # 1. Direct GitHub URL locations (works everywhere without local path resolution issues)
+    - type: url
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/examples/entities.yaml
+    - type: url
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/org-data.yaml
       rules:
         - allow: [Group, User]
-    - type: file
-      target: ./all-templates.yaml
+    - type: url
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/all-templates.yaml
       rules:
         - allow: [Template, Location]
+    # 2. Local Container File locations
     - type: file
       target: /app/examples/entities.yaml
     - type: file
@@ -52,3 +54,4 @@ catalog:
       target: /app/all-templates.yaml
       rules:
         - allow: [Template, Location]
+
