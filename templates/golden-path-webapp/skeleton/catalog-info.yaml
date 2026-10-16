@@ -4,28 +4,24 @@ metadata:
   name: ${{ values.name }}
   description: Enterprise React App for ${{ values.project }}
   annotations:
-    # 1. GitHub Actions (Already Working)
+    # 1. GitHub CI/CD & Actions
     github.com/project-slug: ${{ values.repoUrl | projectSlug }}
     
-    # 2. Datadog Observability
-    datadoghq.com/dashboard-url: 'REPLACE_WITH_DATADOG_DASHBOARD_URL'
+    # 2. Azure Cloud Hosting & Live Diagnostics
+    azure.com/app-service-name: ${{ values.name }}
+    azure.com/resource-group: 'devops-maf'
     
-    # 3. SonarQube Security Scanning
-    sonarqube.org/project-key: 'REPLACE_WITH_SONARQUBE_PROJECT_KEY'
+    # 3. Jira Agile Integration
+    jira/project-key: 'SCRUM'
     
-    # 4. PagerDuty Incident Management
-    pagerduty.com/integration-key: 'REPLACE_WITH_PAGERDUTY_INTEGRATION_KEY'
-    pagerduty.com/service-id: 'REPLACE_WITH_PAGERDUTY_SERVICE_ID'
+    # 4. Datadog Observability & Logs
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
     
-    # 5. Kubernetes Visibility (For future migration from Web Apps)
-    backstage.io/kubernetes-id: 'REPLACE_WITH_KUBERNETES_APP_LABEL'
-    
-    # TechDocs
+    # 5. TechDocs
     backstage.io/techdocs-ref: dir:.
-    azure.com/app-service: ${{ values.name }}-app
 spec:
-  type: website
-  lifecycle: experimental
-  owner: user:raghavendra-vam
-  providesApis:
-    - REPLACE_WITH_API_NAME
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+

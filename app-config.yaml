@@ -1,5 +1,5 @@
 app:
-  title: Any Insurance Company Developer Portal
+  title: Shield Insurance Developer Portal
   baseUrl: http://localhost:3000
   extensions:
     - core:root-redirect:
@@ -25,7 +25,8 @@ app:
           defaultContentOrder: natural
 
 organization:
-  name: Any Insurance Company
+  name: Shield Insurance
+
 
 backend:
   baseUrl: http://localhost:7007

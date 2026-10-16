@@ -53,13 +53,13 @@ export const GitHubRepoPicker = ({
     };
   }, [discoveryApi]);
 
-  const selected = options.find(o => o.fullName === formData) || (formData ? { id: formData, name: formData, fullName: formData, language: '' } : null);
+  const selected = options.find(o => o.fullName === formData) || (formData ? { id: formData, name: (formData.includes('/') ? formData.split('/')[1] : formData), fullName: formData, language: '' } : null);
 
   return (
     <Autocomplete
       id="github-repo-picker"
       options={options}
-      getOptionLabel={opt => opt.fullName || ''}
+      getOptionLabel={opt => opt.name || opt.fullName || ''}
       value={selected}
       loading={loading}
       onChange={(_event, value) => onChange(value ? value.fullName : '')}
@@ -86,13 +86,14 @@ export const GitHubRepoPicker = ({
       renderOption={opt => (
         <Box display="flex" justifyContent="space-between" width="100%" alignItems="center">
           <Typography variant="body2" style={{ fontWeight: 600 }}>
-            {opt.fullName}
+            {opt.name || opt.fullName}
           </Typography>
           {opt.language ? <Chip label={opt.language} size="small" variant="outlined" /> : null}
         </Box>
       )}
     />
   );
+
 };
 
 // --- 2. Azure Resource Group Picker ---

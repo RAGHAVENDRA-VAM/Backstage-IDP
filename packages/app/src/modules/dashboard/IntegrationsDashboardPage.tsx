@@ -462,6 +462,8 @@ const GitHubLiveDashboardView = () => {
   const commits = detailValue?.commits || [];
   const pulls = detailValue?.pulls || [];
   const runs = detailValue?.runs || [];
+  const selectedRepoShortName = selectedRepo.includes('/') ? selectedRepo.split('/')[1] : selectedRepo;
+
 
   const handleRegisterComponent = async (targetRepo: any) => {
     setRegisteringRepo(targetRepo.fullName);
@@ -732,7 +734,7 @@ const GitHubLiveDashboardView = () => {
         <Box>
           <Box mb={2}>
             <Typography variant="subtitle1" style={{ fontWeight: 700, color: '#0f3156' }}>
-              CI/CD Pipeline Workflow Executions for {selectedRepo}
+              CI/CD Pipeline Workflow Executions for {selectedRepoShortName}
             </Typography>
           </Box>
           {loadingDetail ? (
@@ -742,7 +744,7 @@ const GitHubLiveDashboardView = () => {
           ) : runs.length === 0 ? (
             <Paper variant="outlined" style={{ padding: 24, textAlign: 'center' }}>
               <Typography variant="body2" color="textSecondary">
-                No active GitHub Actions workflow executions found for {selectedRepo}.
+                No active GitHub Actions workflow executions found for {selectedRepoShortName}.
               </Typography>
             </Paper>
           ) : (
@@ -804,7 +806,7 @@ const GitHubLiveDashboardView = () => {
         <Box>
           <Box mb={2}>
             <Typography variant="subtitle1" style={{ fontWeight: 700, color: '#0f3156' }}>
-              Pull Requests for {selectedRepo}
+              Pull Requests for {selectedRepoShortName}
             </Typography>
           </Box>
           {loadingDetail ? (
@@ -814,7 +816,7 @@ const GitHubLiveDashboardView = () => {
           ) : pulls.length === 0 ? (
             <Paper variant="outlined" style={{ padding: 24, textAlign: 'center' }}>
               <Typography variant="body2" color="textSecondary">
-                No active pull requests found for {selectedRepo}.
+                No active pull requests found for {selectedRepoShortName}.
               </Typography>
             </Paper>
           ) : (
@@ -869,7 +871,7 @@ const GitHubLiveDashboardView = () => {
         <Box>
           <Box mb={2}>
             <Typography variant="subtitle1" style={{ fontWeight: 700, color: '#0f3156' }}>
-              Recent Commits History for {selectedRepo}
+              Recent Commits History for {selectedRepoShortName}
             </Typography>
           </Box>
           {loadingDetail ? (
@@ -879,11 +881,12 @@ const GitHubLiveDashboardView = () => {
           ) : commits.length === 0 ? (
             <Paper variant="outlined" style={{ padding: 24, textAlign: 'center' }}>
               <Typography variant="body2" color="textSecondary">
-                No recent commits found for {selectedRepo}.
+                No recent commits found for {selectedRepoShortName}.
               </Typography>
             </Paper>
           ) : (
             <TableContainer component={Paper} variant="outlined" style={{ borderRadius: 8 }}>
+
               <Table size="medium">
                 <TableHead style={{ backgroundColor: '#f8fafc' }}>
                   <TableRow>
@@ -1384,9 +1387,10 @@ export const IntegrationsDashboardPage = () => {
           Enterprise Integrations & Extensions Dashboard
         </Typography>
         <Typography className={classes.heroSubtitle}>
-          Central operational command center for Any Insurance Company. Switch between live tool dashboards 
+          Central operational command center for Shield Insurance. Switch between live tool dashboards 
           for Jira tickets, GitHub projects & workflows, Datadog observability, and ecosystem services.
         </Typography>
+
         <Box className={classes.heroBadges}>
           <Chip label="Jira Cloud: Connected" size="small" className={classes.badgePill} />
           <Chip label="GitHub Actions: Synced" size="small" className={classes.badgePill} />

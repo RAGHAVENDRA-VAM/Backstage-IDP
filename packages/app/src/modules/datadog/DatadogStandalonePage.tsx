@@ -109,8 +109,9 @@ export const DatadogStandalonePage = () => {
           </Typography>
           <Typography className={classes.headerSubtitle}>
             Live organization-wide monitoring dashboard, APM latency metrics, error tracking, and real-time
-            infrastructure telemetry across Any Insurance Company services.
+            infrastructure telemetry across Shield Insurance services.
           </Typography>
+
           <Box className={classes.headerBadges}>
             <Chip label="Live Telemetry Stream" size="small" className={classes.badgePill} />
             <Chip label="US1 Datadog Cloud" size="small" className={classes.badgePill} />

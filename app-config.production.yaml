@@ -1,6 +1,11 @@
 app:
+  title: Shield Insurance Developer Portal
   # Should be the same as backend.baseUrl when using the `app-backend` plugin.
   baseUrl: ${APP_CONFIG_app_baseUrl}
+
+organization:
+  name: Shield Insurance
+
 
 backend:
   baseUrl: ${APP_CONFIG_backend_baseUrl}

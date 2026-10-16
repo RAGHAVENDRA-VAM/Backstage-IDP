@@ -1,11 +1,17 @@
-apiVersion: backstage.io/v1alpha1
+﻿apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ${{ values.name }}
   description: ${{ values.description }}
   annotations:
     github.com/project-slug: ${{ values.repoUrl | projectSlug }}
+    azure.com/app-service-name: ${{ values.name }}
+    azure.com/resource-group: 'devops-maf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
 spec:
   type: service
   lifecycle: production
-  owner: user:raghavendra-vam
+  owner: platform-engineering
+

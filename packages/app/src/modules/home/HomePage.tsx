@@ -234,11 +234,12 @@ export const HomePage: React.FC = () => {
           <Chip label="Cloud-Native Golden Paths" size="small" className={classes.heroBadge} />
         </Box>
         <Typography variant="h3" className={classes.heroTitle}>
-          Any Insurance Company Developer Portal
+          Shield Insurance Developer Portal
         </Typography>
         <Typography variant="body1" className={classes.heroSubtitle}>
           The unified internal developer platform for insurance engineering. Accelerating policy issuance, underwriting automation, and claims processing with pre-approved cloud golden paths and continuous governance.
         </Typography>
+
         <Box display="flex" flexWrap="wrap">
           <Button
             variant="contained"

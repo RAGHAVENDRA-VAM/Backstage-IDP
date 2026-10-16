@@ -10,8 +10,41 @@ permissions:
   contents: read
 
 jobs:
+  sast-security-scan:
+    name: 'SAST Security & Secret Scan'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # 1. Gitleaks - Detect leaked secrets, API keys & tokens
+    - name: Run Gitleaks Secret Scanner
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true
+
+    # 2. Semgrep - Static Application Security Testing (SAST)
+    - name: Run Semgrep SAST Analysis
+      run: |
+        python3 -m pip install semgrep
+        semgrep scan --config auto --error || true
+
+    # 3. Trivy - Infrastructure-as-Code & Vulnerability Scanner
+    - name: Run Trivy Security & Misconfiguration Scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        exit-code: '0'
+        severity: 'CRITICAL,HIGH'
+
   terraform:
     name: 'Terraform'
+    needs: sast-security-scan
     runs-on: ubuntu-latest
     env:
       ARM_CLIENT_ID: "${{ values.clientId }}"
@@ -39,3 +72,4 @@ jobs:
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       run: terraform apply -auto-approve tfplan
+

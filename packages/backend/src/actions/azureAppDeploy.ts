@@ -430,6 +430,52 @@ http.createServer((req, res) => {
       const liveUrl = `https://${defaultHostName}`;
       const repoUrl = `https://github.com/${repoFullName}`;
 
+      // 10. Automatically register/sync Component into Backstage Catalog with all tabs enabled
+      try {
+        const repoShort = repoFullName.includes('/') ? repoFullName.split('/')[1] : repoFullName;
+        const cleanCompName = repoShort.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
+        const entitiesFile = path.resolve(__dirname, '../../../../examples/entities.yaml');
+        const altEntitiesFile = '/app/examples/entities.yaml';
+        const targetPath = fs.existsSync(entitiesFile) ? entitiesFile : (fs.existsSync(altEntitiesFile) ? altEntitiesFile : null);
+
+        if (targetPath) {
+          const currentContent = fs.readFileSync(targetPath, 'utf8');
+          if (!currentContent.includes(`name: ${cleanCompName}`) && !currentContent.includes(`'${repoFullName}'`)) {
+            const compSnippet = `
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${cleanCompName}
+  title: "${repoShort}"
+  description: "Cloud Web App & Microservice hosted on Azure (${webAppName})"
+  annotations:
+    github.com/project-slug: '${repoFullName}'
+    azure.com/app-service-name: '${webAppName}'
+    azure.com/resource-group: '${targetRg}'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: ${repoUrl}
+      title: GitHub Repository
+      icon: github
+    - url: ${liveUrl}
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-engineering
+`;
+            fs.appendFileSync(targetPath, compSnippet, 'utf8');
+            ctx.logger.info(`✨ Automatically registered [${cleanCompName}] as a Backstage Component with Azure, Jira, and Datadog tabs!`);
+          }
+        }
+      } catch (err: any) {
+        ctx.logger.warn(`Notice while registering catalog component: ${err.message}`);
+      }
+
       ctx.logger.info(`🎉 DEPLOYMENT 100% COMPLETE AND APPLICATION IS LIVE!`);
       ctx.logger.info(`🌐 Live Web App URL: ${liveUrl}`);
       ctx.logger.info(`📦 Repository: ${repoUrl}`);
@@ -438,4 +484,5 @@ http.createServer((req, res) => {
       ctx.output('repoUrl', repoUrl);
     },
   });
+
 };
