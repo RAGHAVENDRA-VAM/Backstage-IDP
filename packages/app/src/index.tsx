@@ -19,13 +19,20 @@ if (typeof window !== 'undefined') {
     const href = (el.getAttribute('href') || el.querySelector('a')?.getAttribute('href') || '').toLowerCase();
     const text = (el.textContent || '').trim().toLowerCase();
 
-    if (href.includes('github-actions') || text.includes('github action')) return 'github-actions';
-    if (href.includes('pull-requests') || text.includes('pull request')) return 'pull-requests';
-    if (href.includes('jira') || text === 'jira') return 'jira';
-    if (href.includes('azure') || text === 'azure') return 'azure';
-    if (href.includes('datadog') || text === 'datadog') return 'datadog';
-    if (href.includes('docs') || text === 'techdocs' || text === 'docs') return 'docs';
-    if (text === 'overview' || href.endsWith('/component/' + href.split('/').pop())) return 'overview';
+    // Check GitHub Actions
+    if (href.includes('github-actions') || text.includes('github action') || text.includes('actions') || text === 'github') return 'github-actions';
+    // Check Pull Requests
+    if (href.includes('pull-requests') || text.includes('pull request') || text.includes('pulls') || text === 'pr' || text === 'prs') return 'pull-requests';
+    // Check Jira
+    if (href.includes('jira') || text.includes('jira')) return 'jira';
+    // Check Azure
+    if (href.includes('azure') || text.includes('azure')) return 'azure';
+    // Check Datadog
+    if (href.includes('datadog') || text.includes('datadog')) return 'datadog';
+    // Check TechDocs / Docs
+    if (href.includes('docs') || text.includes('techdocs') || text === 'docs') return 'docs';
+    // Overview
+    if (text.includes('overview') || href.endsWith('/component/' + href.split('/').pop()) || href.endsWith('/api/' + href.split('/').pop())) return 'overview';
 
     const last = href.split('/').pop() || '';
     return last || 'overview';
@@ -35,7 +42,7 @@ if (typeof window !== 'undefined') {
 
   const orderTabs = () => {
     if (isReordering) return;
-    const tabHeaders = document.querySelectorAll('[role="tablist"], .MuiTabs-flexContainer, nav[aria-label*="tab"]');
+    const tabHeaders = document.querySelectorAll('[role="tablist"], .MuiTabs-flexContainer, nav[aria-label*="tab"], .MuiTabs-root .MuiTabs-scroller > div');
     tabHeaders.forEach(tabList => {
       const tabs = Array.from(tabList.children) as HTMLElement[];
       if (tabs.length >= 3) {

@@ -2,6 +2,28 @@ app:
   title: Shield Insurance Developer Portal
   # Should be the same as backend.baseUrl when using the `app-backend` plugin.
   baseUrl: ${APP_CONFIG_app_baseUrl}
+  extensions:
+    - core:root-redirect:
+        config:
+          target: '/home'
+    - page:catalog/entity:
+        config:
+          groups:
+            - overview:
+                title: Overview
+            - '/jira':
+                title: Jira
+            - 'github-actions':
+                title: GitHub
+            - '/pull-requests':
+                title: Pull Requests
+            - '/azure':
+                title: Azure
+            - '/datadog':
+                title: Datadog
+            - documentation:
+                title: Docs
+          defaultContentOrder: natural
 
 organization:
   name: Shield Insurance
