@@ -12,8 +12,8 @@ app:
                 title: Overview
             - '/jira':
                 title: Jira
-            - 'github-actions':
-                title: GitHub
+            - '/github-actions':
+                title: GitHub Actions
             - '/pull-requests':
                 title: Pull Requests
             - '/azure':

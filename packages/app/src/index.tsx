@@ -44,7 +44,12 @@ if (typeof window !== 'undefined') {
     if (isReordering) return;
     const tabHeaders = document.querySelectorAll('[role="tablist"], .MuiTabs-flexContainer, nav[aria-label*="tab"], .MuiTabs-root .MuiTabs-scroller > div');
     tabHeaders.forEach(tabList => {
-      const tabs = Array.from(tabList.children) as HTMLElement[];
+      let tabs = Array.from(tabList.children) as HTMLElement[];
+      // If the tabList has a nested flex container holding the links, target that
+      const innerFlex = tabList.querySelector('.MuiTabs-flexContainer') as HTMLElement;
+      const targetContainer = innerFlex || tabList;
+      tabs = Array.from(targetContainer.children) as HTMLElement[];
+
       if (tabs.length >= 3) {
         const sorted = [...tabs].sort((a, b) => {
           const aKey = getTabKey(a);
@@ -60,7 +65,7 @@ if (typeof window !== 'undefined') {
           isReordering = true;
           try {
             sorted.forEach((tab) => {
-              tabList.appendChild(tab);
+              targetContainer.appendChild(tab);
             });
           } finally {
             setTimeout(() => { isReordering = false; }, 50);
