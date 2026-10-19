@@ -38,13 +38,6 @@ const jiraEntityContentExtension = EntityContentBlueprint.make({
   },
 });
 
-export const jiraCustomModule = createFrontendModule({
-  pluginId: 'catalog',
-  extensions: [jiraEntityContentExtension],
-});
-
-export const jiraConvertedPlugin = jiraCustomModule;
-
 import { EntityGithubActionsTabContent } from './github/EntityGithubActionsTabContent';
 import { EntityGithubPullRequestsTabContent } from './github/EntityGithubPullRequestsTabContent';
 
@@ -72,17 +65,19 @@ const githubPullRequestsEntityContentExtension = EntityContentBlueprint.make({
   },
 });
 
-export const githubActionsModule = createFrontendModule({
+export const customCatalogTabsModule = createFrontendModule({
   pluginId: 'catalog',
-  extensions: [githubActionsEntityContentExtension],
+  extensions: [
+    jiraEntityContentExtension,
+    githubActionsEntityContentExtension,
+    githubPullRequestsEntityContentExtension,
+  ],
 });
 
-export const githubPullRequestsModule = createFrontendModule({
-  pluginId: 'catalog',
-  extensions: [githubPullRequestsEntityContentExtension],
-});
-
-export const prsConvertedPlugin = githubPullRequestsModule;
+export const jiraConvertedPlugin = customCatalogTabsModule;
+export const githubActionsModule = customCatalogTabsModule;
+export const githubPullRequestsModule = customCatalogTabsModule;
+export const prsConvertedPlugin = customCatalogTabsModule;
 
 export const terraformConvertedPlugin = convertLegacyPlugin(terraformPlugin, {
   extensions: [
