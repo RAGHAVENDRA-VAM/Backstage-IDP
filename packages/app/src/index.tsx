@@ -42,6 +42,8 @@ if (typeof window !== 'undefined') {
 
   const orderTabs = () => {
     if (isReordering) return;
+    // Only reorder entity catalog tabs to avoid tampering with custom page tabs like /dashboard
+    if (!window.location.pathname.includes('/catalog/')) return;
     const tabHeaders = document.querySelectorAll('[role="tablist"], .MuiTabs-flexContainer, nav[aria-label*="tab"], .MuiTabs-root .MuiTabs-scroller > div');
     tabHeaders.forEach(tabList => {
       let tabs = Array.from(tabList.children) as HTMLElement[];

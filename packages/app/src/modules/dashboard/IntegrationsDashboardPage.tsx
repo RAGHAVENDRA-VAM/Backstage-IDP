@@ -1646,7 +1646,7 @@ export const IntegrationsDashboardPage = () => {
                   <Button
                     size="small"
                     color="primary"
-                    onClick={() => setSelectedMainTab(3)}
+                    onClick={() => setSelectedMainTab(4)}
                     style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                   >
                     View Datadog Tab →
@@ -1762,7 +1762,7 @@ export const IntegrationsDashboardPage = () => {
                         size="small"
                         variant="contained"
                         color="primary"
-                        onClick={() => setSelectedMainTab(3)}
+                        onClick={() => setSelectedMainTab(4)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
                         Open Datadog Canvas
