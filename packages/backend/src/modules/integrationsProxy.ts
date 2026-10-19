@@ -98,17 +98,19 @@ export const integrationsProxyPlugin = createBackendPlugin({
               Accept: 'application/vnd.github.v3+json',
             };
 
-            const [repoRes, commitsRes, pullsRes, runsRes] = await Promise.all([
+            const [repoRes, commitsRes, pullsRes, runsRes, readmeRes] = await Promise.all([
               fetch(`https://api.github.com/repos/${ownerRepo}`, { headers }),
               fetch(`https://api.github.com/repos/${ownerRepo}/commits?per_page=10`, { headers }),
-              fetch(`https://api.github.com/repos/${ownerRepo}/pulls?state=all&per_page=10`, { headers }),
-              fetch(`https://api.github.com/repos/${ownerRepo}/actions/runs?per_page=10`, { headers }),
+              fetch(`https://api.github.com/repos/${ownerRepo}/pulls?state=all&per_page=50`, { headers }),
+              fetch(`https://api.github.com/repos/${ownerRepo}/actions/runs?per_page=50`, { headers }),
+              fetch(`https://api.github.com/repos/${ownerRepo}/readme`, { headers: { ...headers, Accept: 'application/vnd.github.v3.raw' } }),
             ]);
 
             const repoData = repoRes.ok ? await repoRes.json() : {};
             const commitsData = commitsRes.ok ? await commitsRes.json() : [];
             const pullsData = pullsRes.ok ? await pullsRes.json() : [];
             const runsData = runsRes.ok ? await runsRes.json() : {};
+            const readmeContent = readmeRes.ok ? await readmeRes.text() : '';
 
             const commits = (commitsData || []).map((c: any) => ({
               sha: c.sha?.slice(0, 7),
@@ -141,6 +143,7 @@ export const integrationsProxyPlugin = createBackendPlugin({
             }));
 
             res.json({
+              readme: readmeContent,
               repo: {
                 name: repoData.name,
                 fullName: repoData.full_name,

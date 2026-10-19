@@ -19,6 +19,8 @@ import {
   TableRow,
   Paper,
   CircularProgress,
+  Tabs,
+  Tab,
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 import GitHubIcon from '@material-ui/icons/GitHub';
@@ -102,6 +104,7 @@ const useStyles = makeStyles(theme => ({
 export const EntityGithubPullRequestsTabContent = () => {
   const classes = useStyles();
   const { entity } = useEntity();
+  const [activeFilterTab, setActiveFilterTab] = useState(0); // 0: All, 1: Open, 2: Closed
   const [filterQuery, setFilterQuery] = useState('');
 
   const slug = entity?.metadata?.annotations?.['github.com/project-slug'] || 'RAGHAVENDRA-VAM/Claims_UI';
@@ -115,14 +118,23 @@ export const EntityGithubPullRequestsTabContent = () => {
 
   const pulls = value?.pulls || [];
 
-  const filteredPulls = pulls.filter((p: any) =>
+  const openPulls = pulls.filter((p: any) => p.state === 'open');
+  const closedPulls = pulls.filter((p: any) => p.state === 'closed');
+
+  // Filter based on selected sub-tab
+  const stateFilteredPulls =
+    activeFilterTab === 1
+      ? openPulls
+      : activeFilterTab === 2
+      ? closedPulls
+      : pulls;
+
+  // Filter based on search query
+  const displayedPulls = stateFilteredPulls.filter((p: any) =>
     (p.title && p.title.toLowerCase().includes(filterQuery.toLowerCase())) ||
     (p.author && p.author.toLowerCase().includes(filterQuery.toLowerCase())) ||
-    (p.state && p.state.toLowerCase().includes(filterQuery.toLowerCase()))
+    (p.number && p.number.toString().includes(filterQuery))
   );
-
-  const openPulls = pulls.filter((p: any) => p.state === 'open').length;
-  const closedPulls = pulls.filter((p: any) => p.state === 'closed').length;
 
   return (
     <Box className={classes.root}>
@@ -171,23 +183,46 @@ export const EntityGithubPullRequestsTabContent = () => {
         <Grid item xs={12} sm={4}>
           <Card className={classes.statCard}>
             <Typography variant="body2" color="textSecondary" style={{ fontWeight: 600 }}>Open Reviews</Typography>
-            <Typography className={classes.statNumber} style={{ color: '#16a34a' }}>{openPulls}</Typography>
+            <Typography className={classes.statNumber} style={{ color: '#16a34a' }}>{openPulls.length}</Typography>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
           <Card className={classes.statCard}>
             <Typography variant="body2" color="textSecondary" style={{ fontWeight: 600 }}>Merged / Closed</Typography>
-            <Typography className={classes.statNumber} style={{ color: '#64748b' }}>{closedPulls}</Typography>
+            <Typography className={classes.statNumber} style={{ color: '#64748b' }}>{closedPulls.length}</Typography>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Filter Toolbar */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      {/* Sub Tabs: All, Open, Closed */}
+      <Box mb={2} borderBottom="1px solid #e2e8f0">
+        <Tabs
+          value={activeFilterTab}
+          onChange={(_, val) => setActiveFilterTab(val)}
+          indicatorColor="primary"
+          textColor="primary"
+        >
+          <Tab
+            label={`All PRs (${pulls.length})`}
+            style={{ fontWeight: 700, textTransform: 'none' }}
+          />
+          <Tab
+            label={`Open (${openPulls.length})`}
+            style={{ fontWeight: 700, textTransform: 'none' }}
+          />
+          <Tab
+            label={`Closed (${closedPulls.length})`}
+            style={{ fontWeight: 700, textTransform: 'none' }}
+          />
+        </Tabs>
+      </Box>
+
+      {/* Filter Search Toolbar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={2}>
         <TextField
           size="small"
           variant="outlined"
-          placeholder="Filter pull requests by title, author, or state..."
+          placeholder="Filter pull requests by title, author, or # number..."
           value={filterQuery}
           onChange={e => setFilterQuery(e.target.value)}
           style={{ minWidth: 320 }}
@@ -200,7 +235,7 @@ export const EntityGithubPullRequestsTabContent = () => {
           }}
         />
         <Typography variant="body2" color="textSecondary">
-          Showing {filteredPulls.length} of {pulls.length} PRs
+          Showing {displayedPulls.length} of {stateFilteredPulls.length} PRs
         </Typography>
       </Box>
 
@@ -216,21 +251,21 @@ export const EntityGithubPullRequestsTabContent = () => {
               <TableRow>
                 <TableCell style={{ fontWeight: 700, width: 80 }}>#</TableCell>
                 <TableCell style={{ fontWeight: 700 }}>Pull Request Title</TableCell>
-                <TableCell style={{ fontWeight: 700 }}>Status</TableCell>
-                <TableCell style={{ fontWeight: 700 }}>Author</TableCell>
-                <TableCell style={{ fontWeight: 700 }}>Created</TableCell>
-                <TableCell style={{ fontWeight: 700, textAlign: 'center' }}>Review Link</TableCell>
+                <TableCell style={{ fontWeight: 700, width: 120 }}>Status</TableCell>
+                <TableCell style={{ fontWeight: 700, width: 140 }}>Author</TableCell>
+                <TableCell style={{ fontWeight: 700, width: 130 }}>Created</TableCell>
+                <TableCell style={{ fontWeight: 700, width: 140, textAlign: 'center' }}>Review Link</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredPulls.length === 0 ? (
+              {displayedPulls.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" style={{ padding: 32, color: '#64748b' }}>
-                    No pull requests currently open for this component repository.
+                    No {activeFilterTab === 1 ? 'open' : activeFilterTab === 2 ? 'closed' : ''} pull requests found for this component repository.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPulls.map((p: any) => {
+                displayedPulls.map((p: any) => {
                   const isOpen = p.state === 'open';
 
                   return (
