@@ -49,7 +49,7 @@ integrations:
       credentials:
         - personalAccessToken: ${AZURE_TOKEN}
   terraform:
-    token: ${TERRAFORM_TOKEN}
+    token: ${TERRAFORM_TOKEN:-dummy-terraform-token}
 
 proxy:
   '/datadog':
