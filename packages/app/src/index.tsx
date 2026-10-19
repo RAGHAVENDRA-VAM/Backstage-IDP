@@ -98,6 +98,10 @@ if (typeof window !== 'undefined') {
     }, 100);
   });
 
+  if (window.location.pathname === '/' || window.location.pathname === '') {
+    window.location.replace('/catalog');
+  }
+
   if (document.body) {
     observer.observe(document.body, { childList: true, subtree: true });
     cleanRepoText();
