@@ -43,18 +43,42 @@ export const jiraCustomModule = createFrontendModule({
   extensions: [jiraEntityContentExtension],
 });
 
-export const jiraConvertedPlugin = jiraCustomModule;
+import { EntityGithubActionsTabContent } from './github/EntityGithubActionsTabContent';
+import { EntityGithubPullRequestsTabContent } from './github/EntityGithubPullRequestsTabContent';
 
-export const prsConvertedPlugin = convertLegacyPlugin(githubPullRequestsPlugin, {
-  extensions: [
-    convertLegacyEntityContentExtension(EntityGithubPullRequestsContent, {
-      name: 'pull-requests',
-      title: 'Pull Requests',
-      path: '/pull-requests',
-      filter: isGithubPullRequestsAvailable,
-    }),
-  ]
+const githubActionsEntityContentExtension = EntityContentBlueprint.make({
+  name: 'github-actions',
+  params: {
+    path: '/github-actions',
+    title: 'GitHub Actions',
+    filter: (entity) => Boolean(
+      entity.metadata.annotations?.['github.com/project-slug']
+    ),
+    loader: async () => <EntityGithubActionsTabContent />,
+  },
 });
+
+const githubPullRequestsEntityContentExtension = EntityContentBlueprint.make({
+  name: 'pull-requests',
+  params: {
+    path: '/pull-requests',
+    title: 'Pull Requests',
+    filter: (entity) => Boolean(
+      entity.metadata.annotations?.['github.com/project-slug']
+    ),
+    loader: async () => <EntityGithubPullRequestsTabContent />,
+  },
+});
+
+export const githubCatalogCustomModule = createFrontendModule({
+  pluginId: 'catalog',
+  extensions: [
+    githubActionsEntityContentExtension,
+    githubPullRequestsEntityContentExtension,
+  ],
+});
+
+export const prsConvertedPlugin = githubCatalogCustomModule;
 
 export const terraformConvertedPlugin = convertLegacyPlugin(terraformPlugin, {
   extensions: [
@@ -66,3 +90,4 @@ export const terraformConvertedPlugin = convertLegacyPlugin(terraformPlugin, {
     }),
   ]
 });
+

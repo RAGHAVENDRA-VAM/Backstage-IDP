@@ -61,7 +61,6 @@ export default createApp({
     homeModule, 
     dashboardModule,
     azureCatalogModule,
-    githubActionsPlugin, 
     signInModule, 
     adoWorkItemPickerModule,
     azureDeployPickersModule,
