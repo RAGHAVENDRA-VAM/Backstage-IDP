@@ -18,6 +18,7 @@ import {
 import TimelineIcon from '@material-ui/icons/Timeline';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import RefreshIcon from '@material-ui/icons/Refresh';
+import LaunchIcon from '@material-ui/icons/Launch';
 
 const useStyles = makeStyles(theme => ({
   root: {
