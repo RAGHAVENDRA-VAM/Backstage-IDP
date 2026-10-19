@@ -153,11 +153,30 @@ export const DatadogDashboardIframe = () => {
               </Box>
             </Box>
             <CardContent style={{ padding: 0 }}>
+              <Box style={{ background: '#f8fafc', padding: '12px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" style={{ color: '#475569', fontSize: '0.85rem' }}>
+                  🔒 <strong>Datadog Security Policy:</strong> If your browser blocks this embedded canvas (X-Frame-Options), click the <strong>Open in Datadog</strong> button to view the dashboard directly in full screen.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  startIcon={<OpenInNewIcon fontSize="small" />}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textTransform: 'none', fontWeight: 600, flexShrink: 0, marginLeft: 16 }}
+                >
+                  Open Direct View
+                </Button>
+              </Box>
               <iframe
                 key={refreshKey}
                 title={`${title} Datadog Dashboard ${idx + 1}`}
                 src={url}
                 className={classes.iframeContainer}
+                allow="fullscreen"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               />
             </CardContent>
           </Card>
