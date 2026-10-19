@@ -72,15 +72,17 @@ const githubPullRequestsEntityContentExtension = EntityContentBlueprint.make({
   },
 });
 
-export const githubCatalogCustomModule = createFrontendModule({
+export const githubActionsModule = createFrontendModule({
   pluginId: 'catalog',
-  extensions: [
-    githubActionsEntityContentExtension,
-    githubPullRequestsEntityContentExtension,
-  ],
+  extensions: [githubActionsEntityContentExtension],
 });
 
-export const prsConvertedPlugin = githubCatalogCustomModule;
+export const githubPullRequestsModule = createFrontendModule({
+  pluginId: 'catalog',
+  extensions: [githubPullRequestsEntityContentExtension],
+});
+
+export const prsConvertedPlugin = githubPullRequestsModule;
 
 export const terraformConvertedPlugin = convertLegacyPlugin(terraformPlugin, {
   extensions: [
