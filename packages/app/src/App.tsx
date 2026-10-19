@@ -46,7 +46,7 @@ import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
 import scaffolderPlugin from '@backstage/plugin-scaffolder/alpha';
 import catalogImportPlugin from '@backstage/plugin-catalog-import/alpha';
 import { datadogConvertedPlugin } from './modules/datadog';
-import { jiraConvertedPlugin, githubActionsModule, githubPullRequestsModule } from './modules/community-tabs';
+import { customCatalogTabsModule } from './modules/community-tabs';
 import { githubReadmeModule } from './modules/github-readme';
 import { customTranslationsModule } from './modules/translations';
 import { dashboardModule } from './modules/dashboard';
@@ -60,9 +60,7 @@ export default createApp({
     navModule, 
     homeModule, 
     dashboardModule,
-    jiraConvertedPlugin,
-    githubActionsModule,
-    githubPullRequestsModule,
+    customCatalogTabsModule,
     azureCatalogModule,
     datadogConvertedPlugin,
     techdocsPlugin,
