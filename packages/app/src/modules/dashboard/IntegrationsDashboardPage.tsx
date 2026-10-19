@@ -1204,9 +1204,9 @@ const DatadogLiveDashboardView = () => {
                   <Paper variant="outlined" style={{ padding: 20, borderRadius: 8 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                       <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f172a' }}>
-                        📈 {activeDashboard?.title} — Live Response Latency (Last 60 Mins)
+                        {activeDashboard?.title} — Live Response Latency
                       </Typography>
-                      <Chip label="Real-time" size="small" style={{ height: 20, fontSize: '0.7rem' }} />
+                      <Chip label="Telemetry Stream" size="small" style={{ height: 20, fontSize: '0.7rem' }} />
                     </Box>
                     <svg viewBox="0 0 500 160" style={{ width: '100%', height: '160px', overflow: 'visible' }}>
                       <defs>
@@ -1249,7 +1249,7 @@ const DatadogLiveDashboardView = () => {
                   <Paper variant="outlined" style={{ padding: 20, borderRadius: 8 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                       <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f172a' }}>
-                        📊 {activeDashboard?.title} — Resource Utilization (CPU &amp; Memory)
+                        {activeDashboard?.title} — Resource Utilization (CPU &amp; Memory)
                       </Typography>
                       <Chip label="Datadog US1" size="small" style={{ height: 20, fontSize: '0.7rem' }} />
                     </Box>
@@ -1288,7 +1288,7 @@ const DatadogLiveDashboardView = () => {
               {/* Direct Datadog Canvas Opener */}
               <Box mt={3} p={2} style={{ background: '#f8fafc', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <Typography variant="body2" style={{ color: '#475569' }}>
-                  🚀 <strong>Client Demo Access:</strong> View raw widgets, trace flamegraphs, and host topologies directly in full screen.
+                  <strong>Observability Workspace:</strong> Inspect distributed trace flamegraphs, host topologies, and synthetic tests directly in full screen.
                 </Typography>
                 <Button
                   variant="outlined"

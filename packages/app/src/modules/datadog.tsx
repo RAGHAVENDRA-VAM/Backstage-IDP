@@ -13,6 +13,7 @@ import {
   Button,
   IconButton,
   Tooltip,
+  Paper,
   makeStyles,
 } from '@material-ui/core';
 import TimelineIcon from '@material-ui/icons/Timeline';
@@ -184,9 +185,9 @@ export const DatadogDashboardIframe = () => {
                   <Paper variant="outlined" style={{ padding: 20, borderRadius: 8 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                       <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f172a' }}>
-                        📈 Response Latency (P50, P90, P99) — Last 60 Mins
+                        Response Latency Distribution (P50, P90, P99)
                       </Typography>
-                      <Chip label="Real-time" size="small" style={{ height: 20, fontSize: '0.7rem' }} />
+                      <Chip label="Telemetry Stream" size="small" style={{ height: 20, fontSize: '0.7rem' }} />
                     </Box>
                     <svg viewBox="0 0 500 160" style={{ width: '100%', height: '160px', overflow: 'visible' }}>
                       <defs>
@@ -223,7 +224,7 @@ export const DatadogDashboardIframe = () => {
                   <Paper variant="outlined" style={{ padding: 20, borderRadius: 8 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                       <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f172a' }}>
-                        📊 Infrastructure Resource Utilization (CPU &amp; Memory)
+                        Infrastructure Resource Utilization (CPU &amp; Memory)
                       </Typography>
                       <Chip label="US1 Host" size="small" style={{ height: 20, fontSize: '0.7rem' }} />
                     </Box>

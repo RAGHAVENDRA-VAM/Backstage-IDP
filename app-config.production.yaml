@@ -5,7 +5,7 @@ app:
   extensions:
     - core:root-redirect:
         config:
-          target: '/home'
+          target: '/catalog'
     - page:catalog/entity:
         config:
           groups:
