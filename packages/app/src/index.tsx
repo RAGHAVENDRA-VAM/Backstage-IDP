@@ -15,33 +15,42 @@ if (typeof window !== 'undefined') {
     'docs',
   ];
 
+  const getTabKey = (el: HTMLElement) => {
+    const href = (el.getAttribute('href') || el.querySelector('a')?.getAttribute('href') || '').toLowerCase();
+    const text = (el.textContent || '').trim().toLowerCase();
+
+    if (href.includes('github-actions') || text.includes('github action')) return 'github-actions';
+    if (href.includes('pull-requests') || text.includes('pull request')) return 'pull-requests';
+    if (href.includes('jira') || text === 'jira') return 'jira';
+    if (href.includes('azure') || text === 'azure') return 'azure';
+    if (href.includes('datadog') || text === 'datadog') return 'datadog';
+    if (href.includes('docs') || text === 'techdocs' || text === 'docs') return 'docs';
+    if (text === 'overview' || href.endsWith('/component/' + href.split('/').pop())) return 'overview';
+
+    const last = href.split('/').pop() || '';
+    return last || 'overview';
+  };
+
   const orderTabs = () => {
-    // Find tab container containing links
-    const tabHeaders = document.querySelectorAll('header [role="tablist"], [role="tablist"]');
+    // Find tab container containing links (either role="tablist", [class*="tabs"], or a nav/header row of links)
+    const tabHeaders = document.querySelectorAll('[role="tablist"], .MuiTabs-flexContainer, nav[aria-label*="tab"]');
     tabHeaders.forEach(tabList => {
       const tabs = Array.from(tabList.children) as HTMLElement[];
-      if (tabs.length > 2) {
-        let changed = false;
+      if (tabs.length >= 3) {
         // Sort tabs according to desiredTabOrder
         const sorted = [...tabs].sort((a, b) => {
-          const aHref = (a.getAttribute('href') || a.querySelector('a')?.getAttribute('href') || '').toLowerCase();
-          const bHref = (b.getAttribute('href') || b.querySelector('a')?.getAttribute('href') || '').toLowerCase();
+          const aKey = getTabKey(a);
+          const bKey = getTabKey(b);
 
-          const aPath = aHref.split('/').pop() || 'overview';
-          const bPath = bHref.split('/').pop() || 'overview';
-
-          const aIdx = desiredTabOrder.indexOf(aPath) !== -1 ? desiredTabOrder.indexOf(aPath) : 99;
-          const bIdx = desiredTabOrder.indexOf(bPath) !== -1 ? desiredTabOrder.indexOf(bPath) : 99;
+          const aIdx = desiredTabOrder.indexOf(aKey) !== -1 ? desiredTabOrder.indexOf(aKey) : 99;
+          const bIdx = desiredTabOrder.indexOf(bKey) !== -1 ? desiredTabOrder.indexOf(bKey) : 99;
 
           return aIdx - bIdx;
         });
 
         // Re-append in sorted order if order differs
-        sorted.forEach((tab, idx) => {
-          if (tabs[idx] !== tab) {
-            tabList.appendChild(tab);
-            changed = true;
-          }
+        sorted.forEach((tab) => {
+          tabList.appendChild(tab);
         });
       }
     });
