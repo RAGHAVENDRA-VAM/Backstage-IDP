@@ -37,7 +37,66 @@ catalog:
   rules:
     - allow: [Component, System, API, Resource, Location, Template, Group, User]
   locations:
-    # 1. Direct GitHub URL locations (Components, Org, Templates)
+    # 1. Local container files (guaranteed to exist inside container image at /app/)
+    - type: file
+      target: ./examples/entities.yaml
+    - type: file
+      target: ./org-data.yaml
+      rules:
+        - allow: [Group, User]
+    - type: file
+      target: ./all-templates.yaml
+      rules:
+        - allow: [Template, Location]
+    - type: file
+      target: /app/examples/entities.yaml
+    - type: file
+      target: /app/org-data.yaml
+      rules:
+        - allow: [Group, User]
+    - type: file
+      target: /app/all-templates.yaml
+      rules:
+        - allow: [Template, Location]
+    # Direct individual template files
+    - type: file
+      target: ./templates/golden-path-webapp/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ./templates/deploy-app-to-azure-webapp/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ./templates/ado-work-item/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ./templates/react-web-app/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ./templates/node-express-microservice/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ./templates/java-springboot-enterprise/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ./templates/dotnet-webapi-enterprise/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ./templates/enterprise-rag-application/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ./templates/techdocs-onboarding/template.yaml
+      rules:
+        - allow: [Template]
+
+    # 2. Direct GitHub URL locations (fallback)
     - type: url
       target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/examples/entities.yaml
     - type: url
@@ -48,7 +107,6 @@ catalog:
       target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/all-templates.yaml
       rules:
         - allow: [Template, Location]
-    # Direct individual template URLs for reliable loading
     - type: url
       target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/golden-path-webapp/template.yaml
       rules:
@@ -85,5 +143,6 @@ catalog:
       target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/techdocs-onboarding/template.yaml
       rules:
         - allow: [Template]
+
 
 
