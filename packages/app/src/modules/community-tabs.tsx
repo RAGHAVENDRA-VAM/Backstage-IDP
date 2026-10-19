@@ -43,6 +43,8 @@ export const jiraCustomModule = createFrontendModule({
   extensions: [jiraEntityContentExtension],
 });
 
+export const jiraConvertedPlugin = jiraCustomModule;
+
 import { EntityGithubActionsTabContent } from './github/EntityGithubActionsTabContent';
 import { EntityGithubPullRequestsTabContent } from './github/EntityGithubPullRequestsTabContent';
 
