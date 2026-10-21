@@ -620,12 +620,12 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                         Current Spend (MTD)
                       </Typography>
                       <Typography className={classes.statNumber} style={{ color: '#0f3156' }}>
-                        ${costData?.currentSpend?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '1,245.80'}
+                        {costData?.currency === 'INR' ? '₹' : '$'}{costData?.currentSpend?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '1,245.80'}
                       </Typography>
                       <Box mt={1}>
                         <Box display="flex" justifyContent="space-between" mb={0.5}>
                           <Typography variant="caption" color="textSecondary">
-                            Budget: ${costData?.budget?.toLocaleString() || '2,000'}
+                            Budget: {costData?.currency === 'INR' ? '₹' : '$'}{costData?.budget?.toLocaleString() || '2,000'}
                           </Typography>
                           <Typography variant="caption" style={{ fontWeight: 700, color: '#059669' }}>
                             {costData?.percentOfBudget || 62}%
@@ -646,7 +646,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                         Forecasted Month-End
                       </Typography>
                       <Typography className={classes.statNumber} style={{ color: '#0284c7' }}>
-                        ${costData?.projectedMonthEnd?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '1,680.50'}
+                        {costData?.currency === 'INR' ? '₹' : '$'}{costData?.projectedMonthEnd?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '1,680.50'}
                       </Typography>
                       <Typography variant="caption" style={{ color: '#059669', fontWeight: 600 }}>
                         Within monthly budget (-16.0% buffer)
@@ -660,7 +660,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                         Daily Burn Rate
                       </Typography>
                       <Typography className={classes.statNumber} style={{ color: '#7c3aed' }}>
-                        ${costData?.dailyBurnRate?.toFixed(2) || '41.52'} / day
+                        {costData?.currency === 'INR' ? '₹' : '$'}{costData?.dailyBurnRate?.toFixed(2) || '41.52'} / day
                       </Typography>
                       <Typography variant="caption" color="textSecondary">
                         Average 24h consumption
@@ -675,7 +675,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                       </Typography>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Typography className={classes.statNumber} style={{ color: '#059669' }}>
-                          ${costData?.potentialMonthlySavings?.toFixed(2) || '305.50'}
+                          {costData?.currency === 'INR' ? '₹' : '$'}{costData?.potentialMonthlySavings?.toFixed(2) || '305.50'}
                         </Typography>
                         <EcoIcon style={{ color: '#059669', fontSize: 24 }} />
                       </Box>
@@ -723,7 +723,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                                   {s.trend}
                                 </Typography>
                                 <Typography variant="body2" style={{ fontWeight: 700, minWidth: 70, textAlign: 'right' }}>
-                                  ${s.cost.toFixed(2)}
+                                  {costData?.currency === 'INR' ? '₹' : '$'}{s.cost.toFixed(2)}
                                 </Typography>
                               </Box>
                             </Box>
