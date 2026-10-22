@@ -1,4 +1,4 @@
-# Shield Insurance — Enterprise Internal Developer Platform (Backstage IDP)
+#  Enterprise Internal Developer Platform (Backstage IDP)
 
 [![Azure Web Apps](https://img.shields.io/badge/Azure%20App%20Service-Deployed-0078D4?logo=microsoftazure)](https://backstage-idp-gvftaxetancteec5.westus3-01.azurewebsites.net)
 [![Backstage](https://img.shields.io/badge/Backstage-v1.36.0-white?logo=backstage&logoColor=005B4B)](https://backstage.io)
@@ -44,7 +44,7 @@ Central developer portal and self-service engineering command center for Shield 
 
 ---
 
-## 🚀 End-to-End Deployment Process
+##  End-to-End Deployment Process
 
 This application is containerized using Docker and deployed continuously to **Microsoft Azure App Service (Linux Containers)** via **GitHub Actions** and **Azure Container Registry (ACR)**.
 
@@ -188,7 +188,7 @@ Once the GitHub Actions workflow finishes (`exited with code 0`):
 
 ---
 
-## 💻 Local Development Workflow
+##  Local Development Workflow
 
 To run and test the application on your local workstation:
 
@@ -209,7 +209,7 @@ yarn start
 
 ---
 
-## 🛡️ Enterprise Security & Compliance
+##  Enterprise Security & Compliance
 
 - **SAST & Secret Scanning:** Gitleaks, Semgrep OWASP rules, and Aqua Trivy vulnerability scanners integrated on all templates and repositories.
 - **Role-Based Access Control (RBAC):** Azure Service Principal configured with least-privilege `Cost Management Reader` and resource group isolation.
