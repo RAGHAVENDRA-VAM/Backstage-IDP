@@ -14,13 +14,13 @@ const useSidebarLogoStyles = makeStyles({
     display: 'flex',
     flexFlow: 'row nowrap',
     alignItems: 'center',
-    marginBottom: -14,
+    marginBottom: -10,
   },
   link: {
-    width: '100%',
-    marginLeft: 18,
     display: 'flex',
     alignItems: 'center',
+    paddingLeft: 18,
+    textDecoration: 'none',
   },
 });
 
@@ -30,7 +30,7 @@ export const SidebarLogo = () => {
 
   return (
     <div className={classes.root}>
-      <Link to="/" underline="none" className={classes.link} aria-label="Home">
+      <Link to="/" underline="none" className={classes.link} aria-label="Shield Insurance Home">
         {isOpen ? <LogoFull /> : <LogoIcon />}
       </Link>
     </div>
