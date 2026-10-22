@@ -9,7 +9,7 @@ Central developer portal and self-service engineering command center for Shield 
 
 ---
 
-## 🏛️ Architecture Overview
+##  Architecture Overview
 
 ```
                       +---------------------------------------+
