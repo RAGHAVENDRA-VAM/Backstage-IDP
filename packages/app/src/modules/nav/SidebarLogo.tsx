@@ -9,7 +9,7 @@ import { LogoIcon } from './LogoIcon';
 
 const useSidebarLogoStyles = makeStyles({
   root: {
-    width: sidebarConfig.drawerWidthClosed,
+    width: '100%',
     height: 3 * sidebarConfig.logoHeight,
     display: 'flex',
     flexFlow: 'row nowrap',
@@ -17,8 +17,10 @@ const useSidebarLogoStyles = makeStyles({
     marginBottom: -14,
   },
   link: {
-    width: sidebarConfig.drawerWidthClosed,
-    marginLeft: 24,
+    width: '100%',
+    marginLeft: 18,
+    display: 'flex',
+    alignItems: 'center',
   },
 });
 

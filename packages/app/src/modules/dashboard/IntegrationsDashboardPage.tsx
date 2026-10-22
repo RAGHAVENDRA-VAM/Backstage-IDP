@@ -1542,7 +1542,7 @@ export const IntegrationsDashboardPage = () => {
       {/* Enterprise Hero Banner */}
       <Box className={classes.heroBanner}>
         <Typography className={classes.heroTitle}>
-          Enterprise Integrations & Extensions Dashboard
+          Enterprise Self Service Portal
         </Typography>
         <Typography className={classes.heroSubtitle}>
           Central operational command center for Shield Insurance. Switch between live tool dashboards 
