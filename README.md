@@ -1,4 +1,4 @@
-#  Enterprise Internal Developer Platform (Backstage IDP)
+#  Enterprise Internal Developer Platform (IDP)
 
 [![Azure Web Apps](https://img.shields.io/badge/Azure%20App%20Service-Deployed-0078D4?logo=microsoftazure)](https://backstage-idp-gvftaxetancteec5.westus3-01.azurewebsites.net)
 [![Backstage](https://img.shields.io/badge/Backstage-v1.36.0-white?logo=backstage&logoColor=005B4B)](https://backstage.io)
@@ -116,7 +116,7 @@ DATADOG_APP_KEY=<datadog-app-key>
 Every `git push` to `main` executes `.github/workflows/deploy-azure-webapp.yml`:
 
 ```yaml
-name: Build and Deploy Backstage IDP to Azure Web App
+name: Build and Deploy IDP to Azure Web App
 
 on:
   push:
