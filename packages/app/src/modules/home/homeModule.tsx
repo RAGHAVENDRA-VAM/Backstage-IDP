@@ -19,6 +19,11 @@ const homePage = PageBlueprint.make({
 });
 
 export const homeModule = createFrontendPlugin({
-  id: 'home',
+  pluginId: 'home',
+  title: 'Home',
+  icon: <HomeIcon fontSize="inherit" />,
+  routes: {
+    root: rootRouteRef,
+  },
   extensions: [homePage],
 });
