@@ -174,7 +174,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: `👋 Hi! I'm **Shield AI Copilot**.\nAsk me anything about our catalog microservices, owners, Azure West US 3 deployments, or incident troubleshooting!`,
+      content: `**Shield AI Copilot**\nAsk me anything about our catalog microservices, owners, Azure West US 3 deployments, or incident troubleshooting.`,
     },
   ]);
 
@@ -216,7 +216,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
           ...prev,
           {
             role: 'assistant',
-            content: `⚠️ Failed to reach AI backend (HTTP ${response.status}). Please check network or backend configuration.`,
+            content: `Failed to reach AI backend (HTTP ${response.status}). Please check network or backend configuration.`,
           },
         ]);
       }
@@ -225,7 +225,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
         ...prev,
         {
           role: 'assistant',
-          content: `⚠️ Error communicating with Shield AI: ${e.message}`,
+          content: `Error communicating with Shield AI: ${e.message}`,
         },
       ]);
     } finally {

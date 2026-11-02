@@ -187,7 +187,7 @@ export const ShieldAiHubPage: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     {
       role: 'assistant',
-      content: `### 🛡️ Welcome to Shield AI Copilot\n\nI am connected to your **Backstage Catalog**, **Azure West US 3 environment**, and **GitHub Actions CI/CD workflows**.\n\nAsk me about service owners, architecture standards, deployment steps, or cloud unit economics.`,
+      content: `### Welcome to Shield AI Copilot\n\nI am connected to your **Backstage Catalog**, **Azure West US 3 environment**, and **GitHub Actions CI/CD workflows**.\n\nAsk me about service owners, architecture standards, deployment steps, or cloud unit economics.`,
     },
   ]);
   const [chatInput, setChatInput] = useState('');
@@ -253,10 +253,10 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
         const data = await res.json();
         setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
       } else {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: `⚠️ Backend error HTTP ${res.status}` }]);
+        setChatMessages(prev => [...prev, { role: 'assistant', content: `Backend error HTTP ${res.status}` }]);
       }
     } catch (e: any) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: `⚠️ Error: ${e.message}` }]);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: `Error: ${e.message}` }]);
     } finally {
       setChatLoading(false);
     }
@@ -387,7 +387,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
         {/* Real AI Connection Guide Dialog */}
         <Dialog open={configDialogOpen} onClose={() => setConfigDialogOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle style={{ fontWeight: 700 }}>
-            ⚡ Connect Real Azure AI Foundry / OpenAI Model
+            Connect Real Azure AI Foundry / OpenAI Model
           </DialogTitle>
           <DialogContent dividers>
             <Typography variant="body2" style={{ marginBottom: 12 }}>
@@ -402,7 +402,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`}</pre>
             </Paper>
 
             <Typography variant="caption" color="textSecondary" style={{ display: 'block', marginTop: 12 }}>
-              💡 <strong>Where to find in Azure:</strong> Go to <strong>Azure AI Foundry Portal</strong> (ai.azure.com) → Project Overview → Deployments → Copy the Target Endpoint, Deployment Name (e.g. <code>gpt-4o</code>), and Key.
+              <strong>Where to find in Azure:</strong> Go to <strong>Azure AI Foundry Portal</strong> (ai.azure.com) → Project Overview → Deployments → Copy the Target Endpoint, Deployment Name (e.g. <code>gpt-4o</code>), and Key.
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -511,7 +511,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
               <Card className={classes.card}>
                 <CardContent>
                   <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 12 }}>
-                    💡 Suggested Inquiries
+                    Suggested Inquiries
                   </Typography>
                   <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
                     Click any quick prompt to query the embedded platform knowledge base:
@@ -571,7 +571,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
                 <CardContent>
                   <Box display="flex" justifyContent="space-between" alignItems="center" marginBottom={1}>
                     <Typography variant="h6" style={{ fontWeight: 700 }}>
-                      📋 Incident & CI/CD Error Trace
+                      Incident & CI/CD Error Trace
                     </Typography>
                     <Box>
                       <Button
@@ -639,7 +639,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
               <Card className={classes.card}>
                 <CardContent style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 12 }}>
-                    🔍 AI Root Cause Analysis (RCA) & One-Click Fix
+                    AI Root Cause Analysis (RCA) & Suggested Fix
                   </Typography>
 
                   {!logAnalysis && !logLoading && (
@@ -701,7 +701,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
 
                       <Paper variant="outlined" style={{ padding: 12, backgroundColor: 'rgba(0,0,0,0.02)' }}>
                         <Typography variant="caption" style={{ fontWeight: 700, color: '#dc2626' }}>
-                          💥 ROOT CAUSE BREAKDOWN
+                          ROOT CAUSE BREAKDOWN
                         </Typography>
                         <Typography variant="body2" style={{ marginTop: 4 }}>
                           {logAnalysis.rootCause}
@@ -719,7 +719,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
 
                       <Paper variant="outlined" style={{ padding: 12, borderLeft: '4px solid #10b981' }}>
                         <Typography variant="caption" style={{ fontWeight: 700, color: '#059669' }}>
-                          ✅ RECOMMENDED RESOLUTION
+                          RECOMMENDED RESOLUTION
                         </Typography>
                         <Typography variant="body2" style={{ marginTop: 4 }}>
                           {logAnalysis.suggestedFix}
@@ -758,7 +758,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
               <Card className={classes.card}>
                 <CardContent>
                   <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 8 }}>
-                    📚 Enterprise Architecture & TechDocs Semantic RAG
+                    Enterprise Architecture & TechDocs Semantic RAG
                   </Typography>
                   <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
                     Ask natural-language questions across Shield Insurance's Architecture Decision Records (ADRs), Security Policies, FinOps Directives, and API Contracts.
@@ -824,7 +824,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
                         }}
                       >
                         <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0284c7' }}>
-                          💡 Synthesized AI Answer (Confidence: {(ragResult.confidence * 100).toFixed(0)}%)
+                          Synthesized AI Answer (Confidence: {(ragResult.confidence * 100).toFixed(0)}%)
                         </Typography>
                         <Typography variant="body1" style={{ marginTop: 8, lineHeight: 1.6 }}>
                           {ragResult.answer}
@@ -893,7 +893,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
               <Card className={classes.card}>
                 <CardContent>
                   <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 8 }}>
-                    ⚡ AI Golden Path Code Scaffolder
+                    AI Golden Path Code Scaffolder
                   </Typography>
                   <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
                     Describe your intended microservice in natural language. Shield AI will synthesize compliant boilerplate, Dockerfiles, and GitHub Actions CI/CD workflows tailored to your spec.
@@ -973,7 +973,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
               <Card className={classes.card}>
                 <CardContent style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 12 }}>
-                    📦 Generated Production-Ready Artifacts
+                    Generated Production-Ready Artifacts
                   </Typography>
 
                   {!scaffoldResult && !scaffoldLoading && (

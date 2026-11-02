@@ -149,7 +149,7 @@ Always be concise, precise, and provide production-ready solutions.`;
             let reply = '';
 
             if (q.includes('claims') || q.includes('claim')) {
-              reply = `### 🛡️ Claims Processing Ecosystem\n\n` +
+              reply = `### Claims Processing Ecosystem\n\n` +
                 `- **Primary Service**: \`claims-portal\` (React Frontend) & \`claims-adjudication-api\` (Spring Boot 3.2, Java 21).\n` +
                 `- **Owner**: **Team Core Insurance / Claims Modernization**.\n` +
                 `- **Azure Host**: Azure App Service in **West US 3** (\`app-claims-prod-westus3\`).\n` +
@@ -158,34 +158,34 @@ Always be concise, precise, and provide production-ready solutions.`;
                 `- **CI/CD**: GitHub Actions workflow with SAST (SonarQube) and Container image scan (Trivy).\n\n` +
                 `*Quick Action*: You can inspect live metrics on the **Dashboard** tab or view source in the **Catalog**.`;
             } else if (q.includes('risk') || q.includes('underwriting')) {
-              reply = `### ⚖️ Underwriting & Risk Analysis Service\n\n` +
+              reply = `### Underwriting & Risk Analysis Service\n\n` +
                 `- **Primary Service**: \`devops-risk-analyzer-api\` (Python FastAPI + ONNX Runtime).\n` +
                 `- **Owner**: **Team Actuarial & Data Science**.\n` +
                 `- **Azure Host**: Azure Container Apps & Azure AI Foundry Model Gateway (\`gpt-4o-mini\` fine-tuned for actuarial assessment).\n` +
                 `- **Status**: Active (99.98% uptime in production).\n` +
                 `- **Unit Economics**: ~$0.0034 per underwriting calculation, average latency 142ms.`;
             } else if (q.includes('scaffold') || q.includes('template') || q.includes('new service') || q.includes('create')) {
-              reply = `### 🚀 Golden Path Scaffolder Available\n\n` +
+              reply = `### Golden Path Scaffolder Available\n\n` +
                 `You can scaffold standard compliant services directly via the **Scaffolder (Create...)** menu or using our **AI Golden Path Scaffolder** tab:\n\n` +
                 `1. **Standard Spring Boot Microservice**: Includes OAuth2, PostgreSQL, Actuator, and Azure Key Vault integration.\n` +
                 `2. **FastAPI GenAI Model Wrapper**: Pre-configured with Azure AI Foundry endpoints, token counters, and prompt caches.\n` +
                 `3. **React / Next.js Enterprise Frontend**: Styled with Shield Insurance theme and Azure AD SSO.\n\n` +
                 `*Would you like me to generate boilerplate code and GitHub Actions workflow for you right now?*`;
             } else if (q.includes('deploy') || q.includes('azure') || q.includes('west us 3')) {
-              reply = `### ☁️ Azure West US 3 Deployment Guide\n\n` +
+              reply = `### Azure West US 3 Deployment Guide\n\n` +
                 `All enterprise deployments to **West US 3** follow our zero-trust pipeline:\n\n` +
                 `1. **Infrastructure**: Provisioned via Terraform (\`modules/azure-appservice\`).\n` +
                 `2. **Authentication**: Managed Identity & Azure AD App Registration (SPN) with RBAC (\`Cost Management Reader\`, \`Website Contributor\`).\n` +
                 `3. **Secrets Management**: Dynamic Key Vault reference via \`@Microsoft.KeyVault(SecretUri=...)\`.\n` +
                 `4. **Deployment Command**: \`az webapp deploy --resource-group rg-backstage-prod --name backstage-idp --src-path target.zip\`.`;
             } else if (q.includes('cost') || q.includes('foundry') || q.includes('tokens') || q.includes('bill')) {
-              reply = `### 💰 Azure AI Foundry & Cloud FinOps Insights\n\n` +
+              reply = `### Azure AI Foundry & Cloud FinOps Insights\n\n` +
                 `- **Current Month Run-rate**: ~$12,480 / month across all GenAI services.\n` +
                 `- **Top Cost Drivers**: \`gpt-4o\` (Claims Copilot - 68%), followed by \`text-embedding-3-large\`.\n` +
                 `- **Optimization Opportunity**: Route simple FAQ intents to \`gpt-4o-mini\` to save up to **42% on prompt token costs**.\n\n` +
                 `*Inspect the detailed breakdown in the **Azure AI Foundry Costs** tab in the Self-Service Portal.*`;
             } else {
-              reply = `### 🤖 Shield AI Assistant at your service\n\n` +
+              reply = `### Shield AI Assistant at your service\n\n` +
                 `I can assist you with your Internal Developer Platform workflows:\n\n` +
                 `- **Catalog Inquiries**: Ask about any microservice, owner, SLA, or API dependency.\n` +
                 `- **CI/CD & Log Diagnosis**: Paste any build or runtime error trace to get an instant root cause analysis & code fix.\n` +
@@ -475,7 +475,7 @@ app.post('/api/v1/process', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(\`🚀 ${cleanName} listening on port \${port}\`);
+  console.log(\`[service] \${cleanName} listening on port \${port}\`);
 });
 `,
               },
