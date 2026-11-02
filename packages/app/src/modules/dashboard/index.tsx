@@ -4,10 +4,9 @@ import { IntegrationsDashboardPage } from './IntegrationsDashboardPage';
 
 import DashboardIcon from '@material-ui/icons/Dashboard';
 
-const dashboardRouteRef = createRouteRef({ id: 'dashboard' });
+export const dashboardRouteRef = createRouteRef({ id: 'dashboard' });
 
-const dashboardPage = PageBlueprint.make({
-  name: 'dashboard',
+export const dashboardPage = PageBlueprint.make({
   params: {
     path: '/dashboard',
     title: 'Dashboard',
@@ -19,6 +18,12 @@ const dashboardPage = PageBlueprint.make({
 });
 
 export const dashboardModule = createFrontendPlugin({
-  id: 'dashboard',
+  pluginId: 'dashboard',
+  title: 'Dashboard',
+  icon: <DashboardIcon fontSize="inherit" />,
+  routes: {
+    root: dashboardRouteRef,
+  },
   extensions: [dashboardPage],
 });
+

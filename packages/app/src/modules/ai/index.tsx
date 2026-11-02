@@ -18,7 +18,12 @@ export const shieldAiPage = PageBlueprint.make({
 });
 
 export const aiModule = createFrontendPlugin({
-  id: 'shield-ai',
+  pluginId: 'shield-ai',
+  title: 'Shield AI Hub',
+  icon: <BubbleChartIcon fontSize="inherit" />,
+  routes: {
+    root: shieldAiRouteRef,
+  },
   extensions: [shieldAiPage],
 });
 
