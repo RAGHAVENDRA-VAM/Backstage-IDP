@@ -25,18 +25,12 @@ export const SidebarContent = NavContentBlueprint.make({
         <SidebarItem icon={() => item.icon} to={item.href} text={item.title} />
       ));
 
-      // Skipped & explicitly handled items
+      // Skipped items
       nav.take('page:search'); // Using search modal instead
       nav.take('page:notifications'); // Excluded from sidebar
       nav.take('page:catalog-graph'); // Excluded from sidebar
       nav.take('page:catalog-import'); // Excluded from sidebar ("Register existing component")
       nav.take('page:app-visualizer'); // Excluded from sidebar
-      nav.take('page:home');
-      nav.take('page:home/home');
-      nav.take('page:dashboard');
-      nav.take('page:dashboard/dashboard');
-      nav.take('page:shield-ai');
-      nav.take('page:shield-ai/shield-ai');
 
       return (
         <>
@@ -47,9 +41,9 @@ export const SidebarContent = NavContentBlueprint.make({
             </SidebarGroup>
             <SidebarDivider />
             <SidebarGroup label="Menu" icon={<MenuIcon />}>
-              <SidebarItem icon={HomeIcon} to="/home" text="Home" />
-              <SidebarItem icon={DashboardIcon} to="/dashboard" text="Dashboard" />
-              <SidebarItem icon={BubbleChartIcon} to="/shield-ai" text="Shield AI Hub" />
+              {nav.take('page:home')}
+              {nav.take('page:dashboard')}
+              {nav.take('page:shield-ai')}
               {nav.take('page:catalog')}
               {nav.take('page:scaffolder')}
               <SidebarDivider />
