@@ -189,9 +189,11 @@ backend.add(import('@backstage/plugin-mcp-actions-backend'));
 import { adoProxyPlugin } from './modules/adoProxy';
 import { azureDeployProxyPlugin } from './modules/azureDeployProxy';
 import { integrationsProxyPlugin } from './modules/integrationsProxy';
+import { aiAssistantProxyPlugin } from './modules/aiAssistantProxy';
 
 backend.add(adoProxyPlugin);
 backend.add(azureDeployProxyPlugin);
 backend.add(integrationsProxyPlugin);
+backend.add(aiAssistantProxyPlugin);
 
 backend.start();

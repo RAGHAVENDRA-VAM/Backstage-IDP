@@ -51,6 +51,7 @@ import { githubReadmeModule } from './modules/github-readme';
 import { customTranslationsModule } from './modules/translations';
 import { dashboardModule } from './modules/dashboard';
 import { azureCatalogModule } from './modules/azure';
+import { aiModule } from './modules/ai';
 
 export default createApp({
   features: [
@@ -60,6 +61,7 @@ export default createApp({
     navModule, 
     homeModule, 
     dashboardModule,
+    aiModule,
     customCatalogTabsModule,
     azureCatalogModule,
     datadogConvertedPlugin,
