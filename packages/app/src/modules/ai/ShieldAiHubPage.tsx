@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   makeStyles,
   Box,
@@ -20,6 +20,10 @@ import {
   FormControl,
   InputLabel,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@material-ui/core';
 import BubbleChartIcon from '@material-ui/icons/BubbleChart';
 import BugReportIcon from '@material-ui/icons/BugReport';
@@ -331,6 +335,16 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
     navigator.clipboard.writeText(text);
   };
 
+  const [aiStatus, setAiStatus] = useState<{ configured: boolean; model: string; endpointMasked: string | null } | null>(null);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/ai-assistant/status')
+      .then(res => res.json())
+      .then(data => setAiStatus(data))
+      .catch(() => {});
+  }, []);
+
   return (
     <Page themeId="home">
       <Header
@@ -349,12 +363,67 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
               Empowering engineers with 24/7 autonomous cloud guidance, real-time CI/CD root-cause log diagnostics, enterprise architecture RAG search, and generative golden path scaffolding.
             </Typography>
           </div>
-          <Chip
-            icon={<CloudDoneIcon style={{ color: '#10b981' }} />}
-            label="Azure OpenAI GPT-4o Ready"
-            style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: '#ffffff', fontWeight: 600 }}
-          />
+          <Box display="flex" alignItems="center" gap={1}>
+            <Tooltip title="Click to view Azure AI Foundry / OpenAI connection parameters">
+              <Chip
+                icon={<CloudDoneIcon style={{ color: aiStatus?.configured ? '#10b981' : '#f59e0b' }} />}
+                label={
+                  aiStatus?.configured
+                    ? `Live: Azure AI Foundry (${aiStatus.model})`
+                    : 'Embedded Engine (Click to Connect Live Foundry)'
+                }
+                onClick={() => setConfigDialogOpen(true)}
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              />
+            </Tooltip>
+          </Box>
         </div>
+
+        {/* Real AI Connection Guide Dialog */}
+        <Dialog open={configDialogOpen} onClose={() => setConfigDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle style={{ fontWeight: 700 }}>
+            ⚡ Connect Real Azure AI Foundry / OpenAI Model
+          </DialogTitle>
+          <DialogContent dividers>
+            <Typography variant="body2" style={{ marginBottom: 12 }}>
+              To replace default catalog responses with <strong>100% real live GPT-4o / Foundry responses</strong> across Chat, Log Diagnostics, TechDocs RAG, and Code Scaffolding, add these variables to your <code>.env</code> file (or Azure App Service Configuration):
+            </Typography>
+
+            <Paper variant="outlined" style={{ padding: 14, backgroundColor: '#0f172a', color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+              <pre style={{ margin: 0 }}>{`# Azure AI Foundry / Azure OpenAI Model Credentials
+AZURE_OPENAI_ENDPOINT=https://<your-resource-name>.openai.azure.com/
+AZURE_OPENAI_KEY=<your-azure-foundry-or-openai-api-key>
+AZURE_OPENAI_DEPLOYMENT=gpt-4o`}</pre>
+            </Paper>
+
+            <Typography variant="caption" color="textSecondary" style={{ display: 'block', marginTop: 12 }}>
+              💡 <strong>Where to find in Azure:</strong> Go to <strong>Azure AI Foundry Portal</strong> (ai.azure.com) → Project Overview → Deployments → Copy the Target Endpoint, Deployment Name (e.g. <code>gpt-4o</code>), and Key.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(
+`# Azure AI Foundry / Azure OpenAI Model Credentials
+AZURE_OPENAI_ENDPOINT=https://<your-resource-name>.openai.azure.com/
+AZURE_OPENAI_KEY=<your-azure-foundry-or-openai-api-key>
+AZURE_OPENAI_DEPLOYMENT=gpt-4o`
+                );
+              }}
+              color="primary"
+            >
+              Copy Env Snippet
+            </Button>
+            <Button onClick={() => setConfigDialogOpen(false)} color="primary" variant="contained">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Navigation Tabs */}
         <Paper className={classes.tabBar} elevation={0}>

@@ -6,6 +6,76 @@ interface ChatMessage {
   content: string;
 }
 
+// Universal Azure AI Foundry & Azure OpenAI Invocation Helper
+async function callAzureAi(
+  messages: Array<{ role: string; content: string }>,
+  options?: { temperature?: number; max_tokens?: number },
+) {
+  const endpoint =
+    process.env.AZURE_OPENAI_ENDPOINT ||
+    process.env.AZURE_AI_FOUNDRY_ENDPOINT;
+  const key =
+    process.env.AZURE_OPENAI_KEY ||
+    process.env.AZURE_AI_FOUNDRY_KEY ||
+    process.env.AZURE_OPENAI_API_KEY;
+  const deployment =
+    process.env.AZURE_OPENAI_DEPLOYMENT ||
+    process.env.AZURE_AI_FOUNDRY_MODEL ||
+    'gpt-4o';
+
+  if (!endpoint || !key) {
+    return null;
+  }
+
+  try {
+    let url = endpoint.trim().replace(/\/$/, '');
+    if (!url.includes('/chat/completions')) {
+      if (
+        url.includes('models.ai.azure.com') ||
+        url.includes('services.ai.azure.com')
+      ) {
+        // Azure AI Foundry Model Inference Serverless API
+        url = `${url}/models/chat/completions?api-version=2024-05-01-preview`;
+      } else {
+        // Standard Azure OpenAI Resource API
+        url = `${url}/openai/deployments/${deployment}/chat/completions?api-version=2024-02-15-preview`;
+      }
+    }
+
+    const openAiRes = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': key,
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        messages,
+        temperature: options?.temperature ?? 0.3,
+        max_tokens: options?.max_tokens ?? 1500,
+        model: deployment,
+      }),
+    });
+
+    if (openAiRes.ok) {
+      const data = await openAiRes.json();
+      return {
+        reply: data.choices?.[0]?.message?.content || '',
+        model: deployment,
+        usage: data.usage || null,
+        provider: 'azure-ai-foundry',
+      };
+    }
+
+    const errText = await openAiRes.text();
+    console.warn(`Azure AI Foundry call returned HTTP ${openAiRes.status}:`, errText);
+    return null;
+  } catch (err) {
+    console.warn('Azure AI Foundry request error, using fallback:', err);
+    return null;
+  }
+}
+
 export const aiAssistantProxyPlugin = createBackendPlugin({
   pluginId: 'ai-assistant',
   register(env) {
@@ -23,63 +93,58 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
         const router = express.Router();
         router.use(express.json());
 
-        // Helper: Check if Azure OpenAI credentials exist
-        const azureOpenAiEndpoint = process.env.AZURE_OPENAI_ENDPOINT || process.env.AZURE_AI_FOUNDRY_ENDPOINT;
-        const azureOpenAiKey = process.env.AZURE_OPENAI_KEY || process.env.AZURE_AI_FOUNDRY_KEY || process.env.AZURE_OPENAI_API_KEY;
-        const azureOpenAiDeployment = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o';
+        // STATUS ENDPOINT: Allows UI to tell whether real Foundry keys are active
+        router.get('/status', (req, res) => {
+          const hasKey = Boolean(
+            process.env.AZURE_OPENAI_KEY ||
+            process.env.AZURE_AI_FOUNDRY_KEY ||
+            process.env.AZURE_OPENAI_API_KEY
+          );
+          const endpoint =
+            process.env.AZURE_OPENAI_ENDPOINT ||
+            process.env.AZURE_AI_FOUNDRY_ENDPOINT ||
+            '';
+          const model =
+            process.env.AZURE_OPENAI_DEPLOYMENT ||
+            process.env.AZURE_AI_FOUNDRY_MODEL ||
+            'gpt-4o';
+
+          res.json({
+            configured: hasKey && Boolean(endpoint),
+            model,
+            endpointMasked: endpoint ? endpoint.replace(/(https?:\/\/)([^.]+)(.*)/, '$1***$3') : null,
+          });
+        });
 
         // 1. CHAT COPILOT ENDPOINT
         router.post('/chat', async (req, res) => {
           try {
-            const { messages = [], context = {} } = req.body;
+            const { messages = [] } = req.body;
             const lastUserMessage = [...messages].reverse().find((m: ChatMessage) => m.role === 'user')?.content || '';
 
-            // If real Azure OpenAI credentials are configured, call Azure OpenAI
-            if (azureOpenAiEndpoint && azureOpenAiKey) {
-              try {
-                const cleanEndpoint = azureOpenAiEndpoint.replace(/\/$/, '');
-                const url = `${cleanEndpoint}/openai/deployments/${azureOpenAiDeployment}/chat/completions?api-version=2024-02-15-preview`;
-                
-                const systemPrompt = `You are "Shield AI Copilot", an elite enterprise Platform Engineering assistant embedded inside the Backstage IDP at Shield Insurance. 
+            const systemPrompt = `You are "Shield AI Copilot", an elite enterprise Platform Engineering assistant embedded inside the Backstage IDP at Shield Insurance. 
 You are an expert on cloud architectures (Azure West US 3), microservices catalog, CI/CD pipelines (GitHub Actions, Azure DevOps), security (SonarQube, Trivy, Secret Scanning), and golden path templates.
 Always be concise, precise, and provide production-ready solutions.`;
 
-                const formattedMessages = [
-                  { role: 'system', content: systemPrompt },
-                  ...messages,
-                ];
+            const fullMessages = [
+              { role: 'system', content: systemPrompt },
+              ...messages,
+            ];
 
-                const openAiRes = await fetch(url, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'api-key': azureOpenAiKey,
-                  },
-                  body: JSON.stringify({
-                    messages: formattedMessages,
-                    temperature: 0.3,
-                    max_tokens: 1200,
-                  }),
-                });
-
-                if (openAiRes.ok) {
-                  const data = await openAiRes.json();
-                  const reply = data.choices?.[0]?.message?.content || 'No response generated.';
-                  res.json({
-                    reply,
-                    provider: 'azure-openai',
-                    model: azureOpenAiDeployment,
-                    timestamp: new Date().toISOString(),
-                  });
-                  return;
-                }
-                console.warn('Azure OpenAI error, falling back to built-in knowledge engine:', await openAiRes.text());
-              } catch (openAiErr) {
-                console.warn('Azure OpenAI request failed, using intelligent fallback:', openAiErr);
-              }
+            // 1. Attempt Real Azure AI Foundry / OpenAI call
+            const liveAiResponse = await callAzureAi(fullMessages);
+            if (liveAiResponse && liveAiResponse.reply) {
+              res.json({
+                reply: liveAiResponse.reply,
+                provider: 'azure-ai-foundry',
+                model: liveAiResponse.model,
+                usage: liveAiResponse.usage,
+                timestamp: new Date().toISOString(),
+              });
+              return;
             }
 
-            // Intelligent Rule-based & Catalog-aware Fallback Engine
+            // 2. Intelligent Rule-based & Catalog-aware Fallback Engine
             const q = lastUserMessage.toLowerCase();
             let reply = '';
 
@@ -146,7 +211,45 @@ Always be concise, precise, and provide production-ready solutions.`;
           try {
             const { logText = '', serviceName = 'application', environment = 'production' } = req.body;
 
-            // Intelligent error pattern extraction
+            // 1. Attempt Real AI Diagnostic via Foundry
+            const prompt = `You are a Senior DevOps & SRE Site Reliability Architect at Shield Insurance.
+Analyze the following error log / stack trace and provide a structured JSON response with EXACTLY these keys:
+{
+  "summary": "1-line concise summary of the failure",
+  "severity": "critical" | "high" | "medium" | "low",
+  "rootCause": "Detailed technical root-cause explanation",
+  "offendingLine": "Exact error line or stack frame responsible",
+  "suggestedFix": "Clear step-by-step resolution",
+  "codePatch": "Exact shell script or code diff fix"
+}
+Output strictly valid JSON, without any markdown backticks.
+
+ERROR LOG TRACE:
+${logText}`;
+
+            const liveAiResponse = await callAzureAi([
+              { role: 'user', content: prompt }
+            ], { temperature: 0.1 });
+
+            if (liveAiResponse && liveAiResponse.reply) {
+              try {
+                const cleanJson = liveAiResponse.reply.replace(/```json/g, '').replace(/```/g, '').trim();
+                const parsed = JSON.parse(cleanJson);
+                res.json({
+                  ...parsed,
+                  analyzedAt: new Date().toISOString(),
+                  targetService: serviceName,
+                  environment,
+                  provider: 'azure-ai-foundry',
+                  model: liveAiResponse.model,
+                });
+                return;
+              } catch (parseErr) {
+                console.warn('Failed to parse AI JSON response, falling back to local analyzer');
+              }
+            }
+
+            // 2. Intelligent local error pattern extraction fallback
             const lowerLog = logText.toLowerCase();
 
             let summary = 'Build or runtime execution error detected in telemetry trace.';
@@ -203,6 +306,7 @@ Always be concise, precise, and provide production-ready solutions.`;
               analyzedAt: new Date().toISOString(),
               targetService: serviceName,
               environment,
+              provider: 'shield-ai-embedded',
             });
           } catch (err: any) {
             res.status(500).json({ error: err.message || 'Failed to diagnose log' });
@@ -258,7 +362,6 @@ Always be concise, precise, and provide production-ready solutions.`;
               },
             ];
 
-            // Filter relevant docs
             const matchingDocs = documents.filter(doc =>
               doc.title.toLowerCase().includes(q) ||
               doc.snippet.toLowerCase().includes(q) ||
@@ -271,22 +374,26 @@ Always be concise, precise, and provide production-ready solutions.`;
 
             const results = matchingDocs.length > 0 ? matchingDocs : documents.slice(0, 3);
 
-            let synthesizedAnswer = `Based on Shield Insurance's internal architecture standards and TechDocs:\n\n`;
-            if (q.includes('security') || q.includes('sast') || q.includes('scan') || q.includes('trivy')) {
-              synthesizedAnswer += `According to **SEC-008 (Golden Path Security)**, all services must pass mandatory SAST quality gates. Automated SonarQube scans check for OWASP Top 10 vulnerabilities, while Trivy inspects container images for CVEs. Merge requests are automatically blocked if High or Critical vulnerabilities are found.`;
-            } else if (q.includes('azure') || q.includes('deploy') || q.includes('west us 3')) {
-              synthesizedAnswer += `Per **ADR-042 (Azure West US 3 Standard)**, all production services are containerized and deployed to Azure App Service or Container Apps in West US 3. Authentication must rely strictly on Azure Managed Identity; hardcoded credentials in application properties are prohibited.`;
-            } else if (q.includes('ai') || q.includes('cost') || q.includes('foundry') || q.includes('openai')) {
-              synthesizedAnswer += `In accordance with **FIN-015 (GenAI Cost Governance)**, teams must utilize tiered model routing. High-volume conversational prompts should target \`gpt-4o-mini\` with semantic response caching to maintain unit costs below $0.005 per transaction.`;
-            } else {
-              synthesizedAnswer += `Your query matches ${results.length} approved enterprise documents. All services created through the Shield Developer Portal automatically adhere to these policies and include built-in compliance checks.`;
-            }
+            // Attempt live synthesis via Foundry
+            const prompt = `Synthesize an authoritative architecture answer for an engineer at Shield Insurance asking: "${query}".
+Ground your answer in these internal documentation excerpts:
+${JSON.stringify(results, null, 2)}
+Cite the specific document codes (e.g. SEC-008, ADR-042) in bold. Be concise, technical, and actionable.`;
+
+            const liveAiResponse = await callAzureAi([{ role: 'user', content: prompt }]);
+            const synthesizedAnswer = liveAiResponse?.reply || 
+              (q.includes('security') || q.includes('sast')
+                ? `According to **SEC-008 (Golden Path Security)**, all services must pass mandatory SAST quality gates. Automated SonarQube scans check for OWASP Top 10 vulnerabilities, while Trivy inspects container images for CVEs. Merge requests are automatically blocked if High or Critical vulnerabilities are found.`
+                : q.includes('azure') || q.includes('deploy')
+                ? `Per **ADR-042 (Azure West US 3 Standard)**, all production services are containerized and deployed to Azure App Service or Container Apps in West US 3. Authentication must rely strictly on Azure Managed Identity; hardcoded credentials in application properties are prohibited.`
+                : `Based on Shield Insurance architecture guidelines, your query matches ${results.length} approved enterprise documents. All services created through the Shield Developer Portal automatically adhere to these policies and include built-in compliance checks.`);
 
             res.json({
               answer: synthesizedAnswer,
               citations: results,
-              confidence: 0.94,
+              confidence: liveAiResponse ? 0.98 : 0.94,
               totalDocsIndexed: documents.length,
+              provider: liveAiResponse ? 'azure-ai-foundry' : 'shield-ai-embedded',
             });
           } catch (err: any) {
             res.status(500).json({ error: err.message || 'RAG search error' });
