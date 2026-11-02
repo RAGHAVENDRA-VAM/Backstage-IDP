@@ -14,6 +14,7 @@ import DashboardIcon from '@material-ui/icons/Dashboard';
 import { SidebarSearchModal } from '@backstage/plugin-search';
 import { UserSettingsSignInAvatar } from '@backstage/plugin-user-settings';
 import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
+import { ShieldAiFloatingWidget } from '../ai/ShieldAiFloatingWidget';
 
 export const SidebarContent = NavContentBlueprint.make({
   params: {
@@ -30,32 +31,36 @@ export const SidebarContent = NavContentBlueprint.make({
       nav.take('page:app-visualizer'); // Excluded from sidebar
 
       return (
-        <Sidebar>
-          <SidebarLogo />
-          <SidebarGroup label="Search" icon={<SearchIcon />} to="/search">
-            <SidebarSearchModal />
-          </SidebarGroup>
-          <SidebarDivider />
-          <SidebarGroup label="Menu" icon={<MenuIcon />}>
-            {nav.take('page:home')}
-            {nav.take('page:dashboard')}
-            {nav.take('page:catalog')}
-            {nav.take('page:scaffolder')}
+        <>
+          <Sidebar>
+            <SidebarLogo />
+            <SidebarGroup label="Search" icon={<SearchIcon />} to="/search">
+              <SidebarSearchModal />
+            </SidebarGroup>
             <SidebarDivider />
-            <SidebarScrollWrapper>
-              {nav.rest({ sortBy: 'title' })}
-            </SidebarScrollWrapper>
-          </SidebarGroup>
-          <SidebarSpace />
-          <SidebarDivider />
-          <SidebarGroup
-            label="Settings"
-            icon={<UserSettingsSignInAvatar />}
-            to="/settings"
-          >
-            {nav.take('page:user-settings')}
-          </SidebarGroup>
-        </Sidebar>
+            <SidebarGroup label="Menu" icon={<MenuIcon />}>
+              {nav.take('page:home')}
+              {nav.take('page:dashboard')}
+              {nav.take('page:shield-ai')}
+              {nav.take('page:catalog')}
+              {nav.take('page:scaffolder')}
+              <SidebarDivider />
+              <SidebarScrollWrapper>
+                {nav.rest({ sortBy: 'title' })}
+              </SidebarScrollWrapper>
+            </SidebarGroup>
+            <SidebarSpace />
+            <SidebarDivider />
+            <SidebarGroup
+              label="Settings"
+              icon={<UserSettingsSignInAvatar />}
+              to="/settings"
+            >
+              {nav.take('page:user-settings')}
+            </SidebarGroup>
+          </Sidebar>
+          <ShieldAiFloatingWidget />
+        </>
       );
     },
   },

@@ -1813,6 +1813,41 @@ export const IntegrationsDashboardPage = () => {
                   </CardContent>
                 </Card>
               </Grid>
+
+              {/* Shield AI Suite Card */}
+              <Grid item xs={12} sm={6} md={4}>
+                <Card className={classes.integrationCard}>
+                  <CardContent className={classes.cardContent}>
+                    <Box className={classes.cardHeader}>
+                      <Box display="flex" alignItems="center" gap={1.5}>
+                        <BubbleChartIcon style={{ color: '#0284c7', fontSize: 30 }} />
+                        <Box>
+                          <Typography className={classes.cardTitle}>Shield AI Suite</Typography>
+                          <Typography className={classes.cardSubtitle}>Autonomous IDP & Diagnostics</Typography>
+                        </Box>
+                      </Box>
+                      <Box>
+                        <Chip label="GPT-4o Copilot" size="small" className={classes.statusBadgeActive} />
+                      </Box>
+                    </Box>
+                    <Typography className={classes.cardDesc}>
+                      Chat Copilot, CI/CD error log RCA diagnostics, TechDocs architecture RAG, and AI Golden Path code generator.
+                    </Typography>
+                    <Box className={classes.cardFooter}>
+                      <Typography variant="caption" style={{ fontWeight: 600 }}>4 AI Capabilities</Typography>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="primary"
+                        onClick={() => navigate('/shield-ai')}
+                        style={{ textTransform: 'none', fontWeight: 700 }}
+                      >
+                        Launch AI Hub
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
           </Box>
         )}
