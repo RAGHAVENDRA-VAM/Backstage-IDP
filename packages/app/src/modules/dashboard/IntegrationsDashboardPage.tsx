@@ -50,6 +50,8 @@ import { useNavigate } from 'react-router-dom';
 import useAsync from 'react-use/lib/useAsync';
 import { DatadogLogsCard } from '../../components/DatadogLogsCard';
 import { AzureTabContent } from '../azure/AzureTabContent';
+import { AzureAiFoundryDashboardView } from '../azure/AzureAiFoundryDashboardView';
+import BubbleChartIcon from '@material-ui/icons/BubbleChart';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -1591,6 +1593,11 @@ export const IntegrationsDashboardPage = () => {
               label="Datadog Observability"
               className={classes.tabLabel}
             />
+            <Tab
+              icon={<BubbleChartIcon style={{ color: '#ec4899' }} />}
+              label="Azure AI Foundry & GenAI Cost"
+              className={classes.tabLabel}
+            />
           </Tabs>
         </Box>
 
@@ -1771,6 +1778,41 @@ export const IntegrationsDashboardPage = () => {
                   </CardContent>
                 </Card>
               </Grid>
+
+              {/* Azure AI Foundry Card */}
+              <Grid item xs={12} sm={6} md={4}>
+                <Card className={classes.integrationCard}>
+                  <CardContent className={classes.cardContent}>
+                    <Box className={classes.cardHeader}>
+                      <Box display="flex" alignItems="center" gap={1.5}>
+                        <BubbleChartIcon style={{ color: '#ec4899', fontSize: 30 }} />
+                        <Box>
+                          <Typography className={classes.cardTitle}>Azure AI Foundry</Typography>
+                          <Typography className={classes.cardSubtitle}>GenAI Model Governance</Typography>
+                        </Box>
+                      </Box>
+                      <Box>
+                        <Chip label="5 Models Live" size="small" className={classes.statusBadgeActive} />
+                      </Box>
+                    </Box>
+                    <Typography className={classes.cardDesc}>
+                      Prompt/Completion token velocity, inference latency, unit cost curves, and rightsizing guardrails.
+                    </Typography>
+                    <Box className={classes.cardFooter}>
+                      <Typography variant="caption" style={{ fontWeight: 600 }}>197.9M Tokens</Typography>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="primary"
+                        onClick={() => setSelectedMainTab(5)}
+                        style={{ textTransform: 'none', fontWeight: 700 }}
+                      >
+                        Open AI Dashboard
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
           </Box>
         )}
@@ -1786,6 +1828,9 @@ export const IntegrationsDashboardPage = () => {
 
         {/* TAB 4: DATADOG DASHBOARD */}
         {selectedMainTab === 4 && <DatadogLiveDashboardView />}
+
+        {/* TAB 5: AZURE AI FOUNDRY DASHBOARD */}
+        {selectedMainTab === 5 && <AzureAiFoundryDashboardView />}
       </Card>
     </Container>
   );
