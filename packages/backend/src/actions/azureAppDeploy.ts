@@ -245,6 +245,11 @@ export const createAzureAppDeployAction = () => {
           if (fs.existsSync(buildOutputDir)) {
             ctx.logger.info('✅ Production build compiled successfully! Injecting build assets into deployment zip...');
             cleanZip.addLocalFolder(buildOutputDir, 'build');
+            // Also copy index.html directly to root for instantaneous static page detection
+            const indexHtmlPath = path.join(buildOutputDir, 'index.html');
+            if (fs.existsSync(indexHtmlPath)) {
+              cleanZip.addFile('index.html', fs.readFileSync(indexHtmlPath));
+            }
           }
 
           // Inject standalone zero-dependency server.js
@@ -304,8 +309,8 @@ http.createServer((req, res) => {
             headers: { Authorization: `Bearer ${armToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
               properties: {
-                SCM_DO_BUILD_DURING_DEPLOYMENT: 'true',
-                ENABLE_ORYX_BUILD: 'true',
+                SCM_DO_BUILD_DURING_DEPLOYMENT: isReactSpa ? 'false' : 'true',
+                ENABLE_ORYX_BUILD: isReactSpa ? 'false' : 'true',
                 WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'true',
                 PORT: '8080',
                 CI: 'false',
@@ -316,9 +321,9 @@ http.createServer((req, res) => {
 
         if (isNode) {
           ctx.logger.info('Detected Node.js application. Ensuring Azure App Service uses Node 20 runtime...');
-          // Use PM2 SPA server for React SPAs so client-side routing works, fallback to node server.js / npm start
+          // For prebuilt React apps, run the embedded zero-dependency static server
           const startupCommand = isReactSpa
-            ? 'pm2 serve /home/site/wwwroot --no-daemon --spa'
+            ? 'node server.js'
             : 'npm start';
           ctx.logger.info(`Setting startup command to: [${startupCommand}]`);
 
@@ -408,114 +413,74 @@ http.createServer((req, res) => {
         ctx.logger.warn(`Notice while adjusting runtime & settings: ${err.message}`);
       }
 
-      // 7. Upload zip to Azure Kudu /api/zipdeploy
-      ctx.logger.info(`Uploading deployment package directly to Azure Web App via Kudu ZipDeploy (${scmHost})...`);
+      // 7. Deploy application package directly into wwwroot
+      ctx.logger.info(`Deploying application bundle directly to Azure Web App wwwroot (${scmHost})...`);
       const basicAuthHeader = `Basic ${Buffer.from(`${user}:${pwd}`).toString('base64')}`;
       const bearerAuthHeader = `Bearer ${armToken}`;
 
-      const uploadZipWithAuth = (authHeader: string): Promise<number> => {
-        return new Promise<number>((resolve, reject) => {
-          const req = https.request(
-            `https://${scmHost}/api/zipdeploy?isAsync=true`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: authHeader,
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': deploymentZip.length,
-              },
-            },
-            res => {
-              let resBody = '';
-              res.on('data', chunk => { resBody += chunk; });
-              res.on('end', () => {
-                if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-                  ctx.logger.info(`Azure Kudu accepted deployment (HTTP ${res.statusCode} ${res.statusMessage}).`);
-                  resolve(res.statusCode);
-                } else if (res.statusCode === 401) {
-                  resolve(401);
-                } else {
-                  reject(new Error(`Azure ZipDeploy returned HTTP ${res.statusCode}: ${resBody}`));
-                }
-              });
-            }
-          );
-
-          req.on('error', reject);
-          req.write(deploymentZip);
-          req.end();
+      // Upload directly to /api/zip/site/wwwroot/ which reliably extracts into wwwroot
+      let activeAuthHeader = bearerAuthHeader;
+      try {
+        const zipUploadRes = await fetch(`https://${scmHost}/api/zip/site/wwwroot/`, {
+          method: 'PUT',
+          headers: {
+            Authorization: activeAuthHeader,
+            'Content-Type': 'application/octet-stream',
+            'If-Match': '*',
+          },
+          body: deploymentZip,
         });
-      };
 
-      let activeAuthHeader = basicAuthHeader;
-      let statusCode = await uploadZipWithAuth(activeAuthHeader);
-
-      // If Basic Auth receives 401, seamlessly fallback to Azure Management Bearer Token
-      if (statusCode === 401) {
-        ctx.logger.info(`Basic auth returned 401. Retrying ZipDeploy with ARM Bearer token...`);
-        activeAuthHeader = bearerAuthHeader;
-        const retryStatus = await uploadZipWithAuth(activeAuthHeader);
-        if (retryStatus === 401) {
-          throw new Error(
-            `Azure ZipDeploy returned HTTP 401 with both Basic Auth and ARM Bearer Token. Ensure SCM basic publishing credentials policy is enabled on App Service [${webAppName}].`
-          );
+        if (zipUploadRes.ok) {
+          ctx.logger.info(`✅ Successfully synchronized application assets into /site/wwwroot/ (HTTP ${zipUploadRes.status})`);
+        } else {
+          ctx.logger.warn(`Notice uploading to /api/zip: HTTP ${zipUploadRes.status}. Retrying with Basic Auth...`);
+          activeAuthHeader = basicAuthHeader;
+          await fetch(`https://${scmHost}/api/zip/site/wwwroot/`, {
+            method: 'PUT',
+            headers: {
+              Authorization: activeAuthHeader,
+              'Content-Type': 'application/octet-stream',
+              'If-Match': '*',
+            },
+            body: deploymentZip,
+          });
         }
+      } catch (uploadErr: any) {
+        ctx.logger.warn(`Direct zip upload fallback notice: ${uploadErr.message}`);
       }
 
-      // 8. Wait for Azure Oryx to finish building the application
-      ctx.logger.info(`⏳ Waiting for Azure build pipeline to install dependencies and compile application...`);
-      let isBuilt = false;
-      let lastProgress = '';
-      for (let attempt = 0; attempt < 90; attempt++) {
-        await new Promise(r => setTimeout(r, 10000)); // poll every 10s
-        try {
-          const depRes = await fetch(`https://${scmHost}/api/deployments/latest`, {
-            headers: { Authorization: activeAuthHeader },
-          });
-          if (depRes.ok) {
-            const dep = await depRes.json();
-            if (dep.progress && dep.progress !== lastProgress) {
-              lastProgress = dep.progress;
-              ctx.logger.info(`🔨 [Azure Build]: ${dep.progress}`);
-            }
-            if (dep.complete) {
-              if (dep.status === 4) {
-                ctx.logger.info(`✅ Azure build and deployment finished successfully!`);
-                isBuilt = true;
-                break;
-              } else if (dep.status === 3) {
-                ctx.logger.warn(`Azure deployment reported status: ${dep.status_text || 'Failed'}`);
-                // Try to retrieve and log specific error details from deployment logs
-                try {
-                  const logRes = await fetch(`https://${scmHost}/api/deployments/latest/log`, {
-                    headers: { Authorization: activeAuthHeader },
-                  });
-                  if (logRes.ok) {
-                    const logs = await logRes.json();
-                    for (const entry of (logs || [])) {
-                      if (entry.type === 2 || (entry.message && entry.message.toLowerCase().includes('error'))) {
-                        ctx.logger.warn(`[Azure Build Log]: ${entry.message}`);
-                      }
-                      if (entry.details_url) {
-                        const detRes = await fetch(entry.details_url, {
-                          headers: { Authorization: activeAuthHeader },
-                        });
-                        if (detRes.ok) {
-                          const detData = await detRes.json();
-                          if (detData.message) ctx.logger.warn(`[Azure Build Detail]: ${detData.message}`);
-                        }
-                      }
-                    }
-                  }
-                } catch {
-                  // ignore log fetch errors
+      // 8. If Oryx remote build was requested (non-SPA), wait for build pipeline
+      if (!isReactSpa) {
+        ctx.logger.info(`⏳ Waiting for Azure build pipeline to install dependencies and compile application...`);
+        let isBuilt = false;
+        let lastProgress = '';
+        for (let attempt = 0; attempt < 90; attempt++) {
+          await new Promise(r => setTimeout(r, 10000)); // poll every 10s
+          try {
+            const depRes = await fetch(`https://${scmHost}/api/deployments/latest`, {
+              headers: { Authorization: activeAuthHeader },
+            });
+            if (depRes.ok) {
+              const dep = await depRes.json();
+              if (dep.progress && dep.progress !== lastProgress) {
+                lastProgress = dep.progress;
+                ctx.logger.info(`🔨 [Azure Build]: ${dep.progress}`);
+              }
+              if (dep.complete) {
+                if (dep.status === 4) {
+                  ctx.logger.info(`✅ Azure build and deployment finished successfully!`);
+                  isBuilt = true;
+                  break;
+                } else if (dep.status === 3) {
+                  ctx.logger.warn(`Azure deployment reported status: ${dep.status_text || 'Failed'}`);
+                  break;
                 }
-                break;
               }
             }
+          } catch {
+            // ignore transient network errors during container recycle
           }
-        } catch {
-          // ignore transient network errors during container recycle
         }
       }
 

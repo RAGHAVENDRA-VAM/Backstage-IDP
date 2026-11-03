@@ -17,10 +17,13 @@ import { SidebarSearchModal } from '@backstage/plugin-search';
 import { UserSettingsSignInAvatar } from '@backstage/plugin-user-settings';
 import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
 import { ShieldAiFloatingWidget } from '../ai/ShieldAiFloatingWidget';
+import { RoleSwitcher } from '../RoleSwitcher';
+import { useUserRole } from '../RoleContext';
 
 export const SidebarContent = NavContentBlueprint.make({
   params: {
     component: ({ navItems }) => {
+      const { role, isAllowed } = useUserRole();
       const nav = navItems.withComponent(item => (
         <SidebarItem icon={() => item.icon} to={item.href} text={item.title} />
       ));
@@ -36,6 +39,7 @@ export const SidebarContent = NavContentBlueprint.make({
         <>
           <Sidebar>
             <SidebarLogo />
+            <RoleSwitcher />
             <SidebarGroup label="Search" icon={<SearchIcon />} to="/search">
               <SidebarSearchModal />
             </SidebarGroup>
@@ -44,8 +48,8 @@ export const SidebarContent = NavContentBlueprint.make({
               {nav.take('page:home')}
               {nav.take('page:dashboard')}
               {nav.take('page:shield-ai')}
-              {nav.take('page:catalog')}
-              {nav.take('page:scaffolder')}
+              {role !== 'finops' && nav.take('page:catalog')}
+              {role !== 'finops' && nav.take('page:scaffolder')}
               <SidebarDivider />
               <SidebarScrollWrapper>
                 {nav.rest({ sortBy: 'title' })}

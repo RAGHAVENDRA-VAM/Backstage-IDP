@@ -7,6 +7,7 @@ import DashboardIcon from '@material-ui/icons/Dashboard';
 export const dashboardRouteRef = createRouteRef({ id: 'dashboard' });
 
 export const dashboardPage = PageBlueprint.make({
+  name: 'dashboard',
   params: {
     path: '/dashboard',
     title: 'Dashboard',

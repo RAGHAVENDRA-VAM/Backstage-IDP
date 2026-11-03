@@ -52,6 +52,9 @@ import { DatadogLogsCard } from '../../components/DatadogLogsCard';
 import { AzureTabContent } from '../azure/AzureTabContent';
 import { AzureAiFoundryDashboardView } from '../azure/AzureAiFoundryDashboardView';
 import BubbleChartIcon from '@material-ui/icons/BubbleChart';
+import SupervisorAccountIcon from '@material-ui/icons/SupervisorAccount';
+import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
+import { useUserRole } from '../RoleContext';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -1537,25 +1540,59 @@ const DatadogLiveDashboardView = () => {
 export const IntegrationsDashboardPage = () => {
   const classes = useStyles();
   const navigate = useNavigate();
+  const { role, roleInfo, isAllowed } = useUserRole();
   const [selectedMainTab, setSelectedMainTab] = useState(0);
+
+  // Automatically switch tab if current active tab is not allowed for the selected role
+  React.useEffect(() => {
+    if (role === 'finops' && selectedMainTab !== 5 && selectedMainTab !== 3 && selectedMainTab !== 0) {
+      setSelectedMainTab(5); // Default to FinOps AI Cost
+    } else if (role === 'developer' && (selectedMainTab === 3 || selectedMainTab === 4 || selectedMainTab === 5)) {
+      setSelectedMainTab(2); // Default to GitHub developer workspace
+    }
+  }, [role]);
 
   return (
     <Container maxWidth="xl" className={classes.root}>
       {/* Enterprise Hero Banner */}
       <Box className={classes.heroBanner}>
-        <Typography className={classes.heroTitle}>
-          Enterprise Self Service Portal
-        </Typography>
-        <Typography className={classes.heroSubtitle}>
-          Central operational command center for Shield Insurance. Switch between live tool dashboards 
-          for Jira tickets, GitHub projects & workflows, Datadog observability, and ecosystem services.
-        </Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+          <Box>
+            <Typography className={classes.heroTitle}>
+              Enterprise Self Service Portal
+            </Typography>
+            <Typography className={classes.heroSubtitle}>
+              {role === 'platform-engineer' && 'Platform Engineering Command Center: Complete full-lifecycle administrative visibility across cloud infrastructure, repositories, logs, and golden path scaffolding.'}
+              {role === 'developer' && 'Software Developer Workspace: Streamlined view for day-to-day coding, active pull requests, CI/CD pipeline runs, and self-service scaffolder actions.'}
+              {role === 'finops' && 'Cloud FinOps & Cost Governance Portal: Real-time Azure OpenAI and AI Foundry token runrates, infrastructure unit economics, and cloud efficiency.'}
+            </Typography>
+          </Box>
+          <Box>
+            <Chip
+              icon={
+                role === 'platform-engineer' ? <SupervisorAccountIcon style={{ color: '#ffffff' }} /> :
+                role === 'developer' ? <CodeIcon style={{ color: '#ffffff' }} /> :
+                <AttachMoneyIcon style={{ color: '#ffffff' }} />
+              }
+              label={`Active Role: ${roleInfo.title}`}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                padding: '18px 8px',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+              }}
+            />
+          </Box>
+        </Box>
 
         <Box className={classes.heroBadges}>
           <Chip label="Jira Cloud: Connected" size="small" className={classes.badgePill} />
           <Chip label="GitHub Actions: Synced" size="small" className={classes.badgePill} />
-          <Chip label="Datadog APM: Online" size="small" className={classes.badgePill} />
-          <Chip label="SOC2 & ISO-27001 Certified" size="small" className={classes.badgePill} />
+          {role !== 'developer' && <Chip label="Datadog APM: Online" size="small" className={classes.badgePill} />}
+          {role !== 'developer' && <Chip label="Azure West US 3: Connected" size="small" className={classes.badgePill} />}
+          <Chip label={roleInfo.badge} size="small" style={{ backgroundColor: '#ffffff', color: '#005B4B', fontWeight: 800 }} />
         </Box>
       </Box>
 
@@ -1573,31 +1610,41 @@ export const IntegrationsDashboardPage = () => {
               label="All Integrations Overview"
               className={classes.tabLabel}
             />
-            <Tab
-              icon={<CheckCircleIcon style={{ color: '#2563eb' }} />}
-              label="Jira Dashboard & Tickets"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<GitHubIcon />}
-              label="GitHub Repos & Workflows"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<CloudQueueIcon style={{ color: '#0078d4' }} />}
-              label="Microsoft Azure Architecture"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<TimelineIcon style={{ color: '#7c3aed' }} />}
-              label="Datadog Observability"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<BubbleChartIcon style={{ color: '#ec4899' }} />}
-              label="Azure AI Foundry & GenAI Cost"
-              className={classes.tabLabel}
-            />
+            {role !== 'finops' && (
+              <Tab
+                icon={<CheckCircleIcon style={{ color: '#2563eb' }} />}
+                label="Jira Dashboard & Tickets"
+                className={classes.tabLabel}
+              />
+            )}
+            {role !== 'finops' && (
+              <Tab
+                icon={<GitHubIcon />}
+                label={role === 'developer' ? 'My Repositories & Workflows' : 'GitHub Repos & Workflows'}
+                className={classes.tabLabel}
+              />
+            )}
+            {role !== 'developer' && (
+              <Tab
+                icon={<CloudQueueIcon style={{ color: '#0078d4' }} />}
+                label="Microsoft Azure Architecture"
+                className={classes.tabLabel}
+              />
+            )}
+            {role === 'platform-engineer' && (
+              <Tab
+                icon={<TimelineIcon style={{ color: '#7c3aed' }} />}
+                label="Datadog Observability"
+                className={classes.tabLabel}
+              />
+            )}
+            {role !== 'developer' && (
+              <Tab
+                icon={<BubbleChartIcon style={{ color: '#ec4899' }} />}
+                label="Azure AI Foundry & GenAI Cost"
+                className={classes.tabLabel}
+              />
+            )}
           </Tabs>
         </Box>
 
@@ -1606,60 +1653,86 @@ export const IntegrationsDashboardPage = () => {
           <Box p={3}>
             {/* Quick action shortcuts to deep dive */}
             <Grid container spacing={3} style={{ marginBottom: 28 }}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card className={classes.statCard}>
-                  <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
-                    Jira Software
-                  </Typography>
-                  <Typography className={classes.statNumber} style={{ color: '#2563eb' }}>
-                    10 Issues
-                  </Typography>
-                  <Button
-                    size="small"
-                    color="primary"
-                    onClick={() => setSelectedMainTab(1)}
-                    style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
-                  >
-                    View Tickets Tab →
-                  </Button>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card className={classes.statCard}>
-                  <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
-                    GitHub CI/CD
-                  </Typography>
-                  <Typography className={classes.statNumber} style={{ color: '#059669' }}>
-                    187 Runs
-                  </Typography>
-                  <Button
-                    size="small"
-                    color="primary"
-                    onClick={() => setSelectedMainTab(2)}
-                    style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
-                  >
-                    View GitHub Tab →
-                  </Button>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card className={classes.statCard}>
-                  <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
-                    Datadog Telemetry
-                  </Typography>
-                  <Typography className={classes.statNumber} style={{ color: '#7c3aed' }}>
-                    Live APM
-                  </Typography>
-                  <Button
-                    size="small"
-                    color="primary"
-                    onClick={() => setSelectedMainTab(4)}
-                    style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
-                  >
-                    View Datadog Tab →
-                  </Button>
-                </Card>
-              </Grid>
+              {role !== 'finops' && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card className={classes.statCard}>
+                    <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
+                      Jira Software
+                    </Typography>
+                    <Typography className={classes.statNumber} style={{ color: '#2563eb' }}>
+                      10 Issues
+                    </Typography>
+                    <Button
+                      size="small"
+                      color="primary"
+                      onClick={() => setSelectedMainTab(role === 'finops' ? 0 : 1)}
+                      style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
+                    >
+                      View Tickets Tab →
+                    </Button>
+                  </Card>
+                </Grid>
+              )}
+              {role !== 'finops' && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card className={classes.statCard}>
+                    <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
+                      GitHub CI/CD
+                    </Typography>
+                    <Typography className={classes.statNumber} style={{ color: '#059669' }}>
+                      187 Runs
+                    </Typography>
+                    <Button
+                      size="small"
+                      color="primary"
+                      onClick={() => setSelectedMainTab(role === 'finops' ? 0 : 2)}
+                      style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
+                    >
+                      View GitHub Tab →
+                    </Button>
+                  </Card>
+                </Grid>
+              )}
+              {role === 'platform-engineer' && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card className={classes.statCard}>
+                    <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
+                      Datadog Telemetry
+                    </Typography>
+                    <Typography className={classes.statNumber} style={{ color: '#7c3aed' }}>
+                      Live APM
+                    </Typography>
+                    <Button
+                      size="small"
+                      color="primary"
+                      onClick={() => setSelectedMainTab(4)}
+                      style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
+                    >
+                      View Datadog Tab →
+                    </Button>
+                  </Card>
+                </Grid>
+              )}
+              {role !== 'developer' && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card className={classes.statCard}>
+                    <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
+                      Cloud FinOps Run-rate
+                    </Typography>
+                    <Typography className={classes.statNumber} style={{ color: '#9333ea' }}>
+                      $12,480/mo
+                    </Typography>
+                    <Button
+                      size="small"
+                      color="primary"
+                      onClick={() => setSelectedMainTab(5)}
+                      style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
+                    >
+                      View AI Cost Tab →
+                    </Button>
+                  </Card>
+                </Grid>
+              )}
               <Grid item xs={12} sm={6} md={3}>
                 <Card className={classes.statCard}>
                   <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
