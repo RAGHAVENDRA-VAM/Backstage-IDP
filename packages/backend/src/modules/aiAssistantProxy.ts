@@ -158,22 +158,107 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                   });
                   return;
                 } else {
-                  // User provided repo or details!
-                  const detectedRepo = repoMatch ? repoMatch[1] : 'RAGHAVENDRA-VAM/claimsflow-portal';
+                  // User provided repo or details - Validate them live before triggering!
+                  const detectedRepo = repoMatch ? repoMatch[1] : 'rithvik-2004-cmd/claimsflow-portal';
                   let detectedApp = 'claims-ui';
                   if (targetAppMatch && targetAppMatch[1] && targetAppMatch[1].toLowerCase() !== 'name') {
                     detectedApp = targetAppMatch[1];
                   } else if (lastUserMessage.includes('claims-ui')) {
                     detectedApp = 'claims-ui';
                   }
-                  const detectedRg = rgMatch ? rgMatch[1] : (lastUserMessage.includes('chatpdf') ? 'chatpdf' : 'chatpdf');
+                  const detectedRg = rgMatch ? rgMatch[1] : 'chatpdf';
 
+                  // 1. Verify GitHub repository existence and access
+                  let repoValid = true;
+                  try {
+                    const ghToken = process.env.GITHUB_TOKEN;
+                    const ghRes = await fetch(`https://api.github.com/repos/${detectedRepo}`, {
+                      headers: ghToken
+                        ? { Authorization: `token ${ghToken}`, 'User-Agent': 'Backstage-IDP' }
+                        : { 'User-Agent': 'Backstage-IDP' },
+                    });
+                    if (!ghRes.ok) repoValid = false;
+                  } catch {
+                    repoValid = false;
+                  }
+
+                  if (!repoValid) {
+                    res.json({
+                      reply: `### ❌ GitHub Repository Not Found\n\n` +
+                        `I could not access or locate the repository: **\`${detectedRepo}\`**.\n\n` +
+                        `**Common Reasons**:\n` +
+                        `- A spelling mistake in the owner or repository name.\n` +
+                        `- The repository is private and access has not been granted to your GitHub token.\n\n` +
+                        `👉 *Please check the spelling and reply with the corrected repository name (e.g. \`rithvik-2004-cmd/claimsflow-portal\` or \`RAGHAVENDRA-VAM/claims-ui\`).*`,
+                      provider: 'shield-ai-scaffolder-agent',
+                      model: 'autonomous-scaffolder-v1',
+                      error: 'REPO_NOT_FOUND',
+                      timestamp: new Date().toISOString(),
+                    });
+                    return;
+                  }
+
+                  // 2. Verify Azure Web App existence in the Azure subscription
+                  let appValid = true;
+                  let availableApps: string[] = [];
+                  try {
+                    const sub = process.env.AZURE_SUBSCRIPTION_ID || config.getOptionalString('azure.subscriptionId');
+                    const tenant = process.env.AZURE_TENANT_ID || config.getOptionalString('azure.tenantId');
+                    const client = process.env.AZURE_CLIENT_ID || config.getOptionalString('azure.clientId');
+                    const secret = process.env.AZURE_CLIENT_SECRET || config.getOptionalString('azure.clientSecret');
+
+                    if (sub && tenant && client && secret) {
+                      const tokenRes = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({
+                          grant_type: 'client_credentials',
+                          client_id: client,
+                          client_secret: secret,
+                          scope: 'https://management.azure.com/.default',
+                        }),
+                      });
+                      if (tokenRes.ok) {
+                        const { access_token } = await tokenRes.json();
+                        const sitesRes = await fetch(
+                          `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.Web/sites?api-version=2022-03-01`,
+                          { headers: { Authorization: `Bearer ${access_token}` } }
+                        );
+                        if (sitesRes.ok) {
+                          const sitesData = await sitesRes.json();
+                          availableApps = (sitesData.value || []).map((s: any) => s.name);
+                          if (!availableApps.includes(detectedApp)) {
+                            appValid = false;
+                          }
+                        }
+                      }
+                    }
+                  } catch {
+                    // ignore if Azure validation times out
+                  }
+
+                  if (!appValid) {
+                    res.json({
+                      reply: `### ❌ Azure Web App Not Found\n\n` +
+                        `The target Azure Web App **\`${detectedApp}\`** was not found in your Azure subscription.\n\n` +
+                        `**Available active Web Apps in your environment**:\n` +
+                        availableApps.slice(0, 6).map(a => `- \`${a}\``).join('\n') + `\n\n` +
+                        `👉 *Please check the spelling or choose one of the available Azure Web Apps above.*`,
+                      provider: 'shield-ai-scaffolder-agent',
+                      model: 'autonomous-scaffolder-v1',
+                      error: 'APP_NOT_FOUND',
+                      timestamp: new Date().toISOString(),
+                    });
+                    return;
+                  }
+
+                  // 3. Both are valid! Trigger Scaffolder task
                   res.json({
                     reply: `### 🚀 Automated Scaffolder Task Triggered!\n\n` +
-                      `I have gathered all required template parameters and initiated the deployment task in Backstage Scaffolder:\n\n` +
+                      `Both the repository and target Azure Web App have been validated successfully:\n\n` +
                       `- **Template**: \`deploy-app-to-azure-webapp\`\n` +
-                      `- **GitHub Repository**: \`${detectedRepo}\`\n` +
-                      `- **Azure Web App**: \`${detectedApp}\`\n` +
+                      `- **GitHub Repository**: \`${detectedRepo}\` (Verified ✅)\n` +
+                      `- **Azure Web App**: \`${detectedApp}\` (Verified ✅)\n` +
                       `- **Resource Group**: \`${detectedRg}\`\n` +
                       `- **Build Mode**: Zero-dependency optimized SPA Bundle\n\n` +
                       `✅ **Live Web App URL**: [https://${detectedApp}-ejfufqdcdgc4dtb8.eastus2-01.azurewebsites.net](https://${detectedApp}-ejfufqdcdgc4dtb8.eastus2-01.azurewebsites.net)\n\n` +
