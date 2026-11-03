@@ -1,6 +1,8 @@
 import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
 import AdmZip from 'adm-zip';
 import https from 'https';
+import fs from 'fs';
+import path from 'path';
 
 export const createAzureAppDeployAction = () => {
   return createTemplateAction<
@@ -90,23 +92,47 @@ export const createAzureAppDeployAction = () => {
       const tokenData = await tokenRes.json();
       const armToken = tokenData.access_token;
 
-      // 2. Discover Resource Group and defaultHostName if not passed
+      // 2. Discover Resource Group and App Service details
       let defaultHostName = `${webAppName}.azurewebsites.net`;
-      if (!targetRg) {
-        ctx.logger.info(`Discovering Resource Group for [${webAppName}]...`);
-        const sitesRes = await fetch(
-          `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.Web/sites?api-version=2022-03-01`,
-          { headers: { Authorization: `Bearer ${armToken}` } }
-        );
-        if (sitesRes.ok) {
-          const sitesData = await sitesRes.json();
-          const site = (sitesData.value || []).find((s: any) => s.name.toLowerCase() === webAppName.toLowerCase());
-          if (site) {
-            targetRg = site.properties?.resourceGroup || site.id.split('/')[4];
+      let scmHost = `${webAppName}.scm.azurewebsites.net`;
+
+      try {
+        if (!targetRg) {
+          ctx.logger.info(`Discovering Resource Group for [${webAppName}]...`);
+          const sitesRes = await fetch(
+            `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.Web/sites?api-version=2022-03-01`,
+            { headers: { Authorization: `Bearer ${armToken}` } }
+          );
+          if (sitesRes.ok) {
+            const sitesData = await sitesRes.json();
+            const site = (sitesData.value || []).find((s: any) => s.name.toLowerCase() === webAppName.toLowerCase());
+            if (site) {
+              targetRg = site.properties?.resourceGroup || site.id.split('/')[4];
+              defaultHostName = site.properties?.defaultHostName || defaultHostName;
+              const scmFromHostNames = (site.properties?.enabledHostNames || []).find((h: string) => h.toLowerCase().includes('.scm.'));
+              if (scmFromHostNames) {
+                scmHost = scmFromHostNames;
+              }
+              ctx.logger.info(`Found Resource Group: [${targetRg}]`);
+            }
+          }
+        } else {
+          // If resourceGroup was provided, query the site properties directly to get accurate hostname
+          const siteRes = await fetch(
+            `https://management.azure.com/subscriptions/${sub}/resourceGroups/${targetRg}/providers/Microsoft.Web/sites/${webAppName}?api-version=2022-03-01`,
+            { headers: { Authorization: `Bearer ${armToken}` } }
+          );
+          if (siteRes.ok) {
+            const site = await siteRes.json();
             defaultHostName = site.properties?.defaultHostName || defaultHostName;
-            ctx.logger.info(`Found Resource Group: [${targetRg}]`);
+            const scmFromHostNames = (site.properties?.enabledHostNames || []).find((h: string) => h.toLowerCase().includes('.scm.'));
+            if (scmFromHostNames) {
+              scmHost = scmFromHostNames;
+            }
           }
         }
+      } catch (err: any) {
+        ctx.logger.warn(`Notice while fetching site metadata: ${err.message}`);
       }
 
       if (!targetRg) {
@@ -133,6 +159,16 @@ export const createAzureAppDeployAction = () => {
       if (!user || !pwd) {
         throw new Error('Could not parse publishing username or password from Azure publish profile.');
       }
+
+      // Resolve the exact SCM Kudu host dynamically from the Azure publish profile or site hostname
+      const rawPublishUrlMatch = xml.match(/publishUrl="([^":]+)/);
+      if (rawPublishUrlMatch && rawPublishUrlMatch[1]) {
+        scmHost = rawPublishUrlMatch[1];
+      } else if (defaultHostName.includes('.')) {
+        // e.g. claims-ui.westus3-01.azurewebsites.net -> claims-ui.scm.westus3-01.azurewebsites.net
+        scmHost = defaultHostName.replace(/^([^.]+)\./, '$1.scm.');
+      }
+      ctx.logger.info(`Resolved Azure SCM Host: [${scmHost}]`);
 
       // 4. Download source code zip from GitHub
       ctx.logger.info(`Downloading application archive from GitHub [${repoFullName}]...`);
@@ -272,6 +308,7 @@ http.createServer((req, res) => {
                 ENABLE_ORYX_BUILD: 'true',
                 WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'true',
                 PORT: '8080',
+                CI: 'false',
               },
             }),
           }
@@ -279,7 +316,10 @@ http.createServer((req, res) => {
 
         if (isNode) {
           ctx.logger.info('Detected Node.js application. Ensuring Azure App Service uses Node 20 runtime...');
-          const startupCommand = isReactSpa ? 'node server.js' : 'npm start';
+          // Use PM2 SPA server for React SPAs so client-side routing works, fallback to node server.js / npm start
+          const startupCommand = isReactSpa
+            ? 'pm2 serve /home/site/wwwroot --no-daemon --spa'
+            : 'npm start';
           ctx.logger.info(`Setting startup command to: [${startupCommand}]`);
 
           await fetch(
@@ -341,43 +381,86 @@ http.createServer((req, res) => {
             }
           );
         }
+        // Ensure SCM Basic Authentication is enabled on the App Service so Kudu ZipDeploy succeeds
+        try {
+          ctx.logger.info(`Checking and enabling SCM basic publishing credentials policy on [${webAppName}]...`);
+          const scmPolicyRes = await fetch(
+            `https://management.azure.com/subscriptions/${sub}/resourceGroups/${targetRg}/providers/Microsoft.Web/sites/${webAppName}/basicPublishingCredentialsPolicies/scm?api-version=2022-03-01`,
+            {
+              method: 'PUT',
+              headers: { Authorization: `Bearer ${armToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                properties: {
+                  allow: true,
+                },
+              }),
+            }
+          );
+          if (scmPolicyRes.ok) {
+            ctx.logger.info(`SCM basic publishing credentials successfully enabled.`);
+          } else {
+            ctx.logger.warn(`Notice enabling SCM basic auth: ${await scmPolicyRes.text()}`);
+          }
+        } catch (policyErr: any) {
+          ctx.logger.warn(`Could not set SCM policy: ${policyErr.message}`);
+        }
       } catch (err: any) {
         ctx.logger.warn(`Notice while adjusting runtime & settings: ${err.message}`);
       }
 
       // 7. Upload zip to Azure Kudu /api/zipdeploy
-      ctx.logger.info(`Uploading deployment package directly to Azure Web App via Kudu ZipDeploy...`);
-      const auth = Buffer.from(`${user}:${pwd}`).toString('base64');
+      ctx.logger.info(`Uploading deployment package directly to Azure Web App via Kudu ZipDeploy (${scmHost})...`);
+      const basicAuthHeader = `Basic ${Buffer.from(`${user}:${pwd}`).toString('base64')}`;
+      const bearerAuthHeader = `Bearer ${armToken}`;
 
-      await new Promise<void>((resolve, reject) => {
-        const req = https.request(
-          `https://${webAppName}.scm.azurewebsites.net/api/zipdeploy?isAsync=true`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Basic ${auth}`,
-              'Content-Type': 'application/octet-stream',
-              'Content-Length': deploymentZip.length,
+      const uploadZipWithAuth = (authHeader: string): Promise<number> => {
+        return new Promise<number>((resolve, reject) => {
+          const req = https.request(
+            `https://${scmHost}/api/zipdeploy?isAsync=true`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: authHeader,
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': deploymentZip.length,
+              },
             },
-          },
-          res => {
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-              ctx.logger.info(`Azure Kudu accepted deployment (HTTP ${res.statusCode} ${res.statusMessage}).`);
-              resolve();
-            } else {
-              let errBody = '';
-              res.on('data', chunk => { errBody += chunk; });
+            res => {
+              let resBody = '';
+              res.on('data', chunk => { resBody += chunk; });
               res.on('end', () => {
-                reject(new Error(`Azure ZipDeploy returned HTTP ${res.statusCode}: ${errBody}`));
+                if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                  ctx.logger.info(`Azure Kudu accepted deployment (HTTP ${res.statusCode} ${res.statusMessage}).`);
+                  resolve(res.statusCode);
+                } else if (res.statusCode === 401) {
+                  resolve(401);
+                } else {
+                  reject(new Error(`Azure ZipDeploy returned HTTP ${res.statusCode}: ${resBody}`));
+                }
               });
             }
-          }
-        );
+          );
 
-        req.on('error', reject);
-        req.write(deploymentZip);
-        req.end();
-      });
+          req.on('error', reject);
+          req.write(deploymentZip);
+          req.end();
+        });
+      };
+
+      let activeAuthHeader = basicAuthHeader;
+      let statusCode = await uploadZipWithAuth(activeAuthHeader);
+
+      // If Basic Auth receives 401, seamlessly fallback to Azure Management Bearer Token
+      if (statusCode === 401) {
+        ctx.logger.info(`Basic auth returned 401. Retrying ZipDeploy with ARM Bearer token...`);
+        activeAuthHeader = bearerAuthHeader;
+        const retryStatus = await uploadZipWithAuth(activeAuthHeader);
+        if (retryStatus === 401) {
+          throw new Error(
+            `Azure ZipDeploy returned HTTP 401 with both Basic Auth and ARM Bearer Token. Ensure SCM basic publishing credentials policy is enabled on App Service [${webAppName}].`
+          );
+        }
+      }
 
       // 8. Wait for Azure Oryx to finish building the application
       ctx.logger.info(`⏳ Waiting for Azure build pipeline to install dependencies and compile application...`);
@@ -386,8 +469,8 @@ http.createServer((req, res) => {
       for (let attempt = 0; attempt < 90; attempt++) {
         await new Promise(r => setTimeout(r, 10000)); // poll every 10s
         try {
-          const depRes = await fetch(`https://${webAppName}.scm.azurewebsites.net/api/deployments/latest`, {
-            headers: { Authorization: `Basic ${auth}` },
+          const depRes = await fetch(`https://${scmHost}/api/deployments/latest`, {
+            headers: { Authorization: activeAuthHeader },
           });
           if (depRes.ok) {
             const dep = await depRes.json();
@@ -402,6 +485,31 @@ http.createServer((req, res) => {
                 break;
               } else if (dep.status === 3) {
                 ctx.logger.warn(`Azure deployment reported status: ${dep.status_text || 'Failed'}`);
+                // Try to retrieve and log specific error details from deployment logs
+                try {
+                  const logRes = await fetch(`https://${scmHost}/api/deployments/latest/log`, {
+                    headers: { Authorization: activeAuthHeader },
+                  });
+                  if (logRes.ok) {
+                    const logs = await logRes.json();
+                    for (const entry of (logs || [])) {
+                      if (entry.type === 2 || (entry.message && entry.message.toLowerCase().includes('error'))) {
+                        ctx.logger.warn(`[Azure Build Log]: ${entry.message}`);
+                      }
+                      if (entry.details_url) {
+                        const detRes = await fetch(entry.details_url, {
+                          headers: { Authorization: activeAuthHeader },
+                        });
+                        if (detRes.ok) {
+                          const detData = await detRes.json();
+                          if (detData.message) ctx.logger.warn(`[Azure Build Detail]: ${detData.message}`);
+                        }
+                      }
+                    }
+                  }
+                } catch {
+                  // ignore log fetch errors
+                }
                 break;
               }
             }
@@ -411,7 +519,24 @@ http.createServer((req, res) => {
         }
       }
 
-      // 9. Restart the Web App to initialize application container
+      // 9. Remove default Azure placeholder hostingstart.html if present via Kudu VFS
+      try {
+        ctx.logger.info(`Removing default Azure placeholder (hostingstart.html) if present...`);
+        const delRes = await fetch(`https://${scmHost}/api/vfs/site/wwwroot/hostingstart.html`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: activeAuthHeader,
+            'If-Match': '*',
+          },
+        });
+        if (delRes.ok) {
+          ctx.logger.info(`Successfully cleared placeholder hostingstart.html from wwwroot.`);
+        }
+      } catch (e: any) {
+        ctx.logger.warn(`Notice while removing hostingstart.html: ${e.message}`);
+      }
+
+      // 10. Restart the Web App to initialize application container
       ctx.logger.info(`Restarting Azure Web App [${webAppName}] to launch application...`);
       try {
         await fetch(
