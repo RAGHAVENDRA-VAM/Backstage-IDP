@@ -124,29 +124,32 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
             const lastUserMessage = [...messages].reverse().find((m: ChatMessage) => m.role === 'user')?.content || '';
             const q = lastUserMessage.toLowerCase();
 
-            // Detect if user wants to scaffold or deploy a template
-            const isScaffoldIntent = /template|scaffold|deploy.*app|deploy.*react|deploy.*service|create.*service|create.*microservice|create.*app/i.test(lastUserMessage);
+            // 1. Detect if the message contains deployment parameters (e.g. repo + target web app)
+            const containsRepo = /([a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+)/.test(lastUserMessage);
+            const containsApp = /(?:app|webapp|target)\s*(?:name)?\s*[:=]?\s*([a-zA-Z0-9_-]+)/i.test(lastUserMessage) || lastUserMessage.includes('claims-ui');
+            const isScaffoldIntent = /template|scaffold|deploy.*app|deploy.*react|deploy.*service|create.*service|create.*microservice|create.*app/i.test(lastUserMessage) || (containsRepo && containsApp);
 
-            if (isScaffoldIntent) {
-              // Analyze previous conversation history to see if parameters are already provided
-              const conversationHistory = messages.map(m => m.content).join('\n');
-              const hasRepo = /github\.com\/[^\s]+|[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+/i.test(conversationHistory) && !conversationHistory.includes('Which GitHub repository');
-              const hasApp = /claims-ui|claim|portal|service|api|app/i.test(conversationHistory) && /target|app name|webapp/i.test(conversationHistory);
+            if (isScaffoldIntent || (containsRepo && containsApp)) {
+              // Analyze current message and previous conversation history
+              const conversationHistory = [...messages.map((m: ChatMessage) => m.content), lastUserMessage].join('\n');
 
-              // Extract parameters if provided
-              const repoMatch = conversationHistory.match(/([a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+)/);
-              const targetAppMatch = conversationHistory.match(/(?:app|to|target|webapp)\s*[:=]?\s*([a-zA-Z0-9_-]+)/i);
+              // Extract parameters
+              const repoMatch = lastUserMessage.match(/([a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+)/) || conversationHistory.match(/([a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+)/);
+              const targetAppMatch = lastUserMessage.match(/(?:app|target|webapp)\s*(?:name)?\s*[:=]?\s*([a-zA-Z0-9_-]+)/i) || 
+                                     conversationHistory.match(/(?:app|target|webapp)\s*(?:name)?\s*[:=]?\s*([a-zA-Z0-9_-]+)/i);
+              const rgMatch = lastUserMessage.match(/(?:rg|resource group)\s*[:=]?\s*([a-zA-Z0-9_-]+)/i) || 
+                              conversationHistory.match(/(?:rg|resource group)\s*[:=]?\s*([a-zA-Z0-9_-]+)/i);
 
-              if (q.includes('deploy') && (q.includes('azure') || q.includes('webapp') || q.includes('react') || q.includes('ui'))) {
-                if (!repoMatch && !q.includes('/')) {
+              if (containsRepo || q.includes('deploy')) {
+                if (!repoMatch) {
                   res.json({
                     reply: `### Autonomous Scaffolder & Cloud Deployment Assistant\n\n` +
                       `I can automatically provision and deploy the **Deploy Application to Azure Web App** template for you directly from this chat!\n\n` +
                       `To initiate this deployment pipeline, please provide:\n` +
-                      `1. **GitHub Repository** (e.g. \`RAGHAVENDRA-VAM/claims-ui\`)\n` +
+                      `1. **GitHub Repository** (e.g. \`RAGHAVENDRA-VAM/claimsflow-portal\`)\n` +
                       `2. **Target Azure Web App Name** (e.g. \`claims-ui\`)\n` +
                       `3. **Target Resource Group** (optional, e.g. \`chatpdf\` or \`rg-backstage-dev-westus3\`)\n\n` +
-                      `*You can simply reply: "Deploy RAGHAVENDRA-VAM/claims-ui to claims-ui in chatpdf"*`,
+                      `*You can simply reply: "Deploy RAGHAVENDRA-VAM/claimsflow-portal to claims-ui in chatpdf"*`,
                     provider: 'shield-ai-scaffolder-agent',
                     model: 'autonomous-scaffolder-v1',
                     actionRequired: 'collect_parameters',
@@ -156,9 +159,14 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                   return;
                 } else {
                   // User provided repo or details!
-                  const detectedRepo = repoMatch ? repoMatch[1] : 'RAGHAVENDRA-VAM/claims-ui';
-                  const detectedApp = targetAppMatch ? targetAppMatch[1] : 'claims-ui';
-                  const detectedRg = conversationHistory.match(/(?:rg|resource group)\s*[:=]?\s*([a-zA-Z0-9_-]+)/i)?.[1] || 'chatpdf';
+                  const detectedRepo = repoMatch ? repoMatch[1] : 'RAGHAVENDRA-VAM/claimsflow-portal';
+                  let detectedApp = 'claims-ui';
+                  if (targetAppMatch && targetAppMatch[1] && targetAppMatch[1].toLowerCase() !== 'name') {
+                    detectedApp = targetAppMatch[1];
+                  } else if (lastUserMessage.includes('claims-ui')) {
+                    detectedApp = 'claims-ui';
+                  }
+                  const detectedRg = rgMatch ? rgMatch[1] : (lastUserMessage.includes('chatpdf') ? 'chatpdf' : 'chatpdf');
 
                   res.json({
                     reply: `### 🚀 Automated Scaffolder Task Triggered!\n\n` +
