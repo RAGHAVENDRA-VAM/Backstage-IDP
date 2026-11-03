@@ -375,43 +375,86 @@ http.createServer((req, res) => {
             }
           );
         }
+        // Ensure SCM Basic Authentication is enabled on the App Service so Kudu ZipDeploy succeeds
+        try {
+          ctx.logger.info(`Checking and enabling SCM basic publishing credentials policy on [${webAppName}]...`);
+          const scmPolicyRes = await fetch(
+            `https://management.azure.com/subscriptions/${sub}/resourceGroups/${targetRg}/providers/Microsoft.Web/sites/${webAppName}/basicPublishingCredentialsPolicies/scm?api-version=2022-03-01`,
+            {
+              method: 'PUT',
+              headers: { Authorization: `Bearer ${armToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                properties: {
+                  allow: true,
+                },
+              }),
+            }
+          );
+          if (scmPolicyRes.ok) {
+            ctx.logger.info(`SCM basic publishing credentials successfully enabled.`);
+          } else {
+            ctx.logger.warn(`Notice enabling SCM basic auth: ${await scmPolicyRes.text()}`);
+          }
+        } catch (policyErr: any) {
+          ctx.logger.warn(`Could not set SCM policy: ${policyErr.message}`);
+        }
       } catch (err: any) {
         ctx.logger.warn(`Notice while adjusting runtime & settings: ${err.message}`);
       }
 
       // 7. Upload zip to Azure Kudu /api/zipdeploy
       ctx.logger.info(`Uploading deployment package directly to Azure Web App via Kudu ZipDeploy (${scmHost})...`);
-      const auth = Buffer.from(`${user}:${pwd}`).toString('base64');
+      const basicAuthHeader = `Basic ${Buffer.from(`${user}:${pwd}`).toString('base64')}`;
+      const bearerAuthHeader = `Bearer ${armToken}`;
 
-      await new Promise<void>((resolve, reject) => {
-        const req = https.request(
-          `https://${scmHost}/api/zipdeploy?isAsync=true`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Basic ${auth}`,
-              'Content-Type': 'application/octet-stream',
-              'Content-Length': deploymentZip.length,
+      const uploadZipWithAuth = (authHeader: string): Promise<number> => {
+        return new Promise<number>((resolve, reject) => {
+          const req = https.request(
+            `https://${scmHost}/api/zipdeploy?isAsync=true`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: authHeader,
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': deploymentZip.length,
+              },
             },
-          },
-          res => {
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-              ctx.logger.info(`Azure Kudu accepted deployment (HTTP ${res.statusCode} ${res.statusMessage}).`);
-              resolve();
-            } else {
-              let errBody = '';
-              res.on('data', chunk => { errBody += chunk; });
+            res => {
+              let resBody = '';
+              res.on('data', chunk => { resBody += chunk; });
               res.on('end', () => {
-                reject(new Error(`Azure ZipDeploy returned HTTP ${res.statusCode}: ${errBody}`));
+                if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                  ctx.logger.info(`Azure Kudu accepted deployment (HTTP ${res.statusCode} ${res.statusMessage}).`);
+                  resolve(res.statusCode);
+                } else if (res.statusCode === 401) {
+                  resolve(401);
+                } else {
+                  reject(new Error(`Azure ZipDeploy returned HTTP ${res.statusCode}: ${resBody}`));
+                }
               });
             }
-          }
-        );
+          );
 
-        req.on('error', reject);
-        req.write(deploymentZip);
-        req.end();
-      });
+          req.on('error', reject);
+          req.write(deploymentZip);
+          req.end();
+        });
+      };
+
+      let activeAuthHeader = basicAuthHeader;
+      let statusCode = await uploadZipWithAuth(activeAuthHeader);
+
+      // If Basic Auth receives 401, seamlessly fallback to Azure Management Bearer Token
+      if (statusCode === 401) {
+        ctx.logger.info(`Basic auth returned 401. Retrying ZipDeploy with ARM Bearer token...`);
+        activeAuthHeader = bearerAuthHeader;
+        const retryStatus = await uploadZipWithAuth(activeAuthHeader);
+        if (retryStatus === 401) {
+          throw new Error(
+            `Azure ZipDeploy returned HTTP 401 with both Basic Auth and ARM Bearer Token. Ensure SCM basic publishing credentials policy is enabled on App Service [${webAppName}].`
+          );
+        }
+      }
 
       // 8. Wait for Azure Oryx to finish building the application
       ctx.logger.info(`⏳ Waiting for Azure build pipeline to install dependencies and compile application...`);
@@ -421,7 +464,7 @@ http.createServer((req, res) => {
         await new Promise(r => setTimeout(r, 10000)); // poll every 10s
         try {
           const depRes = await fetch(`https://${scmHost}/api/deployments/latest`, {
-            headers: { Authorization: `Basic ${auth}` },
+            headers: { Authorization: activeAuthHeader },
           });
           if (depRes.ok) {
             const dep = await depRes.json();
