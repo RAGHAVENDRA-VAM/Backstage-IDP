@@ -207,14 +207,14 @@ export const createAzureAppDeployAction = () => {
             if (relativePath === 'requirements.txt' || relativePath === 'app.py' || relativePath === 'manage.py' || relativePath === 'pyproject.toml') isPython = true;
             if (relativePath.endsWith('.csproj') || relativePath.endsWith('.sln')) isDotNet = true;
             if (relativePath === 'pom.xml' || relativePath === 'build.gradle') isJava = true;
-            if (relativePath === 'src/App.js' || relativePath === 'src/App.tsx' || relativePath === 'src/main.tsx' || relativePath === 'src/main.jsx') isReactSpa = true;
+            if (relativePath === 'src/App.js' || relativePath === 'src/App.tsx' || relativePath === 'src/main.tsx' || relativePath === 'src/main.jsx' || relativePath === 'vite.config.js' || relativePath === 'vite.config.ts') isReactSpa = true;
           }
         }
       }
 
       // If it is a React SPA, compile the production build locally and bundle static server
       if (isNode && isReactSpa) {
-        ctx.logger.info('🔨 Compiling React production bundle locally to guarantee zero 404 errors...');
+        ctx.logger.info('🔨 Compiling React/Vite production bundle locally to guarantee zero 404 errors...');
         try {
           const fs = await import('fs');
           const path = await import('path');
@@ -241,10 +241,15 @@ export const createAzureAppDeployAction = () => {
 
           execSync('npm run build', { cwd: buildWorkspace, stdio: 'ignore', env: { ...process.env, CI: 'false' } });
 
-          const buildOutputDir = path.join(buildWorkspace, 'build');
+          // Support both CRA ('build') and Vite ('dist') output directories
+          const buildOutputDir = fs.existsSync(path.join(buildWorkspace, 'dist'))
+            ? path.join(buildWorkspace, 'dist')
+            : path.join(buildWorkspace, 'build');
+
           if (fs.existsSync(buildOutputDir)) {
             ctx.logger.info('✅ Production build compiled successfully! Injecting build assets into deployment zip...');
             cleanZip.addLocalFolder(buildOutputDir, 'build');
+            cleanZip.addLocalFolder(buildOutputDir, 'dist');
             // Also copy index.html directly to root for instantaneous static page detection
             const indexHtmlPath = path.join(buildOutputDir, 'index.html');
             if (fs.existsSync(indexHtmlPath)) {
@@ -252,12 +257,16 @@ export const createAzureAppDeployAction = () => {
             }
           }
 
-          // Inject standalone zero-dependency server.js
+          // Inject standalone zero-dependency server.js supporting both 'dist', 'build', and root
           const serverJs = `const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const port = process.env.PORT || 8080;
-const publicDir = fs.existsSync(path.join(__dirname, 'build')) ? path.join(__dirname, 'build') : (fs.existsSync(path.join(__dirname, 'public')) ? path.join(__dirname, 'public') : __dirname);
+const publicDir = fs.existsSync(path.join(__dirname, 'dist')) 
+  ? path.join(__dirname, 'dist') 
+  : (fs.existsSync(path.join(__dirname, 'build')) 
+      ? path.join(__dirname, 'build') 
+      : (fs.existsSync(path.join(__dirname, 'public')) ? path.join(__dirname, 'public') : __dirname));
 const mime = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
