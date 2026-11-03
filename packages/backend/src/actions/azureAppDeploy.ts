@@ -1,6 +1,8 @@
 import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
 import AdmZip from 'adm-zip';
 import https from 'https';
+import fs from 'fs';
+import path from 'path';
 
 export const createAzureAppDeployAction = () => {
   return createTemplateAction<
@@ -306,6 +308,7 @@ http.createServer((req, res) => {
                 ENABLE_ORYX_BUILD: 'true',
                 WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'true',
                 PORT: '8080',
+                CI: 'false',
               },
             }),
           }
@@ -313,7 +316,10 @@ http.createServer((req, res) => {
 
         if (isNode) {
           ctx.logger.info('Detected Node.js application. Ensuring Azure App Service uses Node 20 runtime...');
-          const startupCommand = isReactSpa ? 'node server.js' : 'npm start';
+          // Use PM2 SPA server for React SPAs so client-side routing works, fallback to node server.js / npm start
+          const startupCommand = isReactSpa
+            ? 'pm2 serve /home/site/wwwroot --no-daemon --spa'
+            : 'npm start';
           ctx.logger.info(`Setting startup command to: [${startupCommand}]`);
 
           await fetch(
@@ -479,6 +485,31 @@ http.createServer((req, res) => {
                 break;
               } else if (dep.status === 3) {
                 ctx.logger.warn(`Azure deployment reported status: ${dep.status_text || 'Failed'}`);
+                // Try to retrieve and log specific error details from deployment logs
+                try {
+                  const logRes = await fetch(`https://${scmHost}/api/deployments/latest/log`, {
+                    headers: { Authorization: activeAuthHeader },
+                  });
+                  if (logRes.ok) {
+                    const logs = await logRes.json();
+                    for (const entry of (logs || [])) {
+                      if (entry.type === 2 || (entry.message && entry.message.toLowerCase().includes('error'))) {
+                        ctx.logger.warn(`[Azure Build Log]: ${entry.message}`);
+                      }
+                      if (entry.details_url) {
+                        const detRes = await fetch(entry.details_url, {
+                          headers: { Authorization: activeAuthHeader },
+                        });
+                        if (detRes.ok) {
+                          const detData = await detRes.json();
+                          if (detData.message) ctx.logger.warn(`[Azure Build Detail]: ${detData.message}`);
+                        }
+                      }
+                    }
+                  }
+                } catch {
+                  // ignore log fetch errors
+                }
                 break;
               }
             }
@@ -488,7 +519,24 @@ http.createServer((req, res) => {
         }
       }
 
-      // 9. Restart the Web App to initialize application container
+      // 9. Remove default Azure placeholder hostingstart.html if present via Kudu VFS
+      try {
+        ctx.logger.info(`Removing default Azure placeholder (hostingstart.html) if present...`);
+        const delRes = await fetch(`https://${scmHost}/api/vfs/site/wwwroot/hostingstart.html`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: activeAuthHeader,
+            'If-Match': '*',
+          },
+        });
+        if (delRes.ok) {
+          ctx.logger.info(`Successfully cleared placeholder hostingstart.html from wwwroot.`);
+        }
+      } catch (e: any) {
+        ctx.logger.warn(`Notice while removing hostingstart.html: ${e.message}`);
+      }
+
+      // 10. Restart the Web App to initialize application container
       ctx.logger.info(`Restarting Azure Web App [${webAppName}] to launch application...`);
       try {
         await fetch(
