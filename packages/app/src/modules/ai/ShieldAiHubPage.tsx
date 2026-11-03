@@ -458,10 +458,11 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
                           <div
                             dangerouslySetInnerHTML={{
                               __html: m.content
-                                .replace(/### (.*?)\n/g, '<h3>$1</h3>')
+                                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #0078D4; font-weight: 700; text-decoration: underline;">$1</a>')
+                                .replace(/### (.*?)\n/g, '<h3 style="margin: 6px 0;">$1</h3>')
                                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                                .replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 4px;">$1</code>')
                                 .replace(/\n- (.*?)(?=\n|$)/g, '<li>$1</li>')
                                 .replace(/\n\n/g, '<br/>'),
                             }}
