@@ -22,13 +22,17 @@ export function createAzureWorkItemAction(options: { config: Config }) {
       const { organization, project, type, title, description, parentId } = ctx.input;
       
       const config = options.config;
-      const azureIntegrations = config.getOptionalConfigArray('integrations.azure') || [];
-      const devAzureIntegration = azureIntegrations.find(c => c.getString('host') === 'dev.azure.com');
-      
-      let token = devAzureIntegration?.getOptionalString('token'); // Fallback for old configs
+      let token = process.env.AZURE_DEVOPS_TOKEN || process.env.AZURE_TOKEN;
+
       if (!token) {
-        const credentials = devAzureIntegration?.getOptionalConfigArray('credentials') || [];
-        token = credentials[0]?.getOptionalString('personalAccessToken');
+        const azureIntegrations = config.getOptionalConfigArray('integrations.azure') || [];
+        const devAzureIntegration = azureIntegrations.find(c => c.getString('host') === 'dev.azure.com');
+        
+        token = devAzureIntegration?.getOptionalString('token'); // Fallback for old configs
+        if (!token) {
+          const credentials = devAzureIntegration?.getOptionalConfigArray('credentials') || [];
+          token = credentials[0]?.getOptionalString('personalAccessToken');
+        }
       }
 
       if (!token) {

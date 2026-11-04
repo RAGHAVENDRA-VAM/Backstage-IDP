@@ -10,8 +10,29 @@ export const adoProxyPlugin = createBackendPlugin({
         config: coreServices.rootConfig,
       },
       async init({ httpRouter, config }) {
+        httpRouter.addAuthPolicy({
+          path: '*',
+          allow: 'unauthenticated',
+        });
+
         const router = express.Router();
         router.use(express.json());
+
+        // Helper function to resolve the Azure DevOps personal access token
+        const getAdoToken = (): string | undefined => {
+          let token = process.env.AZURE_DEVOPS_TOKEN || process.env.AZURE_TOKEN;
+          if (token) return token;
+
+          const azureIntegrations = config.getOptionalConfigArray('integrations.azure') || [];
+          const devAzureIntegration = azureIntegrations.find(c => c.getString('host') === 'dev.azure.com');
+          
+          token = devAzureIntegration?.getOptionalString('token');
+          if (!token) {
+            const credentials = devAzureIntegration?.getOptionalConfigArray('credentials') || [];
+            token = credentials[0]?.getOptionalString('personalAccessToken');
+          }
+          return token;
+        };
 
         router.get('/projects', async (req, res) => {
           const { organization } = req.query;
@@ -22,14 +43,7 @@ export const adoProxyPlugin = createBackendPlugin({
           }
 
           try {
-            const azureIntegrations = config.getOptionalConfigArray('integrations.azure') || [];
-            const devAzureIntegration = azureIntegrations.find(c => c.getString('host') === 'dev.azure.com');
-            
-            let token = devAzureIntegration?.getOptionalString('token');
-            if (!token) {
-              const credentials = devAzureIntegration?.getOptionalConfigArray('credentials') || [];
-              token = credentials[0]?.getOptionalString('personalAccessToken');
-            }
+            const token = getAdoToken();
 
             if (!token) {
               res.status(500).json({ error: 'No ADO token configured' });
@@ -74,14 +88,7 @@ export const adoProxyPlugin = createBackendPlugin({
           }
 
           try {
-            const azureIntegrations = config.getOptionalConfigArray('integrations.azure') || [];
-            const devAzureIntegration = azureIntegrations.find(c => c.getString('host') === 'dev.azure.com');
-            
-            let token = devAzureIntegration?.getOptionalString('token');
-            if (!token) {
-              const credentials = devAzureIntegration?.getOptionalConfigArray('credentials') || [];
-              token = credentials[0]?.getOptionalString('personalAccessToken');
-            }
+            const token = getAdoToken();
 
             if (!token) {
               res.status(500).json({ error: 'No ADO token configured' });
