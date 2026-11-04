@@ -427,6 +427,28 @@ http.createServer((req, res) => {
       const basicAuthHeader = `Basic ${Buffer.from(`${user}:${pwd}`).toString('base64')}`;
       const bearerAuthHeader = `Bearer ${armToken}`;
 
+      // Clean existing stale deployment assets (old index.html, assets, build) to guarantee newly selected repo displays cleanly
+      try {
+        ctx.logger.info('Performing pre-deployment cleanup of legacy assets in /site/wwwroot/...');
+        const listRes = await fetch(`https://${scmHost}/api/vfs/site/wwwroot/`, {
+          headers: { Authorization: basicAuthHeader },
+        });
+        if (listRes.ok) {
+          const files = await listRes.json();
+          for (const item of files) {
+            if (['index.html', 'assets', 'build', 'dist', 'server.js', 'package.json'].includes(item.name)) {
+              await fetch(`https://${scmHost}/api/vfs/site/wwwroot/${item.name}${item.mime === 'inode/directory' ? '/?recursive=true' : ''}`, {
+                method: 'DELETE',
+                headers: { Authorization: basicAuthHeader, 'If-Match': '*' },
+              }).catch(() => {});
+            }
+          }
+          ctx.logger.info('Cleaned previous application assets to prevent collision.');
+        }
+      } catch (cleanErr: any) {
+        ctx.logger.warn(`Notice during cleanup: ${cleanErr.message}`);
+      }
+
       // Upload directly to /api/zip/site/wwwroot/ which reliably extracts into wwwroot
       let activeAuthHeader = bearerAuthHeader;
       try {

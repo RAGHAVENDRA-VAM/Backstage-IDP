@@ -728,7 +728,7 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                 timestamp: new Date(now.getTime() - 90000).toISOString(),
                 level: 'INFO',
                 source: 'AzureAppServiceHttpLogs',
-                message: `POST /api/claims/fnol-intake 201 Created - 48ms - Client: Any Insurance Portal UI`,
+                message: `POST /api/claims/fnol-intake 201 Created - 48ms - Client: Shield Insurance Portal UI`,
               },
               {
                 timestamp: new Date(now.getTime() - 180000).toISOString(),
