@@ -15,7 +15,7 @@ import CloseIcon from '@material-ui/icons/Close';
 import SendIcon from '@material-ui/icons/Send';
 import LaunchIcon from '@material-ui/icons/Launch';
 import RefreshIcon from '@material-ui/icons/Refresh';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const useStyles = makeStyles(theme => ({
   fabContainer: {
@@ -23,6 +23,14 @@ const useStyles = makeStyles(theme => ({
     bottom: 24,
     right: 28,
     zIndex: 99999,
+    transition: 'all 0.3s ease',
+  },
+  fabContainerScaffolder: {
+    position: 'fixed',
+    bottom: 84,
+    right: 28,
+    zIndex: 99999,
+    transition: 'all 0.3s ease',
   },
   fab: {
     background: 'linear-gradient(135deg, #0078D4 0%, #7B1FA2 100%)',
@@ -168,9 +176,13 @@ interface Message {
 export const ShieldAiFloatingWidget: React.FC = () => {
   const classes = useStyles();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Check if current page is within template execution / scaffolder wizard to avoid obscuring Next/Back buttons
+  const isScaffolderForm = location.pathname.startsWith('/create') || location.pathname.includes('/templates/');
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -249,7 +261,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
 
   return (
     <>
-      <div className={classes.fabContainer}>
+      <div className={isScaffolderForm ? classes.fabContainerScaffolder : classes.fabContainer}>
         {!open && (
           <Fab
             variant="extended"

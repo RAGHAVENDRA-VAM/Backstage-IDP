@@ -1854,17 +1854,14 @@ export const IntegrationsDashboardPage = () => {
 
               {/* Azure AI Foundry Card */}
               <Grid item xs={12} sm={6} md={4}>
-                <Card className={classes.integrationCard}>
-                  <CardContent className={classes.cardContent}>
+                <Card className={classes.card}>
+                  <CardContent>
                     <Box className={classes.cardHeader}>
-                      <Box display="flex" alignItems="center" gap={1.5}>
-                        <BubbleChartIcon style={{ color: '#ec4899', fontSize: 30 }} />
-                        <Box>
-                          <Typography className={classes.cardTitle}>Azure AI Foundry</Typography>
-                          <Typography className={classes.cardSubtitle}>GenAI Model Governance</Typography>
-                        </Box>
+                      <Box className={classes.iconBox} style={{ backgroundColor: '#fdf2f8', color: '#ec4899' }}>
+                        <BubbleChartIcon fontSize="medium" />
                       </Box>
-                      <Box>
+                      <Box flex={1}>
+                        <Typography className={classes.cardTitle}>Azure AI Foundry</Typography>
                         <Chip label="5 Models Live" size="small" className={classes.statusBadgeActive} />
                       </Box>
                     </Box>
@@ -1889,17 +1886,14 @@ export const IntegrationsDashboardPage = () => {
 
               {/* Shield AI Suite Card */}
               <Grid item xs={12} sm={6} md={4}>
-                <Card className={classes.integrationCard}>
-                  <CardContent className={classes.cardContent}>
+                <Card className={classes.card}>
+                  <CardContent>
                     <Box className={classes.cardHeader}>
-                      <Box display="flex" alignItems="center" gap={1.5}>
-                        <BubbleChartIcon style={{ color: '#0284c7', fontSize: 30 }} />
-                        <Box>
-                          <Typography className={classes.cardTitle}>Shield AI Suite</Typography>
-                          <Typography className={classes.cardSubtitle}>Autonomous IDP & Diagnostics</Typography>
-                        </Box>
+                      <Box className={classes.iconBox} style={{ backgroundColor: '#e0f2fe', color: '#0284c7' }}>
+                        <BubbleChartIcon fontSize="medium" />
                       </Box>
-                      <Box>
+                      <Box flex={1}>
+                        <Typography className={classes.cardTitle}>Shield AI Suite</Typography>
                         <Chip label="GPT-4o Copilot" size="small" className={classes.statusBadgeActive} />
                       </Box>
                     </Box>
