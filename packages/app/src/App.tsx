@@ -3,16 +3,30 @@ import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import { navModule } from './modules/nav';
 import { homeModule } from './modules/home';
 import githubActionsPlugin from '@backstage-community/plugin-github-actions/alpha';
+import { SignInPage } from '@backstage/core-components';
+import { githubAuthApiRef } from '@backstage/core-plugin-api';
 import { SignInPageBlueprint } from '@backstage/plugin-app-react';
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
-import { EnterpriseSignInPage } from './modules/EnterpriseSignInPage';
+
 
 const signInModule = createFrontendModule({
   pluginId: 'app',
   extensions: [
     SignInPageBlueprint.make({
       params: {
-        loader: async () => props => <EnterpriseSignInPage {...props} />,
+        loader: async () => props => (
+          <SignInPage
+            {...props}
+            providers={[
+              {
+                id: 'github-auth-provider',
+                title: 'GitHub',
+                message: 'Sign in using GitHub',
+                apiRef: githubAuthApiRef,
+              },
+            ]}
+          />
+        ),
       },
     }),
   ],
