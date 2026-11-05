@@ -1,51 +1,1356 @@
 ---
-# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
+# Live Azure & GitHub Software Catalog Entities
+# Auto-generated from live cloud resources
+---
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: risk-analysis
-  title: "Risk Analysis Project"
-  description: "DevOps Risk Analyzer API & AI Risk Evaluation Engine"
+  name: devops-risk-analyzer-api
+  title: "devops-risk-analyzer-api"
+  description: "Live Azure App Service running in [devops-maf]"
   annotations:
-    github.com/project-slug: 'RAGHAVENDRA-VAM/Risk_Analaysis'
-    jira/project-key: 'RISK'
-    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-b815955c39a96638ee135ce3d3bc9cb6'
-    datadoghq.com/graph-token: 'your_graph_token_here'
     azure.com/app-service-name: 'devops-risk-analyzer-api'
     azure.com/resource-group: 'devops-maf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
   links:
-    - url: https://github.com/RAGHAVENDRA-VAM/Risk_Analaysis
-      title: GitHub Repository
-      icon: github
     - url: https://devops-risk-analyzer-api-enejenekbsg7f9cc.centralus-01.azurewebsites.net
-      title: Live API Endpoint
+      title: Live Azure Web App
       icon: web
 spec:
   type: service
-  lifecycle: experimental
+  lifecycle: production
   owner: platform-engineering
 ---
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: Claims_UI
-  title: "Claims UI"
-  description: "Claims UI React frontend application & Insurance Portal"
+  name: ba-agent
+  title: "ba-agent"
+  description: "Live Azure App Service running in [chatpdf]"
+  annotations:
+    azure.com/app-service-name: 'ba-agent'
+    azure.com/resource-group: 'chatpdf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://ba-agent-aqd8c3d8dtdrbcat.centralus-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: shield-claims-isnurance-webapp
+  title: "shield-claims-isnurance-webapp"
+  description: "Live Azure App Service running in [shield-claims-isnurance-rg]"
+  annotations:
+    azure.com/app-service-name: 'shield-claims-isnurance-webapp'
+    azure.com/resource-group: 'shield-claims-isnurance-rg'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://shield-claims-isnurance-webapp.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: gudiewirewebhook
+  title: "gudiewirewebhook"
+  description: "Live Azure App Service running in [QualityGatesDemo]"
+  annotations:
+    azure.com/app-service-name: 'gudiewirewebhook'
+    azure.com/resource-group: 'QualityGatesDemo'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://gudiewirewebhook-g6h6bgfggsardugy.eastus-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: runner-autoscale
+  title: "runner-autoscale"
+  description: "Live Azure App Service running in [devops-maf]"
+  annotations:
+    azure.com/app-service-name: 'runner-autoscale'
+    azure.com/resource-group: 'devops-maf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://runner-autoscale-fzb5dpb5axe7cram.eastus-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: claims-ui
+  title: "claims-ui"
+  description: "Live Azure App Service running in [chatpdf]"
+  annotations:
+    azure.com/app-service-name: 'claims-ui'
+    azure.com/resource-group: 'chatpdf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://claims-ui-ejfufqdcdgc4dtb8.eastus2-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: vam-health-check
+  title: "vam-health-check"
+  description: "Live Azure App Service running in [health-check]"
+  annotations:
+    azure.com/app-service-name: 'vam-health-check'
+    azure.com/resource-group: 'health-check'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://vam-health-check.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ops-bot
+  title: "Ops-Bot"
+  description: "Live Azure App Service running in [health-check]"
+  annotations:
+    azure.com/app-service-name: 'Ops-Bot'
+    azure.com/resource-group: 'health-check'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://ops-bot-duf6f8bvbgbjh8ce.eastus2-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: offer-letter-backend
+  title: "offer-letter-backend"
+  description: "Live Azure App Service running in [chatpdf]"
+  annotations:
+    azure.com/app-service-name: 'offer-letter-backend'
+    azure.com/resource-group: 'chatpdf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://offer-letter-backend-gcf9d8g7f3ghcfb2.canadacentral-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: failureagent
+  title: "Failureagent"
+  description: "Live Azure App Service running in [devops-maf]"
+  annotations:
+    azure.com/app-service-name: 'Failureagent'
+    azure.com/resource-group: 'devops-maf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://failureagent-aeazhcavfya3c8dm.canadacentral-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: adoagent
+  title: "adoagent"
+  description: "Live Azure App Service running in [devops-maf]"
+  annotations:
+    azure.com/app-service-name: 'adoagent'
+    azure.com/resource-group: 'devops-maf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://adoagent-eqhrcpccgccphtgy.canadacentral-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: valora-insurance-ui
+  title: "valora-insurance-ui"
+  description: "Live Azure App Service running in [devops-maf]"
+  annotations:
+    azure.com/app-service-name: 'valora-insurance-ui'
+    azure.com/resource-group: 'devops-maf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://valora-insurance-ui-aydmbcc7angzfjg5.westus3-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: selfhealingagenttestingwebapp
+  title: "SelfhealingAgentTestingwebapp"
+  description: "Live Azure App Service running in [devops-maf]"
+  annotations:
+    azure.com/app-service-name: 'SelfhealingAgentTestingwebapp'
+    azure.com/resource-group: 'devops-maf'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://selfhealingagenttestingwebapp-dfcvahcgdtc3hne8.westus3-01.azurewebsites.net
+      title: Live Azure Web App
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: qualitygates
+  title: "QualityGates"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'CloudTSC/QualityGates'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/CloudTSC/QualityGates
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ado_agent
+  title: "ADO_agent"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'Hari-var/ADO_agent'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/Hari-var/ADO_agent
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: failure-agent
+  title: "Failure-agent"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'Hari-var/Failure-agent'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/Hari-var/Failure-agent
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: test1
+  title: "test1"
+  description: "Repository test1 created via assistant"
+  annotations:
+    github.com/project-slug: 'Hari-var/test1'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/Hari-var/test1
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: test2
+  title: "test2"
+  description: "Repository test2 created via assistant"
+  annotations:
+    github.com/project-slug: 'Hari-var/test2'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/Hari-var/test2
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: webhook_probe
+  title: "webhook_probe"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'Hari-var/webhook_probe'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/Hari-var/webhook_probe
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: insurance-portal
+  title: "insurance-portal"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'InapuriMonish1/insurance-portal'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/InapuriMonish1/insurance-portal
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: terraform-azure-webapp
+  title: "terraform-azure-webapp"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'InapuriMonish1/terraform-azure-webapp'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/InapuriMonish1/terraform-azure-webapp
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: admin
+  title: "Admin"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'mohansai001/Admin'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/mohansai001/Admin
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: co-ordinator_agnet
+  title: "Co-ordinator_agnet"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'mohansai001/Co-ordinator_agnet'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/mohansai001/Co-ordinator_agnet
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: devops-agent_frontend
+  title: "devops-agent_frontend"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'mohansai001/devops-agent_frontend'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/mohansai001/devops-agent_frontend
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: devops_agent_maf-backend
+  title: "Devops_agent_MAF-Backend"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'mohansai001/Devops_agent_MAF-Backend'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/mohansai001/Devops_agent_MAF-Backend
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: devops_agent_maf-frontend
+  title: "Devops_agent_MAF-Frontend"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'mohansai001/Devops_agent_MAF-Frontend'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/mohansai001/Devops_agent_MAF-Frontend
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: failure_agent
+  title: "Failure_agent"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'mohansai001/Failure_agent'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/mohansai001/Failure_agent
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: github_agent
+  title: "Github_agent"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'mohansai001/Github_agent'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/mohansai001/Github_agent
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: terraform_agent
+  title: "Terraform_agent"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'mohansai001/Terraform_agent'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/mohansai001/Terraform_agent
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: yaml_agent
+  title: "Yaml_Agent"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'mohansai001/Yaml_Agent'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/mohansai001/Yaml_Agent
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: agents-prompts
+  title: "Agents-Prompts"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/Agents-Prompts'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/Agents-Prompts
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: asp.net-shopping-cart-ecommerce-app
+  title: "ASP.NET-Shopping-cart-Ecommerce-App"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/ASP.NET-Shopping-cart-Ecommerce-App'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/ASP.NET-Shopping-cart-Ecommerce-App
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backstage-idp
+  title: "Backstage-IDP"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/Backstage-IDP'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: claimscare-insurance-demo
+  title: "claimscare-insurance-demo"
+  description: "Insurance claims portal for AWS DevOps Agent incident investigation demo"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/claimscare-insurance-demo'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/claimscare-insurance-demo
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: claims_ui
+  title: "Claims_UI"
+  description: "GitHub Repository & CI/CD Pipeline"
   annotations:
     github.com/project-slug: 'RAGHAVENDRA-VAM/Claims_UI'
     jira/project-key: 'SCRUM'
     datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
     datadoghq.com/graph-token: 'your_graph_token_here'
-    azure.com/app-service-name: 'valora-insurance-ui'
-    azure.com/resource-group: 'devops-maf'
   links:
     - url: https://github.com/RAGHAVENDRA-VAM/Claims_UI
       title: GitHub Repository
       icon: github
-    - url: https://valora-insurance-ui-aydmbcc7angzfjg5.westus3-01.azurewebsites.net
-      title: Live Cloud Web App
-      icon: web
 spec:
-  type: website
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cloudec-backstagepoc-main
+  title: "CloudEC-BackstagePOC-main"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/CloudEC-BackstagePOC-main'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/CloudEC-BackstagePOC-main
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: copilot-enterprise-prompts
+  title: "copilot-enterprise-prompts"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/copilot-enterprise-prompts'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/copilot-enterprise-prompts
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demo-securityscans
+  title: "DEMO-Securityscans"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/DEMO-Securityscans'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/DEMO-Securityscans
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demoqualitygate
+  title: "DemoQualityGate"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/DemoQualityGate'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/DemoQualityGate
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: devops-agent
+  title: "DevOps-Agent"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/DevOps-Agent'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/DevOps-Agent
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: downstreamjob-qg
+  title: "DownStreamJob-QG"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/DownStreamJob-QG'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/DownStreamJob-QG
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: function-sample
+  title: "function-sample"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/function-sample'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/function-sample
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: idp-demo
+  title: "idp-demo"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/idp-demo'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/idp-demo
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: opsagent
+  title: "OpsAgent"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/OpsAgent'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/OpsAgent
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ops_bot
+  title: "Ops_Bot"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/Ops_Bot'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/Ops_Bot
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: policycenter
+  title: "policycenter"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/policycenter'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/policycenter
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: prometheus-poc
+  title: "prometheus-poc"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/prometheus-poc'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/prometheus-poc
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: risk_analaysis
+  title: "Risk_Analaysis"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/Risk_Analaysis'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/Risk_Analaysis
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: risk_analysis_vs_code_extension
+  title: "Risk_Analysis_VS_Code_Extension"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/Risk_Analysis_VS_Code_Extension'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/Risk_Analysis_VS_Code_Extension
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sample
+  title: "Sample"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/Sample'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/Sample
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sast-test-code
+  title: "SAST-Test-code"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/SAST-Test-code'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/SAST-Test-code
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: springboot-app
+  title: "springboot-app"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/springboot-app'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/springboot-app
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: terraform_modules
+  title: "Terraform_modules"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/Terraform_modules'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/Terraform_modules
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: workflow-files
+  title: "Workflow-files"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/Workflow-files'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/Workflow-files
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: yaml-templates
+  title: "Yaml-Templates"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'RAGHAVENDRA-VAM/Yaml-Templates'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/RAGHAVENDRA-VAM/Yaml-Templates
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: claimsflow-portal
+  title: "claimsflow-portal"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'rithvik-2004-cmd/claimsflow-portal'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/rithvik-2004-cmd/claimsflow-portal
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: insurancerag
+  title: "InsuranceRAG"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'rithvik-2004-cmd/InsuranceRAG'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/rithvik-2004-cmd/InsuranceRAG
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: hr-onboarding-backend
+  title: "hr-onboarding-backend"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'Sapireddy555/hr-onboarding-backend'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/Sapireddy555/hr-onboarding-backend
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: hr-onboarding-frontend
+  title: "hr-onboarding-frontend"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'Sapireddy555/hr-onboarding-frontend'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/Sapireddy555/hr-onboarding-frontend
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: vida
+  title: "vida"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'shashanktu/vida'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/shashanktu/vida
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customqg
+  title: "customQG"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'sriharshasure1/customQG'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/sriharshasure1/customQG
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ssure1
+  title: "ssure1"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'sriharshasure1/ssure1'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/sriharshasure1/ssure1
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: approved_services
+  title: "Approved_Services"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'vamsi560/Approved_Services'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/vamsi560/Approved_Services
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: boilerplate
+  title: "boilerplate"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'vamsi560/boilerplate'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/vamsi560/boilerplate
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: maf
+  title: "MAF"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'vamsi560/MAF'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/vamsi560/MAF
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: repo-customqg
+  title: "customQG"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'vanand614/customQG'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/vanand614/customQG
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: vanand
+  title: "vanand"
+  description: "GitHub Repository & CI/CD Pipeline"
+  annotations:
+    github.com/project-slug: 'vanand614/vanand'
+    jira/project-key: 'SCRUM'
+    datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
+    datadoghq.com/graph-token: 'your_graph_token_here'
+  links:
+    - url: https://github.com/vanand614/vanand
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
   lifecycle: production
   owner: platform-engineering
