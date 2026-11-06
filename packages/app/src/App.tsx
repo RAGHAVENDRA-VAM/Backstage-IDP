@@ -1,7 +1,6 @@
 import { createApp } from '@backstage/frontend-defaults';
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import { navModule } from './modules/nav';
-import { homeModule } from './modules/home';
 import githubActionsPlugin from '@backstage-community/plugin-github-actions/alpha';
 import { SignInPage } from '@backstage/core-components';
 import { githubAuthApiRef } from '@backstage/core-plugin-api';
@@ -59,7 +58,6 @@ export default createApp({
     githubReadmeModule,
     catalogPlugin, 
     navModule, 
-    homeModule, 
     dashboardModule,
     aiModule,
     customCatalogTabsModule,
