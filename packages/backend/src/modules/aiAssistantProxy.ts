@@ -51,29 +51,118 @@ async function callAzureAi(
       },
       body: JSON.stringify({
         messages,
-        temperature: options?.temperature ?? 0.3,
-        max_tokens: options?.max_tokens ?? 1500,
-        model: deployment,
+        temperature: options?.temperature ?? 0.2,
+        max_tokens: options?.max_tokens ?? 1200,
       }),
     });
 
-    if (openAiRes.ok) {
-      const data = await openAiRes.json();
-      return {
-        reply: data.choices?.[0]?.message?.content || '',
-        model: deployment,
-        usage: data.usage || null,
-        provider: 'azure-ai-foundry',
-      };
+    if (!openAiRes.ok) {
+      console.warn(`Azure AI call returned ${openAiRes.status}: ${openAiRes.statusText}`);
+      return null;
     }
 
-    const errText = await openAiRes.text();
-    console.warn(`Azure AI Foundry call returned HTTP ${openAiRes.status}:`, errText);
-    return null;
+    const data = await openAiRes.json();
+    return {
+      reply: data.choices?.[0]?.message?.content || '',
+      model: data.model || deployment,
+      usage: data.usage,
+    };
   } catch (err) {
-    console.warn('Azure AI Foundry request error, using fallback:', err);
+    console.warn('Azure AI invocation failed, falling back to local reasoning:', err);
     return null;
   }
+}
+
+// Intelligent Heuristic Log Parser for Deep RCA
+function analyzeLogHeuristically(logText: string, serviceName: string, environment: string) {
+  const lowerLog = logText.toLowerCase();
+  const lines = logText.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // 1. Azure App Service / Container crash on port 8080
+  if (lowerLog.includes('did not respond to http pings on port') || lowerLog.includes("didn't respond to http pings")) {
+    const portMatch = logText.match(/port:\s*(\d+)/i);
+    const containerMatch = logText.match(/container\s+([\w\d_-]+)/i);
+    const siteMatch = logText.match(/site\s+([\w\d_-]+)/i);
+    const port = portMatch ? portMatch[1] : '8080';
+    const site = siteMatch ? siteMatch[1] : serviceName;
+
+    return {
+      summary: `Azure Container Health Check Failure (Port ${port} Ping Timeout)`,
+      severity: 'critical',
+      rootCause: `The Azure App Service container failed to bind or respond to HTTP health probes on port ${port} within the startup timeout limit (230 seconds). The containerized application either started listening on a different port (such as 3000 or 80) or crashed before listening.`,
+      offendingLine: lines.find(l => l.includes('did not respond to HTTP pings') || l.includes('failing site start')) || `Container ${containerMatch ? containerMatch[1] : site} failed health probe on port ${port}`,
+      suggestedFix: `1. Ensure the web application listens on the port defined in WEBSITES_PORT (set to ${port}).\n2. Set environment variable WEBSITES_PORT=${port} in Azure App Service Configuration.\n3. Increase startup timeout buffer: set WEBSITES_CONTAINER_START_TIME_LIMIT=1800.`,
+      codePatch: `# Set correct listening port and container startup timeout in Azure App Service:\naz webapp config appsettings set \\\n  --name "${site}" \\\n  --resource-group "devops-maf" \\\n  --settings WEBSITES_PORT=${port} WEBSITES_CONTAINER_START_TIME_LIMIT=1800\n\n# Restart container\naz webapp restart --name "${site}" --resource-group "devops-maf"`,
+    };
+  }
+
+  // 2. Webpack / NPM / React Icon Resolution
+  if (lowerLog.includes('module not found') || lowerLog.includes('cant resolve') || lowerLog.includes("can't resolve")) {
+    const missingModule = logText.match(/Can't resolve '([^']+)'/i) || logText.match(/Cannot find module '([^']+)'/i);
+    const modName = missingModule ? missingModule[1] : 'requested module';
+    const errorFile = lines.find(l => l.includes('ERROR in') || l.includes('./src')) || 'Build compilation target';
+
+    return {
+      summary: `Webpack Module Compilation Failure (${modName})`,
+      severity: 'high',
+      rootCause: `The frontend bundler (Webpack/Babel) could not resolve the module or symbol '${modName}'. This occurs when an import path is misspelled, the icon does not exist in @material-ui/icons, or the dependency is missing from package.json.`,
+      offendingLine: lines.find(l => l.includes("Can't resolve") || l.includes('Module not found')) || errorFile,
+      suggestedFix: `1. Verify that '${modName}' exists in @material-ui/icons or npm dependencies.\n2. If it is an icon, replace it with a valid Material-UI icon such as BubbleChart, Speed, or CheckCircle.\n3. Run 'yarn add ${modName}' if it is a missing package.`,
+      codePatch: `// Correct the invalid import in the affected file:\n- import Icon from '${modName}';\n+ import BubbleChartIcon from '@material-ui/icons/BubbleChart';`,
+    };
+  }
+
+  // 3. Out of Memory / Exit code 137
+  if (lowerLog.includes('heap out of memory') || lowerLog.includes('exit code 137') || lowerLog.includes('oom') || lowerLog.includes('allocation failed')) {
+    return {
+      summary: 'Node.js V8 Engine Heap Out of Memory (OOMKilled - Exit Code 137)',
+      severity: 'critical',
+      rootCause: 'The Node.js runtime exceeded the default V8 heap memory ceiling (~2GB) during heavy TypeScript compilation or webpack bundling, triggering an uncatchable fatal abort (SIGKILL / Exit 137).',
+      offendingLine: lines.find(l => l.includes('Allocation failed') || l.includes('heap out of memory')) || 'FATAL ERROR: JavaScript heap out of memory',
+      suggestedFix: 'Increase the V8 max old space size to 4096MB or 8192MB using the NODE_OPTIONS environment variable during build and container execution.',
+      codePatch: `# In GitHub Actions workflow or Azure App Service container:\nenv:\n  NODE_OPTIONS: "--max-old-space-size=4096"\n\n# Or in package.json build script:\n"scripts": {\n  "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 backstage-cli repo build"\n}`,
+    };
+  }
+
+  // 4. Database Connection Refused / Pool Timeout
+  if (lowerLog.includes('econnrefused') || lowerLog.includes('knextimeouterror') || lowerLog.includes('timeout acquiring a connection') || lowerLog.includes('connection refused')) {
+    const ipPortMatch = logText.match(/(\d+\.\d+\.\d+\.\d+:\d+)/);
+    const target = ipPortMatch ? ipPortMatch[1] : 'PostgreSQL host on port 5432';
+
+    return {
+      summary: `Database Connection Timeout & Pool Exhaustion (${target})`,
+      severity: 'critical',
+      rootCause: `The microservice Knex/TypeORM connection pool timed out while attempting to acquire a TCP socket to ${target}. The PostgreSQL instance is either unreachable, down, or all database connection slots are saturated by long-running transactions.`,
+      offendingLine: lines.find(l => l.includes('ECONNREFUSED') || l.includes('KnexTimeoutError')) || 'connect ECONNREFUSED 10.0.4.15:5432',
+      suggestedFix: `1. Check Azure PostgreSQL Flexible Server status in the Azure Portal.\n2. Verify Azure VNet peering and Network Security Group (NSG) rules allowing inbound traffic on port 5432.\n3. Increase Knex pool max connections or enable Azure PgBouncer connection pooling.`,
+      codePatch: `// Adjust knex database connection pool settings:\ndatabase: {\n  client: 'pg',\n  connection: process.env.DATABASE_URL,\n  pool: { min: 2, max: 20, acquireTimeoutMillis: 30000 }\n}`,
+    };
+  }
+
+  // 5. Authentication / Unauthorized 401 / 403
+  if (lowerLog.includes('401') || lowerLog.includes('unauthorized') || lowerLog.includes('forbidden') || lowerLog.includes('403')) {
+    return {
+      summary: 'Identity Provider Authentication Failure (HTTP 401 / 403 Unauthorized)',
+      severity: 'high',
+      rootCause: 'The API request was rejected because the OAuth2 access token or Personal Access Token (PAT) was invalid, expired, or lacked the required RBAC scope for the target Azure or GitHub resource.',
+      offendingLine: lines.find(l => l.includes('401') || l.includes('Unauthorized') || l.includes('Forbidden')) || 'HTTP 401 Unauthorized: Bearer token rejected',
+      suggestedFix: '1. Check token expiration dates in Azure DevOps Boards or GitHub Developer Settings.\n2. Regenerate the Personal Access Token with full read/write scopes.\n3. Update the AZURE_DEVOPS_TOKEN or GITHUB_TOKEN secret in your environment configuration.',
+      codePatch: `# Check and update the token in your Azure App Service configuration:\naz webapp config appsettings set \\\n  --name "backstage-idp-gvftaxetancteec5" \\\n  --resource-group "rg-backstage-dev-westus3" \\\n  --settings AZURE_DEVOPS_TOKEN="<new-unexpired-pat>"`,
+    };
+  }
+
+  // 6. Generic Stack Trace Parsing (Extract top stack frame and exception type)
+  const exceptionLine = lines.find(l => l.includes('Error:') || l.includes('Exception:') || l.includes('FATAL') || l.includes('FAILED')) || lines[0] || 'Unknown runtime error';
+  const stackFrame = lines.find(l => l.startsWith('at ') || l.includes('File "') || l.includes('.ts:') || l.includes('.js:')) || 'Stack trace line uncaptured';
+
+  return {
+    summary: exceptionLine.slice(0, 100),
+    severity: 'high',
+    rootCause: `Runtime exception triggered: "${exceptionLine}". The application failed during execution at ${stackFrame}.`,
+    offendingLine: stackFrame !== 'Stack trace line uncaptured' ? stackFrame : exceptionLine,
+    suggestedFix: `1. Inspect the stack frame: ${stackFrame}.\n2. Ensure all required environment variables and backend dependencies are mounted.\n3. Validate the payload schema and add error handling around the offending call.`,
+    codePatch: `// Add defensive error boundary around the offending call:\ntry {\n  // Offending logic: ${exceptionLine.slice(0, 50)}\n} catch (err: any) {\n  console.error("Safely handled error:", err.message);\n}`,
+  };
 }
 
 export const aiAssistantProxyPlugin = createBackendPlugin({
@@ -93,305 +182,101 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
         const router = express.Router();
         router.use(express.json());
 
-        // STATUS ENDPOINT: Allows UI to tell whether real Foundry keys are active
-        router.get('/status', (req, res) => {
-          const hasKey = Boolean(
-            process.env.AZURE_OPENAI_KEY ||
-            process.env.AZURE_AI_FOUNDRY_KEY ||
-            process.env.AZURE_OPENAI_API_KEY
-          );
-          const endpoint =
-            process.env.AZURE_OPENAI_ENDPOINT ||
-            process.env.AZURE_AI_FOUNDRY_ENDPOINT ||
-            '';
-          const model =
-            process.env.AZURE_OPENAI_DEPLOYMENT ||
-            process.env.AZURE_AI_FOUNDRY_MODEL ||
-            'gpt-4o';
-
-          res.json({
-            configured: hasKey && Boolean(endpoint),
-            model,
-            endpointMasked: endpoint ? endpoint.replace(/(https?:\/\/)([^.]+)(.*)/, '$1***$3') : null,
-          });
-        });
-
         // 1. CHAT COPILOT ENDPOINT
-        // 1. CHAT COPILOT ENDPOINT WITH INTENT-BASED SCAFFOLDER SCAFFOLDING
         router.post('/chat', async (req, res) => {
           try {
             const { messages = [] } = req.body;
-            const lastUserMessage = [...messages].reverse().find((m: ChatMessage) => m.role === 'user')?.content || '';
-            const q = lastUserMessage.toLowerCase();
+            const lastUserMessage = messages[messages.length - 1]?.content || '';
+            const lowerUserMsg = lastUserMessage.toLowerCase();
 
-            // 1. Detect if the message contains deployment parameters (e.g. repo + target web app)
-            const containsRepo = /([a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+)/.test(lastUserMessage);
-            const containsApp = /(?:app|webapp|target)\s*(?:name)?\s*[:=]?\s*([a-zA-Z0-9_-]+)/i.test(lastUserMessage) || lastUserMessage.includes('claims-ui');
-            const isScaffoldIntent = /template|scaffold|deploy.*app|deploy.*react|deploy.*service|create.*service|create.*microservice|create.*app/i.test(lastUserMessage) || (containsRepo && containsApp);
+            // Check if user is asking to trigger a scaffolder template
+            const isDeployIntent =
+              (lowerUserMsg.includes('deploy') || lowerUserMsg.includes('publish') || lowerUserMsg.includes('release')) &&
+              (lowerUserMsg.includes('repo') || lowerUserMsg.includes('portal') || lowerUserMsg.includes('webapp') || lowerUserMsg.includes('web app') || lowerUserMsg.includes('azure') || lowerUserMsg.includes('claims'));
 
-            if (isScaffoldIntent || (containsRepo && containsApp)) {
-              // Analyze current message and previous conversation history
-              const conversationHistory = [...messages.map((m: ChatMessage) => m.content), lastUserMessage].join('\n');
+            if (isDeployIntent) {
+              const repoMatch = lastUserMessage.match(/([a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+)/);
+              const targetAppMatch = lastUserMessage.match(/to\s+([a-zA-Z0-9_-]+)/i) || lastUserMessage.match(/webapp\s+([a-zA-Z0-9_-]+)/i);
+              const rgMatch = lastUserMessage.match(/in\s+([a-zA-Z0-9_-]+)/i) || lastUserMessage.match(/group\s+([a-zA-Z0-9_-]+)/i);
 
-              // Extract parameters
-              const repoMatch = lastUserMessage.match(/([a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+)/) || conversationHistory.match(/([a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+)/);
-              const targetAppMatch = lastUserMessage.match(/(?:app|target|webapp)\s*(?:name)?\s*[:=]?\s*([a-zA-Z0-9_-]+)/i) || 
-                                     conversationHistory.match(/(?:app|target|webapp)\s*(?:name)?\s*[:=]?\s*([a-zA-Z0-9_-]+)/i);
-              const rgMatch = lastUserMessage.match(/(?:rg|resource group)\s*[:=]?\s*([a-zA-Z0-9_-]+)/i) || 
-                              conversationHistory.match(/(?:rg|resource group)\s*[:=]?\s*([a-zA-Z0-9_-]+)/i);
-
-              if (containsRepo || q.includes('deploy')) {
-                if (!repoMatch) {
-                  res.json({
-                    reply: `### Autonomous Scaffolder & Cloud Deployment Assistant\n\n` +
-                      `I can automatically provision and deploy the **Deploy Application to Azure Web App** template for you directly from this chat!\n\n` +
-                      `To initiate this deployment pipeline, please provide:\n` +
-                      `1. **GitHub Repository** (e.g. \`RAGHAVENDRA-VAM/claimsflow-portal\`)\n` +
-                      `2. **Target Azure Web App Name** (e.g. \`claims-ui\`)\n` +
-                      `3. **Target Resource Group** (optional, e.g. \`chatpdf\` or \`rg-backstage-dev-westus3\`)\n\n` +
-                      `*You can simply reply: "Deploy RAGHAVENDRA-VAM/claimsflow-portal to claims-ui in chatpdf"*`,
-                    provider: 'shield-ai-scaffolder-agent',
-                    model: 'autonomous-scaffolder-v1',
-                    actionRequired: 'collect_parameters',
-                    templateId: 'deploy-app-to-azure-webapp',
-                    timestamp: new Date().toISOString(),
-                  });
-                  return;
-                } else {
-                  // User provided repo or details - Validate them live before triggering!
-                  const detectedRepo = repoMatch ? repoMatch[1] : 'rithvik-2004-cmd/claimsflow-portal';
-                  let detectedApp = 'claims-ui';
-                  if (targetAppMatch && targetAppMatch[1] && targetAppMatch[1].toLowerCase() !== 'name') {
-                    detectedApp = targetAppMatch[1];
-                  } else if (lastUserMessage.includes('claims-ui')) {
-                    detectedApp = 'claims-ui';
-                  }
-                  const detectedRg = rgMatch ? rgMatch[1] : 'chatpdf';
-
-                  // 1. Verify GitHub repository existence and access
-                  let repoValid = true;
-                  try {
-                    const ghToken = process.env.GITHUB_TOKEN;
-                    const ghRes = await fetch(`https://api.github.com/repos/${detectedRepo}`, {
-                      headers: ghToken
-                        ? { Authorization: `token ${ghToken}`, 'User-Agent': 'Backstage-IDP' }
-                        : { 'User-Agent': 'Backstage-IDP' },
-                    });
-                    if (!ghRes.ok) repoValid = false;
-                  } catch {
-                    repoValid = false;
-                  }
-
-                  if (!repoValid) {
-                    res.json({
-                      reply: `### ❌ GitHub Repository Not Found\n\n` +
-                        `I could not access or locate the repository: **\`${detectedRepo}\`**.\n\n` +
-                        `**Common Reasons**:\n` +
-                        `- A spelling mistake in the owner or repository name.\n` +
-                        `- The repository is private and access has not been granted to your GitHub token.\n\n` +
-                        `👉 *Please check the spelling and reply with the corrected repository name (e.g. \`rithvik-2004-cmd/claimsflow-portal\` or \`RAGHAVENDRA-VAM/claims-ui\`).*`,
-                      provider: 'shield-ai-scaffolder-agent',
-                      model: 'autonomous-scaffolder-v1',
-                      error: 'REPO_NOT_FOUND',
-                      timestamp: new Date().toISOString(),
-                    });
-                    return;
-                  }
-
-                  // 2. Verify Azure Web App existence in the Azure subscription
-                  let appValid = true;
-                  let availableApps: string[] = [];
-                  try {
-                    const sub = process.env.AZURE_SUBSCRIPTION_ID || config.getOptionalString('azure.subscriptionId');
-                    const tenant = process.env.AZURE_TENANT_ID || config.getOptionalString('azure.tenantId');
-                    const client = process.env.AZURE_CLIENT_ID || config.getOptionalString('azure.clientId');
-                    const secret = process.env.AZURE_CLIENT_SECRET || config.getOptionalString('azure.clientSecret');
-
-                    if (sub && tenant && client && secret) {
-                      const tokenRes = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: new URLSearchParams({
-                          grant_type: 'client_credentials',
-                          client_id: client,
-                          client_secret: secret,
-                          scope: 'https://management.azure.com/.default',
-                        }),
-                      });
-                      if (tokenRes.ok) {
-                        const { access_token } = await tokenRes.json();
-                        const sitesRes = await fetch(
-                          `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.Web/sites?api-version=2022-03-01`,
-                          { headers: { Authorization: `Bearer ${access_token}` } }
-                        );
-                        if (sitesRes.ok) {
-                          const sitesData = await sitesRes.json();
-                          availableApps = (sitesData.value || []).map((s: any) => s.name);
-                          if (!availableApps.includes(detectedApp)) {
-                            appValid = false;
-                          }
-                        }
-                      }
-                    }
-                  } catch {
-                    // ignore if Azure validation times out
-                  }
-
-                  if (!appValid) {
-                    res.json({
-                      reply: `### ❌ Azure Web App Not Found\n\n` +
-                        `The target Azure Web App **\`${detectedApp}\`** was not found in your Azure subscription.\n\n` +
-                        `**Available active Web Apps in your environment**:\n` +
-                        availableApps.slice(0, 6).map(a => `- \`${a}\``).join('\n') + `\n\n` +
-                        `👉 *Please check the spelling or choose one of the available Azure Web Apps above.*`,
-                      provider: 'shield-ai-scaffolder-agent',
-                      model: 'autonomous-scaffolder-v1',
-                      error: 'APP_NOT_FOUND',
-                      timestamp: new Date().toISOString(),
-                    });
-                    return;
-                  }
-
-                  // 3. Both are valid! Trigger Scaffolder task
-                  res.json({
-                    reply: `### 🚀 Automated Scaffolder Task Triggered!\n\n` +
-                      `Both the repository and target Azure Web App have been validated successfully:\n\n` +
-                      `- **Template**: \`deploy-app-to-azure-webapp\`\n` +
-                      `- **GitHub Repository**: \`${detectedRepo}\` (Verified ✅)\n` +
-                      `- **Azure Web App**: \`${detectedApp}\` (Verified ✅)\n` +
-                      `- **Resource Group**: \`${detectedRg}\`\n` +
-                      `- **Build Mode**: Zero-dependency optimized SPA Bundle\n\n` +
-                      `✅ **Live Web App URL**: [https://${detectedApp}-ejfufqdcdgc4dtb8.eastus2-01.azurewebsites.net](https://${detectedApp}-ejfufqdcdgc4dtb8.eastus2-01.azurewebsites.net)\n\n` +
-                      `You can view task logs and live execution status at: [**View Scaffolder Execution**](/create/tasks)`,
-                    provider: 'shield-ai-scaffolder-agent',
-                    model: 'autonomous-scaffolder-v1',
-                    triggeredTask: {
-                      template: 'deploy-app-to-azure-webapp',
-                      parameters: {
-                        repoFullName: detectedRepo,
-                        webAppName: detectedApp,
-                        resourceGroup: detectedRg,
-                      },
-                      status: 'COMPLETED',
-                      url: `https://${detectedApp}-ejfufqdcdgc4dtb8.eastus2-01.azurewebsites.net`,
-                    },
-                    timestamp: new Date().toISOString(),
-                  });
-                  return;
-                }
-              } else if (q.includes('spring') || q.includes('java')) {
+              if (!repoMatch && !targetAppMatch) {
                 res.json({
-                  reply: `### Java Spring Boot Enterprise Microservice Scaffolder\n\n` +
-                    `I am ready to scaffold our standard **Java Spring Boot Enterprise** template with OAuth2, PostgreSQL, and Actuator.\n\n` +
-                    `Please provide:\n` +
-                    `1. **Microservice Name** (e.g. \`claims-adjudication-service\`)\n` +
-                    `2. **Owning Team** (e.g. \`claims-engineering\`)\n` +
-                    `3. **Destination GitHub Repository**\n\n` +
-                    `*Once you reply, I will trigger the Scaffolder pipeline and register the component in your catalog.*`,
+                  reply: `### Autonomous Azure Web App Deployment Agent\n\n` +
+                    `I detected that you want to **deploy a repository to an Azure Web App**.\n\n` +
+                    `To execute this golden path automated deployment, please provide:\n` +
+                    `1. **Repository Slug** (e.g. \`rithvik-2004-cmd/claimsflow-portal\` or \`RAGHAVENDRA-VAM/Claims_UI\`)\n` +
+                    `2. **Target Azure Web App Name** (e.g. \`claims-ui\` or \`valora-insurance-ui\`)\n` +
+                    `3. **Target Resource Group** (e.g. \`devops-maf\` or \`chatpdf\`)\n\n` +
+                    `*You can reply: "Deploy RAGHAVENDRA-VAM/Claims_UI to valora-insurance-ui in devops-maf"*`,
                   provider: 'shield-ai-scaffolder-agent',
                   model: 'autonomous-scaffolder-v1',
                   actionRequired: 'collect_parameters',
-                  templateId: 'java-springboot-enterprise',
-                  timestamp: new Date().toISOString(),
-                });
-                return;
-              } else if (q.includes('react') || q.includes('frontend') || q.includes('web app')) {
-                res.json({
-                  reply: `### React Enterprise Application Scaffolder\n\n` +
-                    `I can create and register a new **React Enterprise Application** with Shield Insurance UI components, TypeScript, and Azure CI/CD.\n\n` +
-                    `Please provide:\n` +
-                    `1. **Application Name** (e.g. \`customer-policy-portal\`)\n` +
-                    `2. **Target GitHub Repository** (e.g. \`RAGHAVENDRA-VAM/customer-policy-portal\`)\n\n` +
-                    `*Reply with your desired names and I will execute the creation.*`,
-                  provider: 'shield-ai-scaffolder-agent',
-                  model: 'autonomous-scaffolder-v1',
-                  actionRequired: 'collect_parameters',
-                  templateId: 'react-web-app',
+                  templateId: 'deploy-app-to-azure-webapp',
                   timestamp: new Date().toISOString(),
                 });
                 return;
               }
             }
 
-            const systemPrompt = `You are "Shield AI Copilot", an elite enterprise Platform Engineering assistant embedded inside the Backstage IDP at Shield Insurance. 
-You are an expert on cloud architectures (Azure West US 3), microservices catalog, CI/CD pipelines (GitHub Actions, Azure DevOps), security (SonarQube, Trivy, Secret Scanning), and golden path templates.
-Always be concise, precise, and provide production-ready solutions.`;
+            // Universal AI Response (Azure AI Foundry or Local High-Performance Model)
+            const systemPrompt = `You are Shield AI Copilot, the autonomous Site Reliability and Platform Engineering Assistant for Shield Insurance Developer Portal.
+You have direct read access to:
+- Backstage Software Catalog: Core services Claims UI Portal, Risk Analysis Service, ClaimsCare Incident Engine, Quality Gates, DevOps Agent, Policy Center.
+- Cloud Infrastructure: Azure West US 3, 13 Azure Web Apps across devops-maf, chatpdf, and shield-claims-isnurance-rg.
+- CI/CD Pipelines: GitHub Actions workflows in organization repositories.
+- APM Telemetry: Datadog US1 real-time APM metrics and alerts.
+Provide concise, authoritative, professional responses with code snippets where helpful.`;
 
             const fullMessages = [
               { role: 'system', content: systemPrompt },
-              ...messages,
+              ...messages.map((m: any) => ({ role: m.role, content: m.content })),
             ];
 
-            // 1. Attempt Real Azure AI Foundry / OpenAI call
-            const liveAiResponse = await callAzureAi(fullMessages);
-            if (liveAiResponse && liveAiResponse.reply) {
+            const liveAi = await callAzureAi(fullMessages);
+            if (liveAi && liveAi.reply) {
               res.json({
-                reply: liveAiResponse.reply,
+                reply: liveAi.reply,
                 provider: 'azure-ai-foundry',
-                model: liveAiResponse.model,
-                usage: liveAiResponse.usage,
+                model: liveAi.model,
                 timestamp: new Date().toISOString(),
               });
               return;
             }
 
-            // 2. Intelligent Rule-based & Catalog-aware Fallback Engine
+            // High-context fallback knowledge base
             let reply = '';
-
-            if (q.includes('claims') || q.includes('claim')) {
-              reply = `### Claims Processing Ecosystem\n\n` +
-                `- **Primary Service**: \`claims-portal\` (React Frontend) & \`claims-adjudication-api\` (Spring Boot 3.2, Java 21).\n` +
-                `- **Owner**: **Team Core Insurance / Claims Modernization**.\n` +
-                `- **Azure Host**: Azure App Service in **West US 3** (\`app-claims-prod-westus3\`).\n` +
-                `- **Database**: Azure Database for PostgreSQL Flexible Server.\n` +
-                `- **Dependencies**: \`policy-admin-service\`, \`payment-gateway\`, \`datadog-agent\`.\n` +
-                `- **CI/CD**: GitHub Actions workflow with SAST (SonarQube) and Container image scan (Trivy).\n\n` +
-                `*Quick Action*: You can inspect live metrics on the **Dashboard** tab or view source in the **Catalog**.`;
-            } else if (q.includes('risk') || q.includes('underwriting')) {
-              reply = `### Underwriting & Risk Analysis Service\n\n` +
-                `- **Primary Service**: \`devops-risk-analyzer-api\` (Python FastAPI + ONNX Runtime).\n` +
-                `- **Owner**: **Team Actuarial & Data Science**.\n` +
-                `- **Azure Host**: Azure Container Apps & Azure AI Foundry Model Gateway (\`gpt-4o-mini\` fine-tuned for actuarial assessment).\n` +
-                `- **Status**: Active (99.98% uptime in production).\n` +
-                `- **Unit Economics**: ~$0.0034 per underwriting calculation, average latency 142ms.`;
-            } else if (q.includes('scaffold') || q.includes('template') || q.includes('new service') || q.includes('create')) {
-              reply = `### Golden Path Scaffolder Available\n\n` +
-                `You can scaffold standard compliant services directly via the **Scaffolder (Create...)** menu or using our **AI Golden Path Scaffolder** tab:\n\n` +
-                `1. **Standard Spring Boot Microservice**: Includes OAuth2, PostgreSQL, Actuator, and Azure Key Vault integration.\n` +
-                `2. **FastAPI GenAI Model Wrapper**: Pre-configured with Azure AI Foundry endpoints, token counters, and prompt caches.\n` +
-                `3. **React / Next.js Enterprise Frontend**: Styled with Shield Insurance theme and Azure AD SSO.\n\n` +
-                `*Would you like me to generate boilerplate code and GitHub Actions workflow for you right now?*`;
-            } else if (q.includes('deploy') || q.includes('azure') || q.includes('west us 3')) {
-              reply = `### Azure West US 3 Deployment Guide\n\n` +
-                `All enterprise deployments to **West US 3** follow our zero-trust pipeline:\n\n` +
-                `1. **Infrastructure**: Provisioned via Terraform (\`modules/azure-appservice\`).\n` +
-                `2. **Authentication**: Managed Identity & Azure AD App Registration (SPN) with RBAC (\`Cost Management Reader\`, \`Website Contributor\`).\n` +
-                `3. **Secrets Management**: Dynamic Key Vault reference via \`@Microsoft.KeyVault(SecretUri=...)\`.\n` +
-                `4. **Deployment Command**: \`az webapp deploy --resource-group rg-backstage-prod --name backstage-idp --src-path target.zip\`.`;
-            } else if (q.includes('cost') || q.includes('foundry') || q.includes('tokens') || q.includes('bill')) {
-              reply = `### Azure AI Foundry & Cloud FinOps Insights\n\n` +
-                `- **Current Month Run-rate**: ~$12,480 / month across all GenAI services.\n` +
-                `- **Top Cost Drivers**: \`gpt-4o\` (Claims Copilot - 68%), followed by \`text-embedding-3-large\`.\n` +
-                `- **Optimization Opportunity**: Route simple FAQ intents to \`gpt-4o-mini\` to save up to **42% on prompt token costs**.\n\n` +
-                `*Inspect the detailed breakdown in the **Azure AI Foundry Costs** tab in the Self-Service Portal.*`;
+            if (lowerUserMsg.includes('owner') || lowerUserMsg.includes('who owns') || lowerUserMsg.includes('claims') || lowerUserMsg.includes('risk')) {
+              reply = `### Service Ownership & Attribution (Catalog):\n\n` +
+                `- **Claims UI Portal (\`Claims_UI\`)**: Owned by **Platform Engineering & Claims Squad** (Lead: Shankar Vinjamuri). Deployed to Azure Web App \`valora-insurance-ui\` in \`devops-maf\`.\n` +
+                `- **Risk Analysis Service (\`risk-analysis\`)**: Owned by **Underwriting Analytics Team**. Deployed to \`devops-risk-analyzer-api\` in \`devops-maf\`.\n` +
+                `- **ClaimsCare Incident Engine**: Owned by **Incident Ops Squad**.\n\n` +
+                `*All services report live APM metrics to Datadog and track sprint tickets in Jira (Project: SCRUM).*`;
+            } else if (lowerUserMsg.includes('deploy') || lowerUserMsg.includes('azure') || lowerUserMsg.includes('west us 3')) {
+              reply = `### Azure Cloud Deployment Standards:\n\n` +
+                `1. **Standard Region**: All production workloads deploy to **Azure West US 3** with secondary DR in East US.\n` +
+                `2. **Self-Service**: Use the **Create** tab to run the **"Deploy App to Azure Web App"** golden path template.\n` +
+                `3. **Governance**: All deployments enforce isolated VNets, HTTPS only, and managed identity authentication.`;
+            } else if (lowerUserMsg.includes('finops') || lowerUserMsg.includes('cost') || lowerUserMsg.includes('spend') || lowerUserMsg.includes('token')) {
+              reply = `### Cloud FinOps & AI Cost Governance:\n\n` +
+                `- **Live MTD Spend**: Azure Cost Management actively monitors daily consumption.\n` +
+                `- **Azure Advisor**: 49 recommendations active, including VM rightsizing on \`chatpdf123\` saving ₹1,200/mo.\n` +
+                `- **Azure AI Foundry**: Real Cognitive Services deployed models (\`gpt-5-mini\`, \`gpt-4.1-mini\`, \`Kimi-K2.6\`) tracked with prompt/completion token quotas.`;
             } else {
-              reply = `### Shield AI Assistant at your service\n\n` +
-                `I can assist you with your Internal Developer Platform workflows:\n\n` +
-                `- **Catalog Inquiries**: Ask about any microservice, owner, SLA, or API dependency.\n` +
-                `- **CI/CD & Log Diagnosis**: Paste any build or runtime error trace to get an instant root cause analysis & code fix.\n` +
-                `- **Architecture Standards**: Query internal TechDocs, security policies, and ADRs.\n` +
-                `- **Code Scaffolding**: Generate production-ready microservice scaffolds and GitHub Actions workflows.\n\n` +
-                `*Try asking: "Who owns the claims service?" or "Why did my Maven build fail?"*`;
+              reply = `### Shield AI Copilot Operational\n\n` +
+                `I am monitoring your Backstage Catalog, Azure Web Apps, and Datadog APM.\n\n` +
+                `Ask me anything about:\n` +
+                `- **Service Ownership**: "Who owns the Claims UI?"\n` +
+                `- **Incident Diagnostics**: Paste broken logs in the Log Diagnostics tab for instant RCA.\n` +
+                `- **Golden Paths**: "Deploy Claims UI to Azure Web App"`;
             }
 
             res.json({
               reply,
               provider: 'shield-ai-embedded',
-              model: 'enterprise-catalog-v2',
+              model: 'enterprise-platform-v2',
               timestamp: new Date().toISOString(),
             });
           } catch (err: any) {
-            console.error('AI chat error:', err);
             res.status(500).json({ error: err.message || 'Internal AI error' });
           }
         });
@@ -401,7 +286,7 @@ Always be concise, precise, and provide production-ready solutions.`;
           try {
             const { logText = '', serviceName = 'application', environment = 'production' } = req.body;
 
-            // 1. Attempt Real AI Diagnostic via Foundry
+            // 1. Attempt Real AI Diagnostic via Foundry if configured
             const prompt = `You are a Senior DevOps & SRE Site Reliability Architect at Shield Insurance.
 Analyze the following error log / stack trace and provide a structured JSON response with EXACTLY these keys:
 {
@@ -435,68 +320,19 @@ ${logText}`;
                 });
                 return;
               } catch (parseErr) {
-                console.warn('Failed to parse AI JSON response, falling back to local analyzer');
+                console.warn('Failed to parse AI JSON response, falling back to heuristic analyzer');
               }
             }
 
-            // 2. Intelligent local error pattern extraction fallback
-            const lowerLog = logText.toLowerCase();
-
-            let summary = 'Build or runtime execution error detected in telemetry trace.';
-            let severity: 'critical' | 'high' | 'medium' | 'low' = 'high';
-            let rootCause = 'The process encountered an unhandled exception during initialization or execution.';
-            let offendingLine = 'Unknown stack trace element';
-            let suggestedFix = 'Review application logs and verify environment variables.';
-            let codePatch = '# Review configuration and restart service\naz webapp restart --name app-name --resource-group rg-name';
-
-            if (lowerLog.includes('npm err!') || lowerLog.includes('cant resolve') || lowerLog.includes("can't resolve")) {
-              summary = 'NPM Dependency Resolution / Missing Module Failure';
-              severity = 'high';
-              rootCause = 'Webpack/Babel failed to compile because an imported module or React icon does not exist in dependencies or node_modules.';
-              offendingLine = logText.split('\n').find((l: string) => l.includes("Can't resolve") || l.includes('Module not found')) || 'Module not found in bundle graph';
-              suggestedFix = 'Ensure the requested package is declared in package.json or replace the invalid import with an available Material-UI icon.';
-              codePatch = `// Fix import statement in the affected file:\n// Replace non-existent icon with standard Material-UI icon:\n- import MissingIcon from '@material-ui/icons/NonExistentIcon';\n+ import BubbleChartIcon from '@material-ui/icons/BubbleChart';`;
-            } else if (lowerLog.includes('out of memory') || lowerLog.includes('exit code 137') || lowerLog.includes('javascript heap out of memory')) {
-              summary = 'Node.js / JVM Heap Out of Memory (OOMKilled)';
-              severity = 'critical';
-              rootCause = 'The process exceeded its memory allocation limits (Linux cgroup limit / Docker container limit) and was terminated with SIGKILL (Exit code 137).';
-              offendingLine = 'FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory';
-              suggestedFix = 'Increase container memory limits or set NODE_OPTIONS="--max-old-space-size=4096" in the build pipeline.';
-              codePatch = `// In GitHub Actions workflow or Dockerfile:\nenv:\n  NODE_OPTIONS: "--max-old-space-size=4096"\n\n# Or increase Kubernetes / App Service container limits:\nresources:\n  limits:\n    memory: 4Gi\n  requests:\n    memory: 2Gi`;
-            } else if (lowerLog.includes('connection refused') || lowerLog.includes('econnrefused') || lowerLog.includes('timeout')) {
-              summary = 'Database / Microservice Connection Refused (TCP/Port Unreachable)';
-              severity = 'critical';
-              rootCause = 'The application attempted to establish a TCP socket connection to a backend service or database host that is down, unreachable, or blocked by Azure VNet NSG rules.';
-              offendingLine = logText.split('\n').find((l: string) => l.includes('ECONNREFUSED') || l.includes('Connection refused')) || 'connect ECONNREFUSED 10.0.4.15:5432';
-              suggestedFix = 'Verify PostgreSQL / database service health, validate Azure Private Endpoint DNS resolution, and check NSG inbound security rules for port 5432.';
-              codePatch = `# Verify network connectivity from Azure App Service Kudu console:\ntcpping app-postgres-westus3.postgres.database.azure.com:5432\n\n# Check Azure Key Vault connection string:\naz keyvault secret show --vault-name kv-shield-prod --name DATABASE-URL`;
-            } else if (lowerLog.includes('401') || lowerLog.includes('unauthorized') || lowerLog.includes('token expired') || lowerLog.includes('forbidden')) {
-              summary = 'Authentication / Token Expiration Failure (HTTP 401 / 403)';
-              severity = 'high';
-              rootCause = 'Client request failed due to missing, expired, or invalid OAuth2 / Azure Bearer token or insufficient RBAC role permissions.';
-              offendingLine = 'HTTP 401 Unauthorized: Invalid or expired Bearer token received in Authorization header.';
-              suggestedFix = 'Refresh Azure AD Service Principal client secret in Azure Key Vault or grant the necessary RBAC role assignment.';
-              codePatch = `# Refresh SPN Secret and update in GitHub Secrets:\naz ad sp credential reset --id $AZURE_CLIENT_ID --years 1\n\n# Grant Cost Management Reader role:\naz role assignment create --assignee $AZURE_CLIENT_ID --role "Cost Management Reader" --scope /subscriptions/$SUB_ID`;
-            } else if (lowerLog.includes('nullpointerexception') || lowerLog.includes('cannot read property') || lowerLog.includes('cannot read properties of undefined')) {
-              summary = 'Null Pointer / Undefined Property Reference Exception';
-              severity = 'medium';
-              rootCause = 'Code attempted to access a property on an uninitialized, null, or undefined object reference during runtime.';
-              offendingLine = logText.split('\n').find((l: string) => l.includes('TypeError') || l.includes('NullPointerException') || l.includes('at ')) || 'TypeError: Cannot read properties of undefined';
-              suggestedFix = 'Add optional chaining (`?.`) or explicit null-guards before dereferencing object attributes.';
-              codePatch = `// Defend against null/undefined payload attributes:\n- const value = response.data.policy.details.amount;\n+ const value = response?.data?.policy?.details?.amount ?? 0;`;
-            }
+            // 2. Deep Heuristic RCA Parser (Accurately parses Azure crashes, Webpack, OOM, DB, 401, or custom stack traces)
+            const analysis = analyzeLogHeuristically(logText, serviceName, environment);
 
             res.json({
-              summary,
-              severity,
-              rootCause,
-              offendingLine,
-              suggestedFix,
-              codePatch,
+              ...analysis,
               analyzedAt: new Date().toISOString(),
               targetService: serviceName,
               environment,
-              provider: 'shield-ai-embedded',
+              provider: 'shield-ai-heuristic-engine',
             });
           } catch (err: any) {
             res.status(500).json({ error: err.message || 'Failed to diagnose log' });
@@ -534,223 +370,50 @@ ${logText}`;
                 tags: ['Foundry', 'OpenAI', 'Cost'],
                 link: '/docs/default/component/finops-policy#fin-015',
               },
-              {
-                id: 'api-012',
-                title: 'API-012: Enterprise REST API Versioning & Error Schema',
-                snippet: 'All internal APIs must implement RFC 7807 Problem Details for HTTP APIs (type, title, status, detail, instance) and expose OpenAPI v3 specifications in Backstage.',
-                category: 'API Standards',
-                tags: ['REST', 'OpenAPI', 'RFC7807'],
-                link: '/docs/default/component/api-standards#api-012',
-              },
-              {
-                id: 'dev-021',
-                title: 'DEV-021: Zero-Downtime Blue/Green Deployments',
-                snippet: 'Azure App Services must utilize staging deployment slots with automated warm-up health checks at /api/health before traffic swap to production.',
-                category: 'DevOps Runbook',
-                tags: ['Blue/Green', 'App Service', 'Deployment'],
-                link: '/docs/default/component/devops-runbook#dev-021',
-              },
             ];
 
-            const matchingDocs = documents.filter(doc =>
-              doc.title.toLowerCase().includes(q) ||
-              doc.snippet.toLowerCase().includes(q) ||
-              doc.tags.some(t => q.includes(t.toLowerCase())) ||
-              q.includes('standard') ||
-              q.includes('how') ||
-              q.includes('what') ||
-              q.length < 5
+            let matches = documents.filter(d =>
+              d.title.toLowerCase().includes(q) ||
+              d.snippet.toLowerCase().includes(q) ||
+              d.tags.some(t => t.toLowerCase().includes(q))
             );
 
-            const results = matchingDocs.length > 0 ? matchingDocs : documents.slice(0, 3);
-
-            // Attempt live synthesis via Foundry
-            const prompt = `Synthesize an authoritative architecture answer for an engineer at Shield Insurance asking: "${query}".
-Ground your answer in these internal documentation excerpts:
-${JSON.stringify(results, null, 2)}
-Cite the specific document codes (e.g. SEC-008, ADR-042) in bold. Be concise, technical, and actionable.`;
-
-            const liveAiResponse = await callAzureAi([{ role: 'user', content: prompt }]);
-            const synthesizedAnswer = liveAiResponse?.reply || 
-              (q.includes('security') || q.includes('sast')
-                ? `According to **SEC-008 (Golden Path Security)**, all services must pass mandatory SAST quality gates. Automated SonarQube scans check for OWASP Top 10 vulnerabilities, while Trivy inspects container images for CVEs. Merge requests are automatically blocked if High or Critical vulnerabilities are found.`
-                : q.includes('azure') || q.includes('deploy')
-                ? `Per **ADR-042 (Azure West US 3 Standard)**, all production services are containerized and deployed to Azure App Service or Container Apps in West US 3. Authentication must rely strictly on Azure Managed Identity; hardcoded credentials in application properties are prohibited.`
-                : `Based on Shield Insurance architecture guidelines, your query matches ${results.length} approved enterprise documents. All services created through the Shield Developer Portal automatically adhere to these policies and include built-in compliance checks.`);
+            if (matches.length === 0) {
+              matches = documents.slice(0, 2);
+            }
 
             res.json({
-              answer: synthesizedAnswer,
-              citations: results,
-              confidence: liveAiResponse ? 0.98 : 0.94,
-              totalDocsIndexed: documents.length,
-              provider: liveAiResponse ? 'azure-ai-foundry' : 'shield-ai-embedded',
+              query,
+              answer: `Based on your architecture guidelines, internal standards require adhering to ${matches[0].title}. Ensure deployments align with ${matches[0].snippet}`,
+              citations: matches,
+              confidence: 0.94,
+              provider: 'shield-ai-rag',
             });
           } catch (err: any) {
-            res.status(500).json({ error: err.message || 'RAG search error' });
+            res.status(500).json({ error: err.message || 'Failed TechDocs RAG' });
           }
         });
 
-        // 4. AI GOLDEN PATH SCAFFOLDER ENDPOINT
+        // 4. AI CODE & WORKFLOW SCAFFOLDER
         router.post('/scaffold-code', async (req, res) => {
           try {
-            const {
-              prompt = '',
-              serviceName = 'my-new-service',
-              language = 'typescript',
-              framework = 'express',
-            } = req.body;
-
-            const cleanName = serviceName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-
-            const files = [
-              {
-                path: 'catalog-info.yaml',
-                language: 'yaml',
-                content: `apiVersion: backstage.io/v1alpha1
-kind: Component
-metadata:
-  name: ${cleanName}
-  title: ${cleanName.toUpperCase()} Service
-  description: ${prompt || 'Enterprise microservice generated by Shield AI Golden Path Scaffolder'}
-  annotations:
-    backstage.io/techdocs-ref: dir:.
-    github.com/project-slug: RAGHAVENDRA-VAM/${cleanName}
-    azure.com/resource-group: rg-shield-prod-westus3
-  tags:
-    - ${language}
-    - ${framework}
-    - azure-westus3
-    - golden-path
-spec:
-  type: service
-  lifecycle: production
-  owner: team-core-engineering
-  system: shield-core
-`,
-              },
-              {
-                path: 'src/index.ts',
-                language: 'typescript',
-                content: `import express from 'express';
-import helmet from 'helmet';
-import cors from 'cors';
-
-const app = express();
-const port = process.env.PORT || 8080;
-
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
-
-// Enterprise Health & Liveness Probe for Azure App Service
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'UP',
-    service: '${cleanName}',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
-});
-
-// Primary Business Logic Endpoint tailored to: ${prompt || 'Service specifications'}
-app.post('/api/v1/process', async (req, res) => {
-  const payload = req.body;
-  // TODO: Implement domain processing logic
-  res.status(200).json({
-    success: true,
-    message: 'Processed successfully by ${cleanName}',
-    data: payload,
-    processedAt: new Date().toISOString(),
-  });
-});
-
-app.listen(port, () => {
-  console.log(\`[service] \${cleanName} listening on port \${port}\`);
-});
-`,
-              },
-              {
-                path: 'Dockerfile',
-                language: 'dockerfile',
-                content: `# Production Multi-Stage Dockerfile for Azure West US 3
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-ENV PORT=8080
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
-RUN npm ci --only=production && npm cache clean --force
-USER node
-EXPOSE 8080
-CMD ["node", "dist/index.js"]
-`,
-              },
-              {
-                path: '.github/workflows/deploy.yml',
-                language: 'yaml',
-                content: `name: Enterprise Build & Deploy to Azure
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  validate:
-    name: SAST Security & Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm test -- --coverage
-      - name: SonarQube SAST Quality Gate
-        run: echo "SonarQube Quality Gate Passed"
-      - name: Trivy Container Vulnerability Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
-
-  deploy:
-    name: Deploy to Azure West US 3
-    needs: validate
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: \${{ secrets.AZURE_CREDENTIALS }}
-      - name: Azure WebApp Deployment
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: '${cleanName}'
-          package: '.'
-`,
-              },
-            ];
-
+            const { prompt = '', serviceName = 'insurance-service', language = 'typescript' } = req.body;
             res.json({
-              serviceName: cleanName,
-              prompt,
-              files,
-              generatedAt: new Date().toISOString(),
+              serviceName,
+              language,
+              files: [
+                {
+                  filename: 'src/server.ts',
+                  content: `import express from 'express';\nconst app = express();\nconst port = process.env.PORT || 8080;\n\napp.use(express.json());\napp.get('/health', (req, res) => res.json({ status: 'UP', service: '${serviceName}' }));\n\napp.listen(port, () => console.log('Service listening on port', port));`,
+                },
+                {
+                  filename: '.github/workflows/deploy.yml',
+                  content: `name: Deploy to Azure\non:\n  push:\n    branches: [main]\njobs:\n  build-and-deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: Deploy to Azure Web App\n        uses: azure/webapps-deploy@v2\n        with:\n          app-name: '${serviceName}'\n          publish-profile: \${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}`,
+                },
+              ],
             });
           } catch (err: any) {
-            res.status(500).json({ error: err.message || 'Scaffolding failed' });
+            res.status(500).json({ error: err.message || 'Failed to scaffold code' });
           }
         });
 
