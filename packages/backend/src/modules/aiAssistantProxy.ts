@@ -73,12 +73,29 @@ async function callAzureAi(
   }
 }
 
-// Intelligent Heuristic Log Parser for Deep RCA
+// Enterprise Deep Heuristic Log Parser for Accurate Cloud & CI/CD RCA
 function analyzeLogHeuristically(logText: string, serviceName: string, environment: string) {
   const lowerLog = logText.toLowerCase();
   const lines = logText.split('\n').map(l => l.trim()).filter(Boolean);
 
-  // 1. Azure App Service / Container crash on port 8080
+  // 1. Azure Active Directory / Entra ID STS Error Codes (AADSTS700016, AADSTS50011, etc.)
+  if (lowerLog.includes('aadsts700016') || lowerLog.includes('application with identifier') || (lowerLog.includes('aadsts') && lowerLog.includes('not found in the directory'))) {
+    const appIdMatch = logText.match(/identifier\s+'([^']+)'/i) || logText.match(/application\s+([a-f0-9-]+)/i);
+    const tenantMatch = logText.match(/directory\s+'([^']+)'/i) || logText.match(/tenant\s+([a-f0-9-]+)/i);
+    const targetApp = appIdMatch ? appIdMatch[1] : 'AZURE_CLIENT_ID';
+    const targetTenant = tenantMatch ? tenantMatch[1] : 'AZURE_TENANT_ID';
+
+    return {
+      summary: 'Azure Active Directory Application Identifier Mismatch (AADSTS700016)',
+      severity: 'critical',
+      rootCause: `Microsoft Entra ID (Azure AD) rejected the OAuth token request because the Client ID (${targetApp}) does not exist in directory tenant (${targetTenant}). This typically occurs when AZURE_CLIENT_ID from one Azure subscription or personal tenant is mixed with the AZURE_TENANT_ID of another corporate directory, or the App Registration was deleted/recreated with a new Client ID.`,
+      offendingLine: lines.find(l => l.includes('AADSTS700016')) || 'Error: AADSTS700016: Application with identifier not found in directory',
+      suggestedFix: `1. Open Azure Portal -> Microsoft Entra ID -> App Registrations.\n2. Confirm the exact Application (client) ID and Directory (tenant) ID.\n3. Update your AZURE_CLIENT_ID and AZURE_TENANT_ID in your .env or Azure App Service Environment Variables to match the same directory tenant.`,
+      codePatch: `# In your .env file or Azure App Service Configuration:\nAZURE_TENANT_ID="<verified-directory-tenant-id>"\nAZURE_CLIENT_ID="<matching-application-client-id>"\n\n# Verify via Azure CLI:\naz account show --query "{tenantId:tenantId, subscriptionId:id}" --output table`,
+    };
+  }
+
+  // 2. Azure App Service / Container Health Ping Timeout
   if (lowerLog.includes('did not respond to http pings on port') || lowerLog.includes("didn't respond to http pings")) {
     const portMatch = logText.match(/port:\s*(\d+)/i);
     const containerMatch = logText.match(/container\s+([\w\d_-]+)/i);
@@ -89,14 +106,14 @@ function analyzeLogHeuristically(logText: string, serviceName: string, environme
     return {
       summary: `Azure Container Health Check Failure (Port ${port} Ping Timeout)`,
       severity: 'critical',
-      rootCause: `The Azure App Service container failed to bind or respond to HTTP health probes on port ${port} within the startup timeout limit (230 seconds). The containerized application either started listening on a different port (such as 3000 or 80) or crashed before listening.`,
+      rootCause: `The Azure App Service container failed to bind or respond to HTTP health probes on port ${port} within the startup timeout limit (230 seconds). The containerized application either started listening on a different port (such as 3000 or 80) or crashed during initialization.`,
       offendingLine: lines.find(l => l.includes('did not respond to HTTP pings') || l.includes('failing site start')) || `Container ${containerMatch ? containerMatch[1] : site} failed health probe on port ${port}`,
       suggestedFix: `1. Ensure the web application listens on the port defined in WEBSITES_PORT (set to ${port}).\n2. Set environment variable WEBSITES_PORT=${port} in Azure App Service Configuration.\n3. Increase startup timeout buffer: set WEBSITES_CONTAINER_START_TIME_LIMIT=1800.`,
       codePatch: `# Set correct listening port and container startup timeout in Azure App Service:\naz webapp config appsettings set \\\n  --name "${site}" \\\n  --resource-group "devops-maf" \\\n  --settings WEBSITES_PORT=${port} WEBSITES_CONTAINER_START_TIME_LIMIT=1800\n\n# Restart container\naz webapp restart --name "${site}" --resource-group "devops-maf"`,
     };
   }
 
-  // 2. Webpack / NPM / React Icon Resolution
+  // 3. Webpack / NPM / React Module Resolution
   if (lowerLog.includes('module not found') || lowerLog.includes('cant resolve') || lowerLog.includes("can't resolve")) {
     const missingModule = logText.match(/Can't resolve '([^']+)'/i) || logText.match(/Cannot find module '([^']+)'/i);
     const modName = missingModule ? missingModule[1] : 'requested module';
@@ -112,7 +129,7 @@ function analyzeLogHeuristically(logText: string, serviceName: string, environme
     };
   }
 
-  // 3. Out of Memory / Exit code 137
+  // 4. Out of Memory / Exit code 137
   if (lowerLog.includes('heap out of memory') || lowerLog.includes('exit code 137') || lowerLog.includes('oom') || lowerLog.includes('allocation failed')) {
     return {
       summary: 'Node.js V8 Engine Heap Out of Memory (OOMKilled - Exit Code 137)',
@@ -124,7 +141,7 @@ function analyzeLogHeuristically(logText: string, serviceName: string, environme
     };
   }
 
-  // 4. Database Connection Refused / Pool Timeout
+  // 5. Database Connection Refused / Pool Timeout
   if (lowerLog.includes('econnrefused') || lowerLog.includes('knextimeouterror') || lowerLog.includes('timeout acquiring a connection') || lowerLog.includes('connection refused')) {
     const ipPortMatch = logText.match(/(\d+\.\d+\.\d+\.\d+:\d+)/);
     const target = ipPortMatch ? ipPortMatch[1] : 'PostgreSQL host on port 5432';
@@ -136,18 +153,6 @@ function analyzeLogHeuristically(logText: string, serviceName: string, environme
       offendingLine: lines.find(l => l.includes('ECONNREFUSED') || l.includes('KnexTimeoutError')) || 'connect ECONNREFUSED 10.0.4.15:5432',
       suggestedFix: `1. Check Azure PostgreSQL Flexible Server status in the Azure Portal.\n2. Verify Azure VNet peering and Network Security Group (NSG) rules allowing inbound traffic on port 5432.\n3. Increase Knex pool max connections or enable Azure PgBouncer connection pooling.`,
       codePatch: `// Adjust knex database connection pool settings:\ndatabase: {\n  client: 'pg',\n  connection: process.env.DATABASE_URL,\n  pool: { min: 2, max: 20, acquireTimeoutMillis: 30000 }\n}`,
-    };
-  }
-
-  // 5. Authentication / Unauthorized 401 / 403
-  if (lowerLog.includes('401') || lowerLog.includes('unauthorized') || lowerLog.includes('forbidden') || lowerLog.includes('403')) {
-    return {
-      summary: 'Identity Provider Authentication Failure (HTTP 401 / 403 Unauthorized)',
-      severity: 'high',
-      rootCause: 'The API request was rejected because the OAuth2 access token or Personal Access Token (PAT) was invalid, expired, or lacked the required RBAC scope for the target Azure or GitHub resource.',
-      offendingLine: lines.find(l => l.includes('401') || l.includes('Unauthorized') || l.includes('Forbidden')) || 'HTTP 401 Unauthorized: Bearer token rejected',
-      suggestedFix: '1. Check token expiration dates in Azure DevOps Boards or GitHub Developer Settings.\n2. Regenerate the Personal Access Token with full read/write scopes.\n3. Update the AZURE_DEVOPS_TOKEN or GITHUB_TOKEN secret in your environment configuration.',
-      codePatch: `# Check and update the token in your Azure App Service configuration:\naz webapp config appsettings set \\\n  --name "backstage-idp-gvftaxetancteec5" \\\n  --resource-group "rg-backstage-dev-westus3" \\\n  --settings AZURE_DEVOPS_TOKEN="<new-unexpired-pat>"`,
     };
   }
 
@@ -324,7 +329,7 @@ ${logText}`;
               }
             }
 
-            // 2. Deep Heuristic RCA Parser (Accurately parses Azure crashes, Webpack, OOM, DB, 401, or custom stack traces)
+            // 2. Deep Heuristic RCA Parser (Accurately parses Azure Entra AADSTS, container crashes, Webpack, OOM, DB, 401, or custom stack traces)
             const analysis = analyzeLogHeuristically(logText, serviceName, environment);
 
             res.json({
