@@ -138,7 +138,7 @@ export const ArchitectureGovernanceView: React.FC = () => {
                 98.6%
               </Typography>
               <Typography variant="caption" style={{ color: '#059669', fontWeight: 600 }}>
-                ✓ Enterprise Standards Met
+                Enterprise Standards Met
               </Typography>
             </CardContent>
           </Card>

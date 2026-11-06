@@ -1621,37 +1621,37 @@ export const IntegrationsDashboardPage = () => {
             />
             <Tab
               icon={<PlayCircleFilledWhiteIcon style={{ color: '#059669' }} />}
-              label="🚀 Automation (Golden Paths)"
+              label="Automation & Golden Paths"
               className={classes.tabLabel}
             />
             <Tab
               icon={<TimelineIcon style={{ color: '#7c3aed' }} />}
-              label="📊 Observability (Datadog)"
+              label="Observability & Telemetry"
               className={classes.tabLabel}
             />
             <Tab
               icon={<HealingIcon style={{ color: '#0284c7' }} />}
-              label="🛡️ SRE & Incident Health"
+              label="Site Reliability & Health"
               className={classes.tabLabel}
             />
             <Tab
               icon={<CloudQueueIcon style={{ color: '#0078d4' }} />}
-              label="☁️ Cloud Native (Azure)"
+              label="Cloud Native Infrastructure"
               className={classes.tabLabel}
             />
             <Tab
               icon={<SecurityIcon style={{ color: '#059669' }} />}
-              label="🔒 DevSecOps & Security"
+              label="DevSecOps & Compliance"
               className={classes.tabLabel}
             />
             <Tab
               icon={<BubbleChartIcon style={{ color: '#ec4899' }} />}
-              label="💰 FinOps & AI Governance"
+              label="FinOps & AI Governance"
               className={classes.tabLabel}
             />
             <Tab
               icon={<MenuBookIcon style={{ color: '#0f766e' }} />}
-              label="📐 Architecture & Governance"
+              label="Design & Architecture Standards"
               className={classes.tabLabel}
             />
             {role !== 'finops' && (
@@ -1942,25 +1942,25 @@ export const IntegrationsDashboardPage = () => {
           </Box>
         )}
 
-        {/* TAB 1: 🚀 AUTOMATION (GOLDEN PATHS) */}
+        {/* TAB 1: AUTOMATION & GOLDEN PATHS */}
         {selectedMainTab === 1 && <AutomationGoldenPathsView />}
 
-        {/* TAB 2: 📊 OBSERVABILITY (DATADOG) */}
+        {/* TAB 2: OBSERVABILITY & TELEMETRY */}
         {selectedMainTab === 2 && <DatadogLiveDashboardView />}
 
-        {/* TAB 3: 🛡️ SRE & INCIDENT HEALTH */}
+        {/* TAB 3: SITE RELIABILITY & HEALTH */}
         {selectedMainTab === 3 && <SreHealthView />}
 
-        {/* TAB 4: ☁️ CLOUD NATIVE (AZURE ARCHITECTURE) */}
+        {/* TAB 4: CLOUD NATIVE INFRASTRUCTURE */}
         {selectedMainTab === 4 && <AzureTabContent isStandalone={true} />}
 
-        {/* TAB 5: 🔒 DEVSECOPS & SECURITY */}
+        {/* TAB 5: DEVSECOPS & COMPLIANCE */}
         {selectedMainTab === 5 && <DevSecOpsView />}
 
-        {/* TAB 6: 💰 FINOPS & AI GOVERNANCE */}
+        {/* TAB 6: FINOPS & AI GOVERNANCE */}
         {selectedMainTab === 6 && <AzureAiFoundryDashboardView />}
 
-        {/* TAB 7: 📐 ARCHITECTURE & GOVERNANCE */}
+        {/* TAB 7: DESIGN & ARCHITECTURE STANDARDS */}
         {selectedMainTab === 7 && <ArchitectureGovernanceView />}
 
         {/* TAB 8: JIRA AGILE BACKLOG */}

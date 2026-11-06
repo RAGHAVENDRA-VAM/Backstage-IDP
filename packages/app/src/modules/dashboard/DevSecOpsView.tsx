@@ -130,7 +130,7 @@ export const DevSecOpsView: React.FC = () => {
                 98.4%
               </Typography>
               <Typography variant="caption" style={{ color: '#10b981', fontWeight: 600 }}>
-                ✓ SOC2 & ISO-27001 Ready
+                SOC2 & ISO-27001 Ready
               </Typography>
             </CardContent>
           </Card>

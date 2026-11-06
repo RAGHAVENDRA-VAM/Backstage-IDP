@@ -150,7 +150,7 @@ export const SreHealthView: React.FC = () => {
                 99.98%
               </Typography>
               <Typography variant="caption" style={{ color: '#10b981', fontWeight: 600 }}>
-                ✓ Exceeding 99.90% SLA Target
+                Exceeding 99.90% SLA Target
               </Typography>
             </CardContent>
           </Card>
