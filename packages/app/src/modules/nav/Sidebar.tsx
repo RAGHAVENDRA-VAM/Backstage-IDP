@@ -34,6 +34,7 @@ export const SidebarContent = NavContentBlueprint.make({
       nav.take('page:catalog-import'); // Excluded from sidebar ("Register existing component")
       nav.take('page:app-visualizer'); // Excluded from sidebar
       nav.take('page:home'); // Excluded - redundant with Dashboard and Catalog
+      nav.take('page:techdocs'); // Excluded - kept lean and focused on core capabilities
 
       return (
         <>
