@@ -33,6 +33,7 @@ export const SidebarContent = NavContentBlueprint.make({
       nav.take('page:catalog-graph'); // Excluded from sidebar
       nav.take('page:catalog-import'); // Excluded from sidebar ("Register existing component")
       nav.take('page:app-visualizer'); // Excluded from sidebar
+      nav.take('page:home'); // Excluded - redundant with Dashboard and Catalog
 
       return (
         <>
@@ -43,11 +44,10 @@ export const SidebarContent = NavContentBlueprint.make({
             </SidebarGroup>
             <SidebarDivider />
             <SidebarGroup label="Menu" icon={<MenuIcon />}>
-              {nav.take('page:home')}
-              {nav.take('page:dashboard')}
-              {nav.take('page:shield-ai')}
               {role !== 'finops' && nav.take('page:catalog')}
               {role !== 'finops' && nav.take('page:scaffolder')}
+              {nav.take('page:dashboard')}
+              {nav.take('page:shield-ai')}
               <SidebarDivider />
               <SidebarScrollWrapper>
                 {nav.rest({ sortBy: 'title' })}
