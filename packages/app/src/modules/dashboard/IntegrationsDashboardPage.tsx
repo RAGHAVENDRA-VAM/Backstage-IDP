@@ -51,9 +51,16 @@ import useAsync from 'react-use/lib/useAsync';
 import { DatadogLogsCard } from '../../components/DatadogLogsCard';
 import { AzureTabContent } from '../azure/AzureTabContent';
 import { AzureAiFoundryDashboardView } from '../azure/AzureAiFoundryDashboardView';
+import { AutomationGoldenPathsView } from './AutomationGoldenPathsView';
+import { SreHealthView } from './SreHealthView';
+import { DevSecOpsView } from './DevSecOpsView';
+import { ArchitectureGovernanceView } from './ArchitectureGovernanceView';
 import BubbleChartIcon from '@material-ui/icons/BubbleChart';
 import SupervisorAccountIcon from '@material-ui/icons/SupervisorAccount';
 import AttachMoneyIcon from '@material-ui/icons/AttachMoney';
+import HealingIcon from '@material-ui/icons/Healing';
+import MenuBookIcon from '@material-ui/icons/MenuBook';
+import PlayCircleFilledWhiteIcon from '@material-ui/icons/PlayCircleFilledWhite';
 import { useUserRole } from '../RoleContext';
 
 const useStyles = makeStyles(theme => ({
@@ -1596,7 +1603,7 @@ export const IntegrationsDashboardPage = () => {
         </Box>
       </Box>
 
-      {/* Main Tabbed Navigation Inside Dashboard */}
+      {/* Main Tabbed Navigation Inside Dashboard - Enterprise Platform Engineering Suite */}
       <Card className={classes.mainTabsCard}>
         <Box className={classes.tabHeader}>
           <Tabs
@@ -1604,44 +1611,60 @@ export const IntegrationsDashboardPage = () => {
             onChange={(_, val) => setSelectedMainTab(val)}
             indicatorColor="primary"
             textColor="primary"
+            variant="scrollable"
+            scrollButtons="auto"
           >
             <Tab
               icon={<LayersIcon />}
-              label="All Integrations Overview"
+              label="Overview"
+              className={classes.tabLabel}
+            />
+            <Tab
+              icon={<PlayCircleFilledWhiteIcon style={{ color: '#059669' }} />}
+              label="🚀 Automation (Golden Paths)"
+              className={classes.tabLabel}
+            />
+            <Tab
+              icon={<TimelineIcon style={{ color: '#7c3aed' }} />}
+              label="📊 Observability (Datadog)"
+              className={classes.tabLabel}
+            />
+            <Tab
+              icon={<HealingIcon style={{ color: '#0284c7' }} />}
+              label="🛡️ SRE & Incident Health"
+              className={classes.tabLabel}
+            />
+            <Tab
+              icon={<CloudQueueIcon style={{ color: '#0078d4' }} />}
+              label="☁️ Cloud Native (Azure)"
+              className={classes.tabLabel}
+            />
+            <Tab
+              icon={<SecurityIcon style={{ color: '#059669' }} />}
+              label="🔒 DevSecOps & Security"
+              className={classes.tabLabel}
+            />
+            <Tab
+              icon={<BubbleChartIcon style={{ color: '#ec4899' }} />}
+              label="💰 FinOps & AI Governance"
+              className={classes.tabLabel}
+            />
+            <Tab
+              icon={<MenuBookIcon style={{ color: '#0f766e' }} />}
+              label="📐 Architecture & Governance"
               className={classes.tabLabel}
             />
             {role !== 'finops' && (
               <Tab
                 icon={<CheckCircleIcon style={{ color: '#2563eb' }} />}
-                label="Jira Dashboard & Tickets"
+                label="Jira Agile Backlog"
                 className={classes.tabLabel}
               />
             )}
             {role !== 'finops' && (
               <Tab
                 icon={<GitHubIcon />}
-                label={role === 'developer' ? 'My Repositories & Workflows' : 'GitHub Repos & Workflows'}
-                className={classes.tabLabel}
-              />
-            )}
-            {role !== 'developer' && (
-              <Tab
-                icon={<CloudQueueIcon style={{ color: '#0078d4' }} />}
-                label="Microsoft Azure Architecture"
-                className={classes.tabLabel}
-              />
-            )}
-            {role === 'platform-engineer' && (
-              <Tab
-                icon={<TimelineIcon style={{ color: '#7c3aed' }} />}
-                label="Datadog Observability"
-                className={classes.tabLabel}
-              />
-            )}
-            {role !== 'developer' && (
-              <Tab
-                icon={<BubbleChartIcon style={{ color: '#ec4899' }} />}
-                label="Azure AI Foundry & GenAI Cost"
+                label="GitHub CI/CD"
                 className={classes.tabLabel}
               />
             )}
@@ -1665,7 +1688,7 @@ export const IntegrationsDashboardPage = () => {
                     <Button
                       size="small"
                       color="primary"
-                      onClick={() => setSelectedMainTab(role === 'finops' ? 0 : 1)}
+                      onClick={() => setSelectedMainTab(8)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
                       View Tickets Tab →
@@ -1685,7 +1708,7 @@ export const IntegrationsDashboardPage = () => {
                     <Button
                       size="small"
                       color="primary"
-                      onClick={() => setSelectedMainTab(role === 'finops' ? 0 : 2)}
+                      onClick={() => setSelectedMainTab(9)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
                       View GitHub Tab →
@@ -1705,7 +1728,7 @@ export const IntegrationsDashboardPage = () => {
                     <Button
                       size="small"
                       color="primary"
-                      onClick={() => setSelectedMainTab(4)}
+                      onClick={() => setSelectedMainTab(2)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
                       View Datadog Tab →
@@ -1725,7 +1748,7 @@ export const IntegrationsDashboardPage = () => {
                     <Button
                       size="small"
                       color="primary"
-                      onClick={() => setSelectedMainTab(5)}
+                      onClick={() => setSelectedMainTab(6)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
                       View AI Cost Tab →
@@ -1778,7 +1801,7 @@ export const IntegrationsDashboardPage = () => {
                         size="small"
                         variant="contained"
                         color="primary"
-                        onClick={() => setSelectedMainTab(1)}
+                        onClick={() => setSelectedMainTab(8)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
                         Open Jira Dashboard
@@ -1810,7 +1833,7 @@ export const IntegrationsDashboardPage = () => {
                         size="small"
                         variant="contained"
                         color="primary"
-                        onClick={() => setSelectedMainTab(2)}
+                        onClick={() => setSelectedMainTab(9)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
                         Open GitHub Dashboard
@@ -1842,7 +1865,7 @@ export const IntegrationsDashboardPage = () => {
                         size="small"
                         variant="contained"
                         color="primary"
-                        onClick={() => setSelectedMainTab(4)}
+                        onClick={() => setSelectedMainTab(2)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
                         Open Datadog Canvas
@@ -1874,7 +1897,7 @@ export const IntegrationsDashboardPage = () => {
                         size="small"
                         variant="contained"
                         color="primary"
-                        onClick={() => setSelectedMainTab(5)}
+                        onClick={() => setSelectedMainTab(6)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
                         Open AI Dashboard
@@ -1919,20 +1942,32 @@ export const IntegrationsDashboardPage = () => {
           </Box>
         )}
 
-        {/* TAB 1: JIRA DASHBOARD */}
-        {selectedMainTab === 1 && <JiraLiveDashboardView />}
+        {/* TAB 1: 🚀 AUTOMATION (GOLDEN PATHS) */}
+        {selectedMainTab === 1 && <AutomationGoldenPathsView />}
 
-        {/* TAB 2: GITHUB DASHBOARD */}
-        {selectedMainTab === 2 && <GitHubLiveDashboardView />}
+        {/* TAB 2: 📊 OBSERVABILITY (DATADOG) */}
+        {selectedMainTab === 2 && <DatadogLiveDashboardView />}
 
-        {/* TAB 3: AZURE DASHBOARD */}
-        {selectedMainTab === 3 && <AzureTabContent isStandalone={true} />}
+        {/* TAB 3: 🛡️ SRE & INCIDENT HEALTH */}
+        {selectedMainTab === 3 && <SreHealthView />}
 
-        {/* TAB 4: DATADOG DASHBOARD */}
-        {selectedMainTab === 4 && <DatadogLiveDashboardView />}
+        {/* TAB 4: ☁️ CLOUD NATIVE (AZURE ARCHITECTURE) */}
+        {selectedMainTab === 4 && <AzureTabContent isStandalone={true} />}
 
-        {/* TAB 5: AZURE AI FOUNDRY DASHBOARD */}
-        {selectedMainTab === 5 && <AzureAiFoundryDashboardView />}
+        {/* TAB 5: 🔒 DEVSECOPS & SECURITY */}
+        {selectedMainTab === 5 && <DevSecOpsView />}
+
+        {/* TAB 6: 💰 FINOPS & AI GOVERNANCE */}
+        {selectedMainTab === 6 && <AzureAiFoundryDashboardView />}
+
+        {/* TAB 7: 📐 ARCHITECTURE & GOVERNANCE */}
+        {selectedMainTab === 7 && <ArchitectureGovernanceView />}
+
+        {/* TAB 8: JIRA AGILE BACKLOG */}
+        {selectedMainTab === 8 && <JiraLiveDashboardView />}
+
+        {/* TAB 9: GITHUB CI/CD */}
+        {selectedMainTab === 9 && <GitHubLiveDashboardView />}
       </Card>
     </Container>
   );
