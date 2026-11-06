@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useApi, identityApiRef } from '@backstage/core-plugin-api';
 
 export type UserRole = 'platform-engineer' | 'developer' | 'finops';
 
@@ -18,7 +19,7 @@ export const ROLES: Record<UserRole, RoleInfo> = {
     badge: 'Admin Access',
     color: '#059669',
     description: 'Full enterprise IDP control across all 50 repositories, infrastructure provisioning, pipelines, Datadog observability, and golden path scaffolding.',
-    allowedTabs: ['overview', 'jira', 'github', 'azure', 'datadog', 'ai-cost', 'scaffolder', 'catalog', 'techdocs'],
+    allowedTabs: ['overview', 'automation', 'observability', 'sre', 'cloud-native', 'security', 'finops', 'governance', 'jira', 'github', 'azure', 'datadog', 'ai-cost', 'scaffolder', 'catalog', 'techdocs'],
   },
   developer: {
     id: 'developer',
@@ -26,7 +27,7 @@ export const ROLES: Record<UserRole, RoleInfo> = {
     badge: 'Developer Access',
     color: '#2563eb',
     description: 'Focused developer self-service workspace: active microservices, PR reviews, CI/CD workflow status, issue tracking, and quick code scaffolding.',
-    allowedTabs: ['overview', 'jira', 'github', 'scaffolder', 'catalog', 'techdocs'],
+    allowedTabs: ['overview', 'automation', 'observability', 'jira', 'github', 'scaffolder', 'catalog', 'techdocs'],
   },
   finops: {
     id: 'finops',
@@ -34,8 +35,56 @@ export const ROLES: Record<UserRole, RoleInfo> = {
     badge: 'FinOps Access',
     color: '#9333ea',
     description: 'Dedicated financial operations hub: Azure AI Foundry GenAI unit economics, cloud cost velocity, resource rightsizing, and FinOps pipelines.',
-    allowedTabs: ['ai-cost', 'azure', 'overview'],
+    allowedTabs: ['overview', 'finops', 'governance', 'cloud-native', 'ai-cost', 'azure'],
   },
+};
+
+// Enterprise Organization Persona Mappings by Email
+export const ROLE_EMAIL_MAPPINGS: Record<string, UserRole> = {
+  // Platform Engineers (Admin Access)
+  'raghavendra.lakkamaraju@valuemomentum.com': 'platform-engineer',
+  'vamsi.sapireddy@valuemomentum.com': 'platform-engineer',
+  'prayanka.gochipatula@valuemomentum.com': 'platform-engineer',
+  'shankar.vinjamuri@valuemomentum.com': 'platform-engineer',
+
+  // Developer Workspace
+  'shashank.tudum@valuemomentum.com': 'developer',
+  'mohansai.ande@valuemomentum.com': 'developer',
+
+  // FinOps & Cost Governance
+  'hari.ponnamanda@valuemomentum.com': 'finops',
+  'shaik.zaheer@valuemomentum.com': 'finops',
+};
+
+// User-Login Fallback Mappings (GitHub Usernames)
+export const ROLE_LOGIN_MAPPINGS: Record<string, UserRole> = {
+  'raghavendra-vam': 'platform-engineer',
+  'vamsi-sapireddy': 'platform-engineer',
+  'prayanka-gochipatula': 'platform-engineer',
+  'shankar-vinjamuri': 'platform-engineer',
+  'shashanktu': 'developer',
+  'mohansai001': 'developer',
+  'hari-var': 'finops',
+  'shaikzaheer': 'finops',
+};
+
+export const resolveRoleForUser = (email?: string, userRef?: string): UserRole => {
+  if (email) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (ROLE_EMAIL_MAPPINGS[normalizedEmail]) {
+      return ROLE_EMAIL_MAPPINGS[normalizedEmail];
+    }
+  }
+
+  if (userRef) {
+    const username = userRef.split('/').pop()?.toLowerCase() || '';
+    if (ROLE_LOGIN_MAPPINGS[username]) {
+      return ROLE_LOGIN_MAPPINGS[username];
+    }
+  }
+
+  // Default to platform engineer for admin/default demo account
+  return 'platform-engineer';
 };
 
 interface RoleContextType {
@@ -43,6 +92,7 @@ interface RoleContextType {
   setRole: (role: UserRole) => void;
   roleInfo: RoleInfo;
   isAllowed: (tabOrFeature: string) => boolean;
+  userEmail?: string;
 }
 
 const RoleContext = createContext<RoleContextType>({
@@ -53,17 +103,45 @@ const RoleContext = createContext<RoleContextType>({
 });
 
 export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [role, setRoleState] = useState<UserRole>(() => {
-    try {
-      const saved = localStorage.getItem('shield_idp_active_role');
-      if (saved && (saved === 'platform-engineer' || saved === 'developer' || saved === 'finops')) {
-        return saved as UserRole;
+  const identityApi = useApi(identityApiRef);
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
+  const [role, setRoleState] = useState<UserRole>('platform-engineer');
+
+  useEffect(() => {
+    let isMounted = true;
+    async function detectUserRole() {
+      try {
+        const [profile, identity] = await Promise.all([
+          identityApi.getProfileInfo().catch(() => undefined),
+          identityApi.getBackstageIdentity().catch(() => undefined),
+        ]);
+
+        const email = profile?.email;
+        const userRef = identity?.userEntityRef;
+
+        if (isMounted && email) {
+          setUserEmail(email);
+        }
+
+        const resolved = resolveRoleForUser(email, userRef);
+        if (isMounted) {
+          setRoleState(resolved);
+          try {
+            localStorage.setItem('shield_idp_active_role', resolved);
+          } catch {
+            // ignore
+          }
+        }
+      } catch (err) {
+        console.error('Failed to resolve persona from identity:', err);
       }
-    } catch {
-      // fallback
     }
-    return 'platform-engineer';
-  });
+
+    detectUserRole();
+    return () => {
+      isMounted = false;
+    };
+  }, [identityApi]);
 
   const setRole = (newRole: UserRole) => {
     setRoleState(newRole);
@@ -82,7 +160,7 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <RoleContext.Provider value={{ role, setRole, roleInfo, isAllowed }}>
+    <RoleContext.Provider value={{ role, setRole, roleInfo, isAllowed, userEmail }}>
       {children}
     </RoleContext.Provider>
   );

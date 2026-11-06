@@ -17,7 +17,6 @@ import { SidebarSearchModal } from '@backstage/plugin-search';
 import { UserSettingsSignInAvatar } from '@backstage/plugin-user-settings';
 import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
 import { ShieldAiFloatingWidget } from '../ai/ShieldAiFloatingWidget';
-import { RoleSwitcher } from '../RoleSwitcher';
 import { useUserRole } from '../RoleContext';
 
 export const SidebarContent = NavContentBlueprint.make({
@@ -39,7 +38,6 @@ export const SidebarContent = NavContentBlueprint.make({
         <>
           <Sidebar>
             <SidebarLogo />
-            <RoleSwitcher />
             <SidebarGroup label="Search" icon={<SearchIcon />} to="/search">
               <SidebarSearchModal />
             </SidebarGroup>

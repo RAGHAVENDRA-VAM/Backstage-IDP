@@ -7,14 +7,14 @@ metadata:
   description: ValueMomentum Organization
 spec:
   type: root
-  children: [platform-engineering, developers]
+  children: [platform-engineering, developers, finops]
 ---
 apiVersion: backstage.io/v1alpha1
 kind: Group
 metadata:
   name: platform-engineering
   title: Platform Engineering Team
-  description: The team responsible for Backstage, DevOps, and internal developer platforms.
+  description: The core team responsible for Backstage, DevOps, Azure infrastructure, and golden paths.
 spec:
   type: team
   parent: valuemomentum
@@ -25,18 +25,30 @@ kind: Group
 metadata:
   name: developers
   title: Application Engineering Team
-  description: The core application development teams.
+  description: Core application development teams, repository owners, and feature engineers.
 spec:
   type: team
   parent: valuemomentum
   children: []
 ---
 apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: finops
+  title: FinOps & Cost Governance Team
+  description: Financial operations, cloud spend governance, and AI Foundry unit economics analysts.
+spec:
+  type: team
+  parent: valuemomentum
+  children: []
+---
+# PLATFORM ENGINEERS (ADMIN)
+apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
   name: raghavendra-vam
   title: Raghavendra Lakkamaraju
-  description: Platform Engineer
+  description: Platform Engineer (Admin)
   annotations:
     github.com/user-login: RAGHAVENDRA-VAM
   links:
@@ -46,14 +58,48 @@ spec:
   profile:
     displayName: Raghavendra Lakkamaraju
     email: Raghavendra.Lakkamaraju@valuemomentum.com
-  memberOf: [developers]
+  memberOf: [platform-engineering]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: vamsi.sapireddy
+  title: Vamsi Sapireddy
+  description: Platform Engineer (Admin)
+  annotations:
+    github.com/user-login: vamsi-sapireddy
+  links:
+    - url: mailto:Vamsi.Sapireddy@valuemomentum.com
+      title: Email
+spec:
+  profile:
+    displayName: Vamsi Sapireddy
+    email: Vamsi.Sapireddy@valuemomentum.com
+  memberOf: [platform-engineering]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: prayanka.gochipatula
+  title: Prayanka Gochipatula
+  description: Platform Engineer (Admin)
+  annotations:
+    github.com/user-login: prayanka-gochipatula
+  links:
+    - url: mailto:prayanka.gochipatula@valuemomentum.com
+      title: Email
+spec:
+  profile:
+    displayName: Prayanka Gochipatula
+    email: prayanka.gochipatula@valuemomentum.com
+  memberOf: [platform-engineering]
 ---
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
   name: shankar.vinjamuri
   title: Shankar Vinjamuri
-  description: Director - Cloud Engineering
+  description: Director - Cloud Engineering (Admin)
   annotations:
     github.com/user-login: shankar-vinjamuri
   links:
@@ -65,36 +111,72 @@ spec:
     email: Shankar.Vinjamuri@valuemomentum.com
   memberOf: [platform-engineering]
 ---
+# DEVELOPER WORKSPACE
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
-  name: vamsi.sapireddy
-  title: Vamsi Sapireddy
-  description: Software Engineer
+  name: shashank.tudum
+  title: Shashank Tudum
+  description: Software Developer
   annotations:
-    github.com/user-login: vamsi-sapireddy
+    github.com/user-login: shashanktu
   links:
-    - url: mailto:Vamsi.Sapireddy@valuemomentum.com
+    - url: mailto:Shashank.Tudum@valuemomentum.com
       title: Email
 spec:
   profile:
-    displayName: Vamsi Sapireddy
-    email: Vamsi.Sapireddy@valuemomentum.com
+    displayName: Shashank Tudum
+    email: Shashank.Tudum@valuemomentum.com
   memberOf: [developers]
 ---
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
-  name: prayanka.gochipatula
-  title: Prayanka Gochipatula
-  description: Software Engineer
+  name: mohansai.ande
+  title: Mohansai Ande
+  description: Software Developer
   annotations:
-    github.com/user-login: prayanka-gochipatula
+    github.com/user-login: mohansai001
   links:
-    - url: mailto:prayanka.gochipatula@valuemomentum.com
+    - url: mailto:Mohansai.Ande@valuemomentum.com
       title: Email
 spec:
   profile:
-    displayName: Prayanka Gochipatula
-    email: prayanka.gochipatula@valuemomentum.com
+    displayName: Mohansai Ande
+    email: Mohansai.Ande@valuemomentum.com
   memberOf: [developers]
+---
+# FINOPS & COST GOVERNANCE
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: hari.ponnamanda
+  title: Hari Ponnamanda
+  description: FinOps & Cloud Cost Specialist
+  annotations:
+    github.com/user-login: hari-var
+  links:
+    - url: mailto:Hari.Ponnamanda@valuemomentum.com
+      title: Email
+spec:
+  profile:
+    displayName: Hari Ponnamanda
+    email: Hari.Ponnamanda@valuemomentum.com
+  memberOf: [finops]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: shaik.zaheer
+  title: Shaik Zaheer
+  description: FinOps & Cost Governance Lead
+  annotations:
+    github.com/user-login: shaikzaheer
+  links:
+    - url: mailto:Shaik.Zaheer@valuemomentum.com
+      title: Email
+spec:
+  profile:
+    displayName: Shaik Zaheer
+    email: Shaik.Zaheer@valuemomentum.com
+  memberOf: [finops]
