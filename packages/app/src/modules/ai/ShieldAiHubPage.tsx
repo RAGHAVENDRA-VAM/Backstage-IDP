@@ -820,11 +820,11 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
             <Grid item xs={12} md={5}>
               <Card className={classes.card}>
                 <CardContent>
-                  <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 8 }}>
-                    AI Golden Path Code Scaffolder
+                  <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 6 }}>
+                    Service Specification
                   </Typography>
-                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
-                    Describe your intended microservice in natural language. Shield AI will synthesize compliant boilerplate, Dockerfiles, and GitHub Actions CI/CD workflows tailored to your spec.
+                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: 20 }}>
+                    Synthesize compliant enterprise boilerplate, Dockerfiles, and Azure CI/CD workflows tailored to your specification.
                   </Typography>
 
                   <Box display="flex" flexDirection="column" gap={2}>
@@ -854,33 +854,12 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                       fullWidth
                       multiline
                       rows={5}
-                      label="Service Prompt / Architecture Specifications"
+                      label="Architecture Requirements & Data Models"
                       variant="outlined"
                       value={scaffoldPrompt}
                       onChange={e => setScaffoldPrompt(e.target.value)}
-                      placeholder="e.g. Create a policyholder claim verification microservice with PostgreSQL connection pool, OAuth2 token verification, and health check..."
+                      placeholder="e.g. Create a high-throughput claims settlement service with PostgreSQL connection pool, OAuth2 token verification, and health check..."
                     />
-
-                    <Box display="flex" flexWrap="wrap" gap={0.5}>
-                      <Chip
-                        size="small"
-                        label="Claims API"
-                        onClick={() =>
-                          setScaffoldPrompt(
-                            'Create a high-throughput claims payment settlement service with PostgreSQL audit logs and Azure Key Vault integration',
-                          )
-                        }
-                      />
-                      <Chip
-                        size="small"
-                        label="GenAI Model Wrapper"
-                        onClick={() =>
-                          setScaffoldPrompt(
-                            'Create an Azure AI Foundry proxy API that routes prompts between GPT-4o and Phi-4 with token usage telemetry',
-                          )
-                        }
-                      />
-                    </Box>
 
                     <Button
                       variant="contained"
@@ -888,7 +867,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                       onClick={handleScaffoldCode}
                       disabled={scaffoldLoading || !scaffoldPrompt.trim()}
                       startIcon={scaffoldLoading ? <CircularProgress size={16} color="inherit" /> : <CodeIcon />}
-                      style={{ marginTop: 8 }}
+                      style={{ marginTop: 8, textTransform: 'none', fontWeight: 700 }}
                     >
                       {scaffoldLoading ? 'Synthesizing Architecture...' : 'Generate Golden Path Service'}
                     </Button>
@@ -901,7 +880,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
               <Card className={classes.card}>
                 <CardContent style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 12 }}>
-                    Generated Production-Ready Artifacts
+                    Generated Production Artifacts
                   </Typography>
 
                   {!scaffoldResult && !scaffoldLoading && (
@@ -913,10 +892,11 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                       height="100%"
                       minHeight={340}
                       color="text.secondary"
+                      style={{ padding: 24, textAlign: 'center' }}
                     >
-                      <CodeIcon style={{ fontSize: 56, opacity: 0.3, marginBottom: 12 }} />
-                      <Typography variant="body1">
-                        Fill in your requirements and click <strong>Generate Golden Path Service</strong> to preview generated files.
+                      <CodeIcon style={{ fontSize: 48, opacity: 0.25, marginBottom: 12, color: '#0078D4' }} />
+                      <Typography variant="body2" color="textSecondary">
+                        Specify requirements on the left and click <strong>Generate Golden Path Service</strong> to preview production boilerplate.
                       </Typography>
                     </Box>
                   )}
