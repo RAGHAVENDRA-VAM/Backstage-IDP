@@ -187,6 +187,21 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
         const router = express.Router();
         router.use(express.json());
 
+        // 0. AI HEALTH & CONFIGURATION STATUS
+        router.get('/status', (req, res) => {
+          const endpoint = process.env.AZURE_OPENAI_ENDPOINT || process.env.AZURE_AI_FOUNDRY_ENDPOINT;
+          const key = process.env.AZURE_OPENAI_KEY || process.env.AZURE_AI_FOUNDRY_KEY || process.env.AZURE_OPENAI_API_KEY;
+          const deployment = process.env.AZURE_OPENAI_DEPLOYMENT || process.env.AZURE_AI_FOUNDRY_MODEL || 'gpt-4o';
+
+          const configured = Boolean(endpoint && key);
+          res.json({
+            configured,
+            model: configured ? deployment : 'Shield Embedded Engine',
+            endpoint: configured ? endpoint.replace(/^https?:\/\//, '').split('/')[0] : undefined,
+            provider: configured ? 'Azure AI Foundry' : 'Embedded Engine',
+          });
+        });
+
         // 1. CHAT COPILOT ENDPOINT
         router.post('/chat', async (req, res) => {
           try {
