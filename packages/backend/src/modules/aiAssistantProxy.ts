@@ -303,7 +303,7 @@ Provide concise, authoritative, professional responses with code snippets where 
             let reply = '';
             if (lowerUserMsg.includes('owner') || lowerUserMsg.includes('who owns') || lowerUserMsg.includes('claims') || lowerUserMsg.includes('risk')) {
               reply = `### Service Ownership & Attribution (Catalog):\n\n` +
-                `- **Claims UI Portal (\`Claims_UI\`)**: Owned by **Platform Engineering & Claims Squad** (Lead: Shankar Vinjamuri). Deployed to Azure Web App \`valora-insurance-ui\` in \`devops-maf\`.\n` +
+                `- **Claims UI Portal (\`Claims_UI\`)**: Owned by **Platform Engineering & Claims Squad** (Lead: Pankaj Kumar). Deployed to Azure Web App \`valora-insurance-ui\` in \`devops-maf\`.\n` +
                 `- **Risk Analysis Service (\`risk-analysis\`)**: Owned by **Underwriting Analytics Team**. Deployed to \`devops-risk-analyzer-api\` in \`devops-maf\`.\n` +
                 `- **ClaimsCare Incident Engine**: Owned by **Incident Ops Squad**.\n\n` +
                 `*All services report live APM metrics to Datadog and track sprint tickets in Jira (Project: SCRUM).*`;

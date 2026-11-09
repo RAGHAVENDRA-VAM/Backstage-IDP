@@ -79,7 +79,7 @@ export const ROLE_EMAIL_MAPPINGS: Record<string, UserRole> = {
   'raghavendra.lakkamaraju@valuemomentum.com': 'platform-engineer',
   'vamsi.sapireddy@valuemomentum.com': 'platform-engineer',
   'prayanka.gochipatula@valuemomentum.com': 'platform-engineer',
-  'shankar.vinjamuri@valuemomentum.com': 'platform-engineer',
+  'pankajk@valuemomentum.com': 'platform-engineer',
 
   // Developer Workspace
   'shashank.tudum@valuemomentum.com': 'developer',
@@ -95,7 +95,8 @@ export const ROLE_LOGIN_MAPPINGS: Record<string, UserRole> = {
   'raghavendra-vam': 'platform-engineer',
   'vamsi-sapireddy': 'platform-engineer',
   'prayanka-gochipatula': 'platform-engineer',
-  'shankar-vinjamuri': 'platform-engineer',
+  'pankaj-kumar': 'platform-engineer',
+  'pankajk': 'platform-engineer',
   'shashanktu': 'developer',
   'mohansai001': 'developer',
   'hari-var': 'finops',

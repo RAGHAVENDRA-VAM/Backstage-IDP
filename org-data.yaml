@@ -97,18 +97,18 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: User
 metadata:
-  name: shankar.vinjamuri
-  title: Shankar Vinjamuri
+  name: pankaj-kumar
+  title: Pankaj Kumar
   description: Director - Cloud Engineering (Admin)
   annotations:
-    github.com/user-login: shankar-vinjamuri
+    github.com/user-login: pankaj-kumar
   links:
-    - url: mailto:Shankar.Vinjamuri@valuemomentum.com
+    - url: mailto:pankajk@valuemomentum.com
       title: Email
 spec:
   profile:
-    displayName: Shankar Vinjamuri
-    email: Shankar.Vinjamuri@valuemomentum.com
+    displayName: Pankaj Kumar
+    email: pankajk@valuemomentum.com
   memberOf: [platform-engineering]
 ---
 # DEVELOPER WORKSPACE
