@@ -186,7 +186,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: `**Shield AI Copilot**\nAsk me anything about our catalog microservices, owners, Azure West US 3 deployments, or incident troubleshooting.`,
+      content: `Hello! I am your AI Developer Assistant. How can I assist you with your projects, deployments, or troubleshooting today?`,
     },
   ]);
 

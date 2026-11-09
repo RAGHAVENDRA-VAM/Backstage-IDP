@@ -187,7 +187,7 @@ export const ShieldAiHubPage: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     {
       role: 'assistant',
-      content: `### Welcome to Shield AI Copilot\n\nI am connected to your **Backstage Catalog**, **Azure West US 3 environment**, and **GitHub Actions CI/CD workflows**.\n\nAsk me about service owners, architecture standards, deployment steps, or cloud unit economics.`,
+      content: `Hello! I am your AI Developer Assistant powered by Azure AI Foundry. How can I help you today? You can ask me about application deployments, service troubleshooting, pull request reviews, or cloud architecture.`,
     },
   ]);
   const [chatInput, setChatInput] = useState('');
