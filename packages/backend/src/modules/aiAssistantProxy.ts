@@ -42,13 +42,18 @@ async function callAzureAi(
       }
     }
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'api-key': key,
+    };
+    // Include Authorization header for Azure AI Foundry / Serverless APIs
+    if (!key.startsWith('Bearer ')) {
+      headers['Authorization'] = `Bearer ${key}`;
+    }
+
     const openAiRes = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': key,
-        Authorization: `Bearer ${key}`,
-      },
+      headers,
       body: JSON.stringify({
         messages,
         temperature: options?.temperature ?? 0.2,
@@ -57,7 +62,8 @@ async function callAzureAi(
     });
 
     if (!openAiRes.ok) {
-      console.warn(`Azure AI call returned ${openAiRes.status}: ${openAiRes.statusText}`);
+      const errText = await openAiRes.text().catch(() => '');
+      console.warn(`Azure AI call returned ${openAiRes.status} (${openAiRes.statusText}): ${errText}`);
       return null;
     }
 
@@ -188,18 +194,28 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
         router.use(express.json());
 
         // 0. AI HEALTH & CONFIGURATION STATUS
-        router.get('/status', (req, res) => {
+        router.get('/status', async (req, res) => {
           const endpoint = process.env.AZURE_OPENAI_ENDPOINT || process.env.AZURE_AI_FOUNDRY_ENDPOINT;
           const key = process.env.AZURE_OPENAI_KEY || process.env.AZURE_AI_FOUNDRY_KEY || process.env.AZURE_OPENAI_API_KEY;
           const deployment = process.env.AZURE_OPENAI_DEPLOYMENT || process.env.AZURE_AI_FOUNDRY_MODEL || 'gpt-4o';
 
-          const configured = Boolean(endpoint && key);
-          res.json({
-            configured,
-            model: configured ? deployment : 'Shield Embedded Engine',
-            endpoint: configured ? endpoint.replace(/^https?:\/\//, '').split('/')[0] : undefined,
-            provider: configured ? 'Azure AI Foundry' : 'Embedded Engine',
-          });
+            const configured = Boolean(endpoint && key);
+            let testResult = 'not-tested';
+            if (req.query.test === 'true') {
+              try {
+                const testCall = await callAzureAi([{ role: 'user', content: 'hello' }]);
+                testResult = testCall ? `success (${testCall.model})` : 'failed (call returned null)';
+              } catch (e: any) {
+                testResult = `error: ${e.message}`;
+              }
+            }
+            res.json({
+              configured,
+              model: configured ? deployment : 'Shield Embedded Engine',
+              endpoint: configured ? endpoint.replace(/^https?:\/\//, '').split('/')[0] : undefined,
+              provider: configured ? 'Azure AI Foundry' : 'Embedded Engine',
+              testResult,
+            });
         });
 
         // 1. CHAT COPILOT ENDPOINT
