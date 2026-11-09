@@ -1626,14 +1626,6 @@ export const IntegrationsDashboardPage = () => {
             />
           </Box>
         </Box>
-
-        <Box className={classes.heroBadges}>
-          <Chip label="Jira Cloud: Connected" size="small" className={classes.badgePill} />
-          <Chip label="GitHub Actions: Synced" size="small" className={classes.badgePill} />
-          {role !== 'developer' && <Chip label="Datadog APM: Online" size="small" className={classes.badgePill} />}
-          {role !== 'developer' && <Chip label="Azure West US 3: Connected" size="small" className={classes.badgePill} />}
-          <Chip label={roleInfo.badge} size="small" style={{ backgroundColor: '#ffffff', color: '#005B4B', fontWeight: 800 }} />
-        </Box>
       </Box>
 
       {/* Main Tabbed Navigation Inside Dashboard - Enterprise Platform Engineering Suite */}
