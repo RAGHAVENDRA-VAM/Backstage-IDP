@@ -80,21 +80,22 @@ const useStyles = makeStyles(theme => ({
     flexDirection: 'column',
   },
   chatContainer: {
-    height: 520,
+    height: 600,
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: theme.palette.type === 'dark' ? '#18181b' : '#f8fafc',
-    borderRadius: 8,
+    backgroundColor: theme.palette.type === 'dark' ? '#18181b' : '#ffffff',
+    borderRadius: 12,
     border: `1px solid ${theme.palette.divider}`,
     overflow: 'hidden',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
   },
   chatMessages: {
     flex: 1,
     overflowY: 'auto',
-    padding: 16,
+    padding: 24,
     display: 'flex',
     flexDirection: 'column',
-    gap: 12,
+    gap: 16,
   },
   userBubble: {
     alignSelf: 'flex-end',
@@ -350,81 +351,28 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
       <Header
         title="Shield AI Hub"
         subtitle="Autonomous Platform Engineering, Incident Diagnostics, TechDocs RAG & Golden Path Scaffolding"
-      />
+      >
+        <Box display="flex" alignItems="center" gap={1}>
+          <Chip
+            icon={<CloudDoneIcon style={{ color: aiStatus?.configured ? '#10b981' : '#f59e0b' }} />}
+            label={
+              aiStatus?.configured
+                ? `Azure AI Foundry (${aiStatus.model})`
+                : 'Connecting to Azure AI...'
+            }
+            onClick={() => setConfigDialogOpen(true)}
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.18)',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,0.3)',
+            }}
+          />
+        </Box>
+      </Header>
       <Content>
-        {/* Banner */}
-        <div className={classes.headerBanner}>
-          <div>
-            <div className={classes.bannerTitle}>
-              <BubbleChartIcon fontSize="large" style={{ color: '#38bdf8' }} />
-              Shield AI & Intelligent IDP Suite
-            </div>
-            <Typography className={classes.bannerSubtitle}>
-              Empowering engineers with 24/7 autonomous cloud guidance, real-time CI/CD root-cause log diagnostics, enterprise architecture RAG search, and generative golden path scaffolding.
-            </Typography>
-          </div>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Tooltip title="Click to view Azure AI Foundry / OpenAI connection parameters">
-              <Chip
-                icon={<CloudDoneIcon style={{ color: aiStatus?.configured ? '#10b981' : '#f59e0b' }} />}
-                label={
-                  aiStatus?.configured
-                    ? `Live: Azure AI Foundry (${aiStatus.model})`
-                    : 'Embedded Engine (Click to Connect Live Foundry)'
-                }
-                onClick={() => setConfigDialogOpen(true)}
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              />
-            </Tooltip>
-          </Box>
-        </div>
-
-        {/* Real AI Connection Guide Dialog */}
-        <Dialog open={configDialogOpen} onClose={() => setConfigDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle style={{ fontWeight: 700 }}>
-            Connect Real Azure AI Foundry / OpenAI Model
-          </DialogTitle>
-          <DialogContent dividers>
-            <Typography variant="body2" style={{ marginBottom: 12 }}>
-              To replace default catalog responses with <strong>100% real live GPT-4o / Foundry responses</strong> across Chat, Log Diagnostics, TechDocs RAG, and Code Scaffolding, add these variables to your <code>.env</code> file (or Azure App Service Configuration):
-            </Typography>
-
-            <Paper variant="outlined" style={{ padding: 14, backgroundColor: '#0f172a', color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.85rem' }}>
-              <pre style={{ margin: 0 }}>{`# Azure AI Foundry / Azure OpenAI Model Credentials
-AZURE_OPENAI_ENDPOINT=https://<your-resource-name>.openai.azure.com/
-AZURE_OPENAI_KEY=<your-azure-foundry-or-openai-api-key>
-AZURE_OPENAI_DEPLOYMENT=gpt-4o`}</pre>
-            </Paper>
-
-            <Typography variant="caption" color="textSecondary" style={{ display: 'block', marginTop: 12 }}>
-              <strong>Where to find in Azure:</strong> Go to <strong>Azure AI Foundry Portal</strong> (ai.azure.com) → Project Overview → Deployments → Copy the Target Endpoint, Deployment Name (e.g. <code>gpt-4o</code>), and Key.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={() => {
-                navigator.clipboard.writeText(
-`# Azure AI Foundry / Azure OpenAI Model Credentials
-AZURE_OPENAI_ENDPOINT=https://<your-resource-name>.openai.azure.com/
-AZURE_OPENAI_KEY=<your-azure-foundry-or-openai-api-key>
-AZURE_OPENAI_DEPLOYMENT=gpt-4o`
-                );
-              }}
-              color="primary"
-            >
-              Copy Env Snippet
-            </Button>
-            <Button onClick={() => setConfigDialogOpen(false)} color="primary" variant="contained">
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
-
         {/* Navigation Tabs */}
         <Paper className={classes.tabBar} elevation={0}>
           <Tabs
@@ -444,124 +392,103 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o`
 
         {/* TAB 0: SHIELD AI COPILOT */}
         {tabIndex === 0 && (
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
-              <Card className={classes.card}>
-                <CardContent style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 16 }}>
-                  <div className={classes.chatContainer}>
-                    <div className={classes.chatMessages}>
-                      {chatMessages.map((m, idx) => (
-                        <div
-                          key={idx}
-                          className={m.role === 'user' ? classes.userBubble : classes.assistantBubble}
-                        >
-                          <div
-                            dangerouslySetInnerHTML={{
-                              __html: m.content
-                                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #0078D4; font-weight: 700; text-decoration: underline;">$1</a>')
-                                .replace(/### (.*?)\n/g, '<h3 style="margin: 6px 0;">$1</h3>')
-                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                .replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 4px;">$1</code>')
-                                .replace(/\n- (.*?)(?=\n|$)/g, '<li>$1</li>')
-                                .replace(/\n\n/g, '<br/>'),
-                            }}
-                          />
-                        </div>
-                      ))}
-                      {chatLoading && (
-                        <div className={classes.assistantBubble} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <CircularProgress size={18} />
-                          <Typography variant="body2" color="textSecondary">
-                            Shield AI Copilot is thinking...
-                          </Typography>
-                        </div>
-                      )}
-                    </div>
-                    <div className={classes.inputArea}>
-                      <TextField
-                        fullWidth
-                        variant="outlined"
-                        size="small"
-                        placeholder="Ask about microservices, owners, deployment runbooks, or architecture..."
-                        value={chatInput}
-                        onChange={e => setChatInput(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendChat();
-                          }
-                        }}
-                      />
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleSendChat()}
-                        disabled={!chatInput.trim() || chatLoading}
-                        endIcon={<SendIcon />}
-                      >
-                        Send
-                      </Button>
-                    </div>
+          <Box>
+            <div className={classes.chatContainer}>
+              <div className={classes.chatMessages}>
+                {chatMessages.map((m, idx) => (
+                  <div
+                    key={idx}
+                    className={m.role === 'user' ? classes.userBubble : classes.assistantBubble}
+                  >
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: m.content
+                          .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #0078D4; font-weight: 700; text-decoration: underline;">$1</a>')
+                          .replace(/### (.*?)\n/g, '<h3 style="margin: 6px 0;">$1</h3>')
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                          .replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 4px;">$1</code>')
+                          .replace(/\n- (.*?)(?=\n|$)/g, '<li>$1</li>')
+                          .replace(/\n\n/g, '<br/>'),
+                      }}
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            </Grid>
+                ))}
+                {chatLoading && (
+                  <div className={classes.assistantBubble} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <CircularProgress size={18} />
+                    <Typography variant="body2" color="textSecondary">
+                      Shield AI Copilot is thinking...
+                    </Typography>
+                  </div>
+                )}
+              </div>
 
-            <Grid item xs={12} md={4}>
-              <Card className={classes.card}>
-                <CardContent>
-                  <Typography variant="h6" style={{ fontWeight: 700, marginBottom: 12 }}>
-                    Suggested Inquiries
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
-                    Click any quick prompt to query the embedded platform knowledge base:
-                  </Typography>
+              {/* Quick Prompt Suggestions Bar */}
+              <Box
+                display="flex"
+                alignItems="center"
+                gap={1}
+                p={1.5}
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                  borderTop: '1px solid rgba(0, 0, 0, 0.06)',
+                  overflowX: 'auto',
+                }}
+              >
+                <Typography variant="caption" style={{ fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap', marginLeft: 4 }}>
+                  Quick Inquiries:
+                </Typography>
+                {[
+                  'How do I deploy a new microservice to Azure?',
+                  'Who owns the Claims UI and risk-analysis services?',
+                  'What are our container security and quality gates?',
+                  'Analyze Azure West US 3 environment health',
+                ].map((prompt, i) => (
+                  <Chip
+                    key={i}
+                    label={prompt}
+                    size="small"
+                    clickable
+                    onClick={() => handleSendChat(prompt)}
+                    style={{
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                    }}
+                  />
+                ))}
+              </Box>
 
-                  <Box display="flex" flexDirection="column" gap={1}>
-                    {[
-                      'Which service is responsible for claims processing?',
-                      'Who owns the risk-analysis service and what are its dependencies?',
-                      'How do I deploy a new microservice to Azure West US 3?',
-                      'What is our GenAI monthly spend and optimization strategy?',
-                      'Explain the mandatory SAST and container security quality gates.',
-                    ].map((prompt, i) => (
-                      <Paper
-                        key={i}
-                        variant="outlined"
-                        style={{
-                          padding: '10px 14px',
-                          cursor: 'pointer',
-                          borderRadius: 8,
-                          transition: 'all 0.2s',
-                        }}
-                        onClick={() => handleSendChat(prompt)}
-                      >
-                        <Typography variant="caption" style={{ fontWeight: 600, color: '#0284c7' }}>
-                          PROMPT #{i + 1}
-                        </Typography>
-                        <Typography variant="body2" style={{ marginTop: 2 }}>
-                          {prompt}
-                        </Typography>
-                      </Paper>
-                    ))}
-                  </Box>
-
-                  <Divider style={{ margin: '20px 0' }} />
-
-                  <Typography variant="subtitle2" style={{ fontWeight: 700 }}>
-                    Active Context & Integrations
-                  </Typography>
-                  <Box display="flex" flexWrap="wrap" gap={0.5} style={{ marginTop: 8 }}>
-                    <Chip size="small" label="Catalog: 42 Entities" />
-                    <Chip size="small" label="Azure: West US 3" />
-                    <Chip size="small" label="Security: SonarQube & Trivy" />
-                    <Chip size="small" label="FinOps: Azure OpenAI" />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+              <div className={classes.inputArea}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  placeholder="Ask about microservices, owners, deployment runbooks, or architecture..."
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendChat();
+                    }
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleSendChat()}
+                  disabled={!chatInput.trim() || chatLoading}
+                  endIcon={<SendIcon />}
+                  style={{ textTransform: 'none', fontWeight: 700, minWidth: 100 }}
+                >
+                  Send
+                </Button>
+              </div>
+            </div>
+          </Box>
         )}
 
         {/* TAB 1: LOG DIAGNOSTICS & RCA */}
