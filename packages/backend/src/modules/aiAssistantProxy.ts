@@ -51,14 +51,22 @@ async function callAzureAi(
       headers['Authorization'] = `Bearer ${key}`;
     }
 
+    const requestBody: Record<string, any> = {
+      messages,
+    };
+    // If model starts with o1, o3, or newer gpt-5/reasoning series, max_completion_tokens is required instead of max_tokens
+    const isNewerReasoningModel = deployment.startsWith('o1') || deployment.startsWith('o3') || deployment.startsWith('gpt-5');
+    if (isNewerReasoningModel) {
+      requestBody.max_completion_tokens = options?.max_tokens ?? 1200;
+    } else {
+      requestBody.max_tokens = options?.max_tokens ?? 1200;
+      requestBody.temperature = options?.temperature ?? 0.2;
+    }
+
     const openAiRes = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        messages,
-        temperature: options?.temperature ?? 0.2,
-        max_tokens: options?.max_tokens ?? 1200,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!openAiRes.ok) {
