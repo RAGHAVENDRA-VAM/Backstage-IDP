@@ -581,8 +581,8 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                       color="text.secondary"
                     >
                       <BugReportIcon style={{ fontSize: 56, opacity: 0.3, marginBottom: 12 }} />
-                      <Typography variant="body1">
-                        Select a sample error log or paste your trace, then click <strong>Diagnose with AI</strong>.
+                      <Typography variant="body2" color="textSecondary">
+                        Paste a container trace or build log on the left, then click <strong>Diagnose with AI</strong> to generate instant root-cause analysis and code patches.
                       </Typography>
                     </Box>
                   )}
