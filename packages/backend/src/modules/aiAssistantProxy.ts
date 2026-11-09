@@ -64,7 +64,11 @@ async function callAzureAi(
     if (!openAiRes.ok) {
       const errText = await openAiRes.text().catch(() => '');
       console.warn(`Azure AI call returned ${openAiRes.status} (${openAiRes.statusText}): ${errText}`);
-      return null;
+      return {
+        reply: '',
+        model: deployment,
+        error: `HTTP ${openAiRes.status} (${openAiRes.statusText}) from ${url}: ${errText.slice(0, 300)}`,
+      };
     }
 
     const data = await openAiRes.json();
@@ -73,9 +77,13 @@ async function callAzureAi(
       model: data.model || deployment,
       usage: data.usage,
     };
-  } catch (err) {
+  } catch (err: any) {
     console.warn('Azure AI invocation failed, falling back to local reasoning:', err);
-    return null;
+    return {
+      reply: '',
+      model: deployment,
+      error: `Exception calling Azure AI: ${err.message}`,
+    };
   }
 }
 
@@ -200,11 +208,15 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
           const deployment = process.env.AZURE_OPENAI_DEPLOYMENT || process.env.AZURE_AI_FOUNDRY_MODEL || 'gpt-4o';
 
             const configured = Boolean(endpoint && key);
-            let testResult = 'not-tested';
+            let testResult: any = 'not-tested';
             if (req.query.test === 'true') {
               try {
                 const testCall = await callAzureAi([{ role: 'user', content: 'hello' }]);
-                testResult = testCall ? `success (${testCall.model})` : 'failed (call returned null)';
+                if (testCall?.reply) {
+                  testResult = `success (${testCall.model}): ${testCall.reply.slice(0, 50)}`;
+                } else {
+                  testResult = testCall?.error || 'failed (call returned null)';
+                }
               } catch (e: any) {
                 testResult = `error: ${e.message}`;
               }
@@ -287,11 +299,19 @@ Provide concise, authoritative, professional responses with code snippets where 
                 `- **Risk Analysis Service (\`risk-analysis\`)**: Owned by **Underwriting Analytics Team**. Deployed to \`devops-risk-analyzer-api\` in \`devops-maf\`.\n` +
                 `- **ClaimsCare Incident Engine**: Owned by **Incident Ops Squad**.\n\n` +
                 `*All services report live APM metrics to Datadog and track sprint tickets in Jira (Project: SCRUM).*`;
-            } else if (lowerUserMsg.includes('deploy') || lowerUserMsg.includes('azure') || lowerUserMsg.includes('west us 3')) {
-              reply = `### Azure Cloud Deployment Standards:\n\n` +
-                `1. **Standard Region**: All production workloads deploy to **Azure West US 3** with secondary DR in East US.\n` +
-                `2. **Self-Service**: Use the **Create** tab to run the **"Deploy App to Azure Web App"** golden path template.\n` +
-                `3. **Governance**: All deployments enforce isolated VNets, HTTPS only, and managed identity authentication.`;
+            } else if (lowerUserMsg.includes('deploy') || lowerUserMsg.includes('publish') || lowerUserMsg.includes('release')) {
+              reply = `### How to Deploy Your Application:\n\n` +
+                `You have **two easy ways** to deploy in the Shield IDP:\n\n` +
+                `1. **Self-Service Golden Path (Recommended)**:\n` +
+                `   - Click on the **Create** tab in the sidebar.\n` +
+                `   - Select the **"Deploy App to Azure Web App"** template.\n` +
+                `   - Choose your repository and target Azure Web App, then click **Execute**.\n\n` +
+                `2. **Autonomous Chatbot Deployment**:\n` +
+                `   - You can ask me directly in this chat! Just specify:\n` +
+                `     - **Repository**: e.g., \`RAGHAVENDRA-VAM/Claims_UI\`\n` +
+                `     - **Target Azure Web App**: e.g., \`valora-insurance-ui\`\n` +
+                `     - **Resource Group**: e.g., \`devops-maf\`\n` +
+                `   - *Example prompt: "Deploy RAGHAVENDRA-VAM/Claims_UI to valora-insurance-ui in devops-maf"*`;
             } else if (lowerUserMsg.includes('finops') || lowerUserMsg.includes('cost') || lowerUserMsg.includes('spend') || lowerUserMsg.includes('token')) {
               reply = `### Cloud FinOps & AI Cost Governance:\n\n` +
                 `- **Live MTD Spend**: Azure Cost Management actively monitors daily consumption.\n` +
