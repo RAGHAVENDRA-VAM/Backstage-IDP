@@ -1550,14 +1550,47 @@ export const IntegrationsDashboardPage = () => {
   const { role, roleInfo, isAllowed } = useUserRole();
   const [selectedMainTab, setSelectedMainTab] = useState(0);
 
-  // Automatically switch tab if current active tab is not allowed for the selected role
-  React.useEffect(() => {
-    if (role === 'finops' && selectedMainTab !== 5 && selectedMainTab !== 3 && selectedMainTab !== 0) {
-      setSelectedMainTab(5); // Default to FinOps AI Cost
-    } else if (role === 'developer' && (selectedMainTab === 3 || selectedMainTab === 4 || selectedMainTab === 5)) {
-      setSelectedMainTab(2); // Default to GitHub developer workspace
+// Dynamic Tab definitions tailored strictly by Group / Persona
+  const availableTabs = React.useMemo(() => {
+    if (role === 'finops') {
+      return [
+        { id: 'overview', label: 'Overview', icon: <LayersIcon /> },
+        { id: 'finops', label: 'FinOps & AI Governance', icon: <BubbleChartIcon style={{ color: '#ec4899' }} /> },
+        { id: 'cloud-native', label: 'Cloud Native Infrastructure', icon: <CloudQueueIcon style={{ color: '#0078d4' }} /> },
+        { id: 'governance', label: 'Architecture & FinOps Standards', icon: <MenuBookIcon style={{ color: '#0f766e' }} /> },
+      ];
     }
+    if (role === 'developer') {
+      return [
+        { id: 'overview', label: 'Developer Workspace', icon: <LayersIcon /> },
+        { id: 'automation', label: 'Automation & Golden Paths', icon: <PlayCircleFilledWhiteIcon style={{ color: '#059669' }} /> },
+        { id: 'observability', label: 'Observability & Telemetry', icon: <TimelineIcon style={{ color: '#7c3aed' }} /> },
+        { id: 'sre', label: 'Site Reliability & Health', icon: <HealingIcon style={{ color: '#0284c7' }} /> },
+        { id: 'jira', label: 'Jira Agile Backlog', icon: <CheckCircleIcon style={{ color: '#2563eb' }} /> },
+        { id: 'github', label: 'GitHub CI/CD', icon: <GitHubIcon /> },
+      ];
+    }
+    // Platform Engineer (Admin) - All 10 Command Center tabs
+    return [
+      { id: 'overview', label: 'Overview', icon: <LayersIcon /> },
+      { id: 'automation', label: 'Automation & Golden Paths', icon: <PlayCircleFilledWhiteIcon style={{ color: '#059669' }} /> },
+      { id: 'observability', label: 'Observability & Telemetry', icon: <TimelineIcon style={{ color: '#7c3aed' }} /> },
+      { id: 'sre', label: 'Site Reliability & Health', icon: <HealingIcon style={{ color: '#0284c7' }} /> },
+      { id: 'cloud-native', label: 'Cloud Native Infrastructure', icon: <CloudQueueIcon style={{ color: '#0078d4' }} /> },
+      { id: 'security', label: 'DevSecOps & Compliance', icon: <SecurityIcon style={{ color: '#059669' }} /> },
+      { id: 'finops', label: 'FinOps & AI Governance', icon: <BubbleChartIcon style={{ color: '#ec4899' }} /> },
+      { id: 'governance', label: 'Design & Architecture Standards', icon: <MenuBookIcon style={{ color: '#0f766e' }} /> },
+      { id: 'jira', label: 'Jira Agile Backlog', icon: <CheckCircleIcon style={{ color: '#2563eb' }} /> },
+      { id: 'github', label: 'GitHub CI/CD', icon: <GitHubIcon /> },
+    ];
   }, [role]);
+
+  // Ensure selected tab index is bounded within available tabs
+  React.useEffect(() => {
+    if (selectedMainTab >= availableTabs.length) {
+      setSelectedMainTab(0);
+    }
+  }, [availableTabs, selectedMainTab]);
 
   return (
     <Container maxWidth="xl" className={classes.root}>
@@ -1614,65 +1647,19 @@ export const IntegrationsDashboardPage = () => {
             variant="scrollable"
             scrollButtons="auto"
           >
-            <Tab
-              icon={<LayersIcon />}
-              label="Overview"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<PlayCircleFilledWhiteIcon style={{ color: '#059669' }} />}
-              label="Automation & Golden Paths"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<TimelineIcon style={{ color: '#7c3aed' }} />}
-              label="Observability & Telemetry"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<HealingIcon style={{ color: '#0284c7' }} />}
-              label="Site Reliability & Health"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<CloudQueueIcon style={{ color: '#0078d4' }} />}
-              label="Cloud Native Infrastructure"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<SecurityIcon style={{ color: '#059669' }} />}
-              label="DevSecOps & Compliance"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<BubbleChartIcon style={{ color: '#ec4899' }} />}
-              label="FinOps & AI Governance"
-              className={classes.tabLabel}
-            />
-            <Tab
-              icon={<MenuBookIcon style={{ color: '#0f766e' }} />}
-              label="Design & Architecture Standards"
-              className={classes.tabLabel}
-            />
-            {role !== 'finops' && (
+            {availableTabs.map((t, idx) => (
               <Tab
-                icon={<CheckCircleIcon style={{ color: '#2563eb' }} />}
-                label="Jira Agile Backlog"
+                key={t.id}
+                icon={t.icon}
+                label={t.label}
                 className={classes.tabLabel}
               />
-            )}
-            {role !== 'finops' && (
-              <Tab
-                icon={<GitHubIcon />}
-                label="GitHub CI/CD"
-                className={classes.tabLabel}
-              />
-            )}
+            ))}
           </Tabs>
         </Box>
 
-        {/* TAB 0: ALL INTEGRATIONS OVERVIEW */}
-        {selectedMainTab === 0 && (
+        {/* Dynamic Views based on active tab ID */}
+        {availableTabs[selectedMainTab]?.id === 'overview' && (
           <Box p={3}>
             {/* Quick action shortcuts to deep dive */}
             <Grid container spacing={3} style={{ marginBottom: 28 }}>
@@ -1942,32 +1929,15 @@ export const IntegrationsDashboardPage = () => {
           </Box>
         )}
 
-        {/* TAB 1: AUTOMATION & GOLDEN PATHS */}
-        {selectedMainTab === 1 && <AutomationGoldenPathsView />}
-
-        {/* TAB 2: OBSERVABILITY & TELEMETRY */}
-        {selectedMainTab === 2 && <DatadogLiveDashboardView />}
-
-        {/* TAB 3: SITE RELIABILITY & HEALTH */}
-        {selectedMainTab === 3 && <SreHealthView />}
-
-        {/* TAB 4: CLOUD NATIVE INFRASTRUCTURE */}
-        {selectedMainTab === 4 && <AzureTabContent isStandalone={true} />}
-
-        {/* TAB 5: DEVSECOPS & COMPLIANCE */}
-        {selectedMainTab === 5 && <DevSecOpsView />}
-
-        {/* TAB 6: FINOPS & AI GOVERNANCE */}
-        {selectedMainTab === 6 && <AzureAiFoundryDashboardView />}
-
-        {/* TAB 7: DESIGN & ARCHITECTURE STANDARDS */}
-        {selectedMainTab === 7 && <ArchitectureGovernanceView />}
-
-        {/* TAB 8: JIRA AGILE BACKLOG */}
-        {selectedMainTab === 8 && <JiraLiveDashboardView />}
-
-        {/* TAB 9: GITHUB CI/CD */}
-        {selectedMainTab === 9 && <GitHubLiveDashboardView />}
+        {availableTabs[selectedMainTab]?.id === 'automation' && <AutomationGoldenPathsView />}
+        {availableTabs[selectedMainTab]?.id === 'observability' && <DatadogLiveDashboardView />}
+        {availableTabs[selectedMainTab]?.id === 'sre' && <SreHealthView />}
+        {availableTabs[selectedMainTab]?.id === 'cloud-native' && <AzureTabContent isStandalone={true} />}
+        {availableTabs[selectedMainTab]?.id === 'security' && <DevSecOpsView />}
+        {availableTabs[selectedMainTab]?.id === 'finops' && <AzureAiFoundryDashboardView />}
+        {availableTabs[selectedMainTab]?.id === 'governance' && <ArchitectureGovernanceView />}
+        {availableTabs[selectedMainTab]?.id === 'jira' && <JiraLiveDashboardView />}
+        {availableTabs[selectedMainTab]?.id === 'github' && <GitHubLiveDashboardView />}
       </Card>
     </Container>
   );

@@ -19,7 +19,24 @@ export const ROLES: Record<UserRole, RoleInfo> = {
     badge: 'Admin Access',
     color: '#059669',
     description: 'Full enterprise IDP control across all 50 repositories, infrastructure provisioning, pipelines, Datadog observability, and golden path scaffolding.',
-    allowedTabs: ['overview', 'automation', 'observability', 'sre', 'cloud-native', 'security', 'finops', 'governance', 'jira', 'github', 'azure', 'datadog', 'ai-cost', 'scaffolder', 'catalog', 'techdocs'],
+    allowedTabs: [
+      'overview',
+      'automation',
+      'observability',
+      'sre',
+      'cloud-native',
+      'security',
+      'finops',
+      'governance',
+      'jira',
+      'github',
+      'azure',
+      'datadog',
+      'ai-cost',
+      'scaffolder',
+      'catalog',
+      'techdocs',
+    ],
   },
   developer: {
     id: 'developer',
@@ -27,7 +44,17 @@ export const ROLES: Record<UserRole, RoleInfo> = {
     badge: 'Developer Access',
     color: '#2563eb',
     description: 'Focused developer self-service workspace: active microservices, PR reviews, CI/CD workflow status, issue tracking, and quick code scaffolding.',
-    allowedTabs: ['overview', 'automation', 'observability', 'jira', 'github', 'scaffolder', 'catalog', 'techdocs'],
+    allowedTabs: [
+      'overview',
+      'automation',
+      'observability',
+      'sre',
+      'jira',
+      'github',
+      'scaffolder',
+      'catalog',
+      'techdocs',
+    ],
   },
   finops: {
     id: 'finops',
@@ -35,7 +62,14 @@ export const ROLES: Record<UserRole, RoleInfo> = {
     badge: 'FinOps Access',
     color: '#9333ea',
     description: 'Dedicated financial operations hub: Azure AI Foundry GenAI unit economics, cloud cost velocity, resource rightsizing, and FinOps pipelines.',
-    allowedTabs: ['overview', 'finops', 'governance', 'cloud-native', 'ai-cost', 'azure'],
+    allowedTabs: [
+      'overview',
+      'finops',
+      'governance',
+      'cloud-native',
+      'ai-cost',
+      'azure',
+    ],
   },
 };
 
@@ -68,7 +102,38 @@ export const ROLE_LOGIN_MAPPINGS: Record<string, UserRole> = {
   'shaikzaheer': 'finops',
 };
 
-export const resolveRoleForUser = (email?: string, userRef?: string): UserRole => {
+// Group-to-Role Mapping based on Backstage catalog groups (org-data.yaml)
+export const ROLE_GROUP_MAPPINGS: Record<string, UserRole> = {
+  'group:default/platform-engineering': 'platform-engineer',
+  'group:default/developers': 'developer',
+  'group:default/finops': 'finops',
+};
+
+export const resolveRoleForUser = (
+  email?: string,
+  userRef?: string,
+  ownershipEntityRefs?: string[],
+): UserRole => {
+  // 1. Direct Backstage Catalog Group Membership Resolution (highest priority)
+  if (ownershipEntityRefs && ownershipEntityRefs.length > 0) {
+    for (const groupRef of ownershipEntityRefs) {
+      const normalizedGroup = groupRef.toLowerCase();
+      if (ROLE_GROUP_MAPPINGS[normalizedGroup]) {
+        return ROLE_GROUP_MAPPINGS[normalizedGroup];
+      }
+      if (normalizedGroup.includes('developer')) {
+        return 'developer';
+      }
+      if (normalizedGroup.includes('finops')) {
+        return 'finops';
+      }
+      if (normalizedGroup.includes('platform')) {
+        return 'platform-engineer';
+      }
+    }
+  }
+
+  // 2. Email Address Resolution
   if (email) {
     const normalizedEmail = email.trim().toLowerCase();
     if (ROLE_EMAIL_MAPPINGS[normalizedEmail]) {
@@ -76,6 +141,7 @@ export const resolveRoleForUser = (email?: string, userRef?: string): UserRole =
     }
   }
 
+  // 3. GitHub Username / User Entity Ref Resolution
   if (userRef) {
     const username = userRef.split('/').pop()?.toLowerCase() || '';
     if (ROLE_LOGIN_MAPPINGS[username]) {
@@ -83,8 +149,8 @@ export const resolveRoleForUser = (email?: string, userRef?: string): UserRole =
     }
   }
 
-  // Default to platform engineer for admin/default demo account
-  return 'platform-engineer';
+  // Default to developer if unknown user, keeping admin actions safe
+  return 'developer';
 };
 
 interface RoleContextType {
@@ -93,19 +159,21 @@ interface RoleContextType {
   roleInfo: RoleInfo;
   isAllowed: (tabOrFeature: string) => boolean;
   userEmail?: string;
+  userName?: string;
 }
 
 const RoleContext = createContext<RoleContextType>({
-  role: 'platform-engineer',
+  role: 'developer',
   setRole: () => {},
-  roleInfo: ROLES['platform-engineer'],
+  roleInfo: ROLES.developer,
   isAllowed: () => true,
 });
 
 export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const identityApi = useApi(identityApiRef);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
-  const [role, setRoleState] = useState<UserRole>('platform-engineer');
+  const [userName, setUserName] = useState<string | undefined>(undefined);
+  const [role, setRoleState] = useState<UserRole>('developer');
 
   useEffect(() => {
     let isMounted = true;
@@ -117,13 +185,18 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
 
         const email = profile?.email;
+        const displayName = profile?.displayName;
         const userRef = identity?.userEntityRef;
+        const ownershipRefs = identity?.ownershipEntityRefs || [];
 
-        if (isMounted && email) {
-          setUserEmail(email);
+        if (isMounted) {
+          if (email) setUserEmail(email);
+          if (displayName || userRef) {
+            setUserName(displayName || userRef?.split('/').pop());
+          }
         }
 
-        const resolved = resolveRoleForUser(email, userRef);
+        const resolved = resolveRoleForUser(email, userRef, ownershipRefs);
         if (isMounted) {
           setRoleState(resolved);
           try {
@@ -152,7 +225,7 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const roleInfo = ROLES[role] || ROLES['platform-engineer'];
+  const roleInfo = ROLES[role] || ROLES.developer;
 
   const isAllowed = (tabOrFeature: string): boolean => {
     if (role === 'platform-engineer') return true;
@@ -160,7 +233,7 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <RoleContext.Provider value={{ role, setRole, roleInfo, isAllowed, userEmail }}>
+    <RoleContext.Provider value={{ role, setRole, roleInfo, isAllowed, userEmail, userName }}>
       {children}
     </RoleContext.Provider>
   );

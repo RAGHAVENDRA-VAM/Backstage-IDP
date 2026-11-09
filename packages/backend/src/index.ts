@@ -68,13 +68,29 @@ import {
 const enterpriseCustomResolver = createSignInResolverFactory({
   create() {
     return async (info, ctx) => {
-      // 1. Try mapping by GitHub username (e.g. RAGHAVENDRA-VAM -> raghavendra-vam)
       const username = (info.result as any)?.fullProfile?.username;
+      const email = info.profile.email;
+
+      // 1. Try mapping by GitHub username (lowercase, exact, or via annotations)
       if (username) {
         try {
           return await ctx.signInWithCatalogUser({
             filter: {
-              'metadata.name': username.toLowerCase(),
+              'metadata.name': [username.toLowerCase(), username],
+            },
+          });
+        } catch (e: any) {
+          if (e.name !== 'NotFoundError') throw e;
+        }
+
+        try {
+          return await ctx.signInWithCatalogUser({
+            filter: {
+              'metadata.annotations.github.com/user-login': [
+                username.toLowerCase(),
+                username,
+                username.toUpperCase(),
+              ],
             },
           });
         } catch (e: any) {
@@ -82,13 +98,12 @@ const enterpriseCustomResolver = createSignInResolverFactory({
         }
       }
 
-      // 2. Try mapping by GitHub email gracefully (without crashing if email is private)
-      const email = info.profile.email;
+      // 2. Try mapping by GitHub email gracefully
       if (email) {
         try {
           return await ctx.signInWithCatalogUser({
             filter: {
-              'spec.profile.email': email,
+              'spec.profile.email': [email.toLowerCase(), email],
             },
           });
         } catch (e: any) {
@@ -96,12 +111,24 @@ const enterpriseCustomResolver = createSignInResolverFactory({
         }
       }
 
-      // 3. Fallback: If no catalog profile exists, let them in anyway!
-      const fallbackId = username || email?.split('@')[0] || 'guest';
+      // 3. Fallback: If no catalog profile exists, determine ownership entity ref
+      const fallbackId = (username || email?.split('@')[0] || 'guest').toLowerCase();
+
+      // Map known members to their corresponding group entity ref
+      const finopsLogins = ['hari-var', 'shaikzaheer', 'hari.ponnamanda@valuemomentum.com', 'shaik.zaheer@valuemomentum.com'];
+      const devLogins = ['shashanktu', 'mohansai001', 'shashank.tudum@valuemomentum.com', 'mohansai.ande@valuemomentum.com'];
+
+      let groupRef = 'group:default/platform-engineering';
+      if (devLogins.includes(fallbackId) || (email && devLogins.includes(email.toLowerCase()))) {
+        groupRef = 'group:default/developers';
+      } else if (finopsLogins.includes(fallbackId) || (email && finopsLogins.includes(email.toLowerCase()))) {
+        groupRef = 'group:default/finops';
+      }
+
       return ctx.issueToken({
         claims: {
-          sub: `user:default/${fallbackId.toLowerCase()}`,
-          ent: [`user:default/${fallbackId.toLowerCase()}`],
+          sub: `user:default/${fallbackId}`,
+          ent: [`user:default/${fallbackId}`, groupRef],
         },
       });
     };
