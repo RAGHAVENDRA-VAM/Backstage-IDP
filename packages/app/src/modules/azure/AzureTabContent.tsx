@@ -276,8 +276,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
   const allResources = entityAppName
     ? rawAllResources.filter((r: any) =>
         r.name.toLowerCase().includes(entityAppName.toLowerCase()) ||
-        (entity?.metadata?.name && r.name.toLowerCase().includes(entity.metadata.name.toLowerCase().replace(/_/g, '-'))) ||
-        r.resourceGroup.toLowerCase() === 'devops-maf'
+        (entity?.metadata?.name && r.name.toLowerCase().includes(entity.metadata.name.toLowerCase().replace(/_/g, '-')))
       )
     : rawAllResources;
 
