@@ -1186,7 +1186,11 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
 
         <DialogActions style={{ padding: '16px 24px', borderTop: `1px solid ${classes.tabsHeader}` }}>
           <Button
-            href={`https://portal.azure.com/#resource/subscriptions/${selectedApp?.subscriptionId || resourcesData?.subscriptionId || 'default'}/resourceGroups/${selectedApp?.resourceGroup}/providers/Microsoft.Web/sites/${selectedApp?.name}/logStream`}
+            href={
+              selectedApp?.fullId
+                ? `https://portal.azure.com/#resource${selectedApp.fullId}/logStream`
+                : `https://portal.azure.com/#resource/subscriptions/${selectedApp?.subscriptionId || allResourcesData?.subscriptionId || 'default'}/resourceGroups/${selectedApp?.resourceGroup}/providers/Microsoft.Web/sites/${selectedApp?.name}/logStream`
+            }
             target="_blank"
             rel="noopener noreferrer"
             endIcon={<OpenInNewIcon fontSize="small" />}

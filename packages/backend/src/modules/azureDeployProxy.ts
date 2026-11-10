@@ -155,6 +155,8 @@ export const azureDeployProxyPlugin = createBackendPlugin({
             const webApps = (sitesData.value || []).map((site: any) => ({
               id: site.name,
               name: site.name,
+              fullId: site.id,
+              subscriptionId: site.id?.split('/')[2] || sub,
               resourceGroup: site.properties?.resourceGroup || site.id.split('/')[4],
               location: site.location,
               state: site.properties?.state || 'Running',
@@ -325,9 +327,10 @@ export const azureDeployProxyPlugin = createBackendPlugin({
               let advisorRecommendations: any[] = [];
               let totalPotentialSavings = 0;
               try {
+                const advToken = await getAzureManagementToken();
                 const advUrl = `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.Advisor/recommendations?api-version=2020-01-01`;
                 const advRes = await fetch(advUrl, {
-                  headers: { Authorization: `Bearer ${token}` },
+                  headers: { Authorization: `Bearer ${advToken}` },
                 });
                 if (advRes.ok) {
                   const advData = await advRes.json();
