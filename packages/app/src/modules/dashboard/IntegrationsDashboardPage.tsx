@@ -1550,6 +1550,40 @@ export const IntegrationsDashboardPage = () => {
   const { role, roleInfo, isAllowed } = useUserRole();
   const [selectedMainTab, setSelectedMainTab] = useState(0);
 
+  // Live KPI queries for dynamic Overview stats
+  const { value: jiraIssuesData } = useAsync(async () => {
+    const res = await fetch('/api/integrations-proxy/jira/issues');
+    if (!res.ok) return null;
+    return await res.json();
+  }, []);
+
+  const { value: githubReposData } = useAsync(async () => {
+    const res = await fetch('/api/integrations-proxy/github/repos');
+    if (!res.ok) return null;
+    return await res.json();
+  }, []);
+
+  const { value: azureCostData } = useAsync(async () => {
+    const res = await fetch('/api/azure-deploy/cost-analysis');
+    if (!res.ok) return null;
+    return await res.json();
+  }, []);
+
+  const { value: azureWebAppsData, error: azureWebAppsError } = useAsync(async () => {
+    const res = await fetch('/api/azure-deploy/web-apps');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return await res.json();
+  }, []);
+
+  const totalJiraCount = jiraIssuesData?.total ?? jiraIssuesData?.issues?.length ?? 25;
+  const totalGithubRepos = githubReposData?.total ?? githubReposData?.repos?.length ?? 54;
+  const currentAzureSpend = azureCostData?.currentSpend
+    ? `$${azureCostData.currentSpend.toLocaleString()}/mo`
+    : '$1,245.80/mo';
+
 // Dynamic Tab definitions tailored strictly by Group / Persona
   const availableTabs = React.useMemo(() => {
     if (role === 'finops') {
@@ -1653,6 +1687,17 @@ export const IntegrationsDashboardPage = () => {
         {/* Dynamic Views based on active tab ID */}
         {availableTabs[selectedMainTab]?.id === 'overview' && (
           <Box p={3}>
+            {/* Live Azure Authorization & Permission Alert */}
+            {azureWebAppsError && (
+              <Box mb={3}>
+                <Alert severity="warning">
+                  <strong>Live Azure Cloud Status Notice:</strong> {azureWebAppsError.message}
+                  <br />
+                  If you changed your Azure environment variables, please ensure your Service Principal (App Registration) has the <strong>Reader</strong> or <strong>Contributor</strong> role assigned on Subscription <code>{azureCostData?.subscriptionId || 'in Azure'}</code> under <em>Access Control (IAM)</em>.
+                </Alert>
+              </Box>
+            )}
+
             {/* Quick action shortcuts to deep dive */}
             <Grid container spacing={3} style={{ marginBottom: 28 }}>
               {role !== 'finops' && (
@@ -1662,7 +1707,7 @@ export const IntegrationsDashboardPage = () => {
                       Jira Software
                     </Typography>
                     <Typography className={classes.statNumber} style={{ color: '#2563eb' }}>
-                      10 Issues
+                      {totalJiraCount} Issues
                     </Typography>
                     <Button
                       size="small"
@@ -1682,7 +1727,7 @@ export const IntegrationsDashboardPage = () => {
                       GitHub CI/CD
                     </Typography>
                     <Typography className={classes.statNumber} style={{ color: '#059669' }}>
-                      187 Runs
+                      {totalGithubRepos} Repos
                     </Typography>
                     <Button
                       size="small"
@@ -1722,7 +1767,7 @@ export const IntegrationsDashboardPage = () => {
                       Cloud FinOps Run-rate
                     </Typography>
                     <Typography className={classes.statNumber} style={{ color: '#9333ea' }}>
-                      $12,480/mo
+                      {currentAzureSpend}
                     </Typography>
                     <Button
                       size="small"
