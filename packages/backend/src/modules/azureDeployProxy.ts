@@ -237,8 +237,9 @@ export const azureDeployProxyPlugin = createBackendPlugin({
 
             let liveCostData: any = null;
             let usedLiveApi = false;
-
             let apiErrorDetail: string | null = null;
+            let advisorRecommendations: any[] = [];
+            let totalPotentialSavings = 0;
 
             try {
               const token = await getAzureManagementToken();
@@ -334,8 +335,6 @@ export const azureDeployProxyPlugin = createBackendPlugin({
               const percentBudget = Math.round((totalCost / budgetMonthly) * 100);
 
               // Fetch real Azure Advisor Cost & HighAvailability Recommendations live!
-              let advisorRecommendations: any[] = [];
-              let totalPotentialSavings = 0;
               try {
                 const advToken = await getAzureManagementToken();
                 const advUrl = `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.Advisor/recommendations?api-version=2020-01-01`;
