@@ -996,7 +996,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                         <TableCell>
                           <IconButton
                             size="small"
-                            href={`https://portal.azure.com/#@5f3ec70f-0215-4f44-bdab-f5beda7cdd74/resource${r.id}`}
+                            href={`https://portal.azure.com/#resource${r.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -1186,7 +1186,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
 
         <DialogActions style={{ padding: '16px 24px', borderTop: `1px solid ${classes.tabsHeader}` }}>
           <Button
-            href={`https://portal.azure.com/#@5f3ec70f-0215-4f44-bdab-f5beda7cdd74/resource/subscriptions/46269e09-e1e1-4067-af90-78fd27b1b64d/resourceGroups/${selectedApp?.resourceGroup}/providers/Microsoft.Web/sites/${selectedApp?.name}/logStream`}
+            href={`https://portal.azure.com/#resource/subscriptions/${selectedApp?.subscriptionId || resourcesData?.subscriptionId || 'default'}/resourceGroups/${selectedApp?.resourceGroup}/providers/Microsoft.Web/sites/${selectedApp?.name}/logStream`}
             target="_blank"
             rel="noopener noreferrer"
             endIcon={<OpenInNewIcon fontSize="small" />}

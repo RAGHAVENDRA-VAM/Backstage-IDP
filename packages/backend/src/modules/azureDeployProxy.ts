@@ -216,6 +216,8 @@ export const azureDeployProxyPlugin = createBackendPlugin({
               total: resources.length,
               resources,
               typeSummary,
+              subscriptionId: sub,
+              tenantId: process.env.AZURE_TENANT_ID || config.getOptionalString('azure.tenantId') || '',
             });
           } catch (e: any) {
             res.status(500).json({ error: e.message });
