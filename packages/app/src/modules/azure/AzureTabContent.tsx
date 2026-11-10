@@ -631,6 +631,16 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
               </Box>
             </Box>
 
+            {costData?.apiError && (
+              <Box mb={3}>
+                <Alert severity="warning">
+                  <strong>Azure FinOps Live API Notice:</strong> {costData.apiError}
+                  <br />
+                  To stream live billing and cost metrics directly from Subscription <code>{costData.subscriptionId}</code>, assign the <strong>Cost Management Reader</strong> role to your Service Principal under <em>Azure Portal → Subscriptions → Access control (IAM)</em>.
+                </Alert>
+              </Box>
+            )}
+
             {costLoading ? (
               <Box display="flex" justifyContent="center" py={6}>
                 <CircularProgress />

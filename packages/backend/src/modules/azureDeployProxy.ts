@@ -238,6 +238,8 @@ export const azureDeployProxyPlugin = createBackendPlugin({
             let liveCostData: any = null;
             let usedLiveApi = false;
 
+            let apiErrorDetail: string | null = null;
+
             try {
               const token = await getAzureManagementToken();
               const costApiUrl = `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.CostManagement/query?api-version=2023-03-01`;
@@ -274,9 +276,17 @@ export const azureDeployProxyPlugin = createBackendPlugin({
               if (armCostRes.ok) {
                 liveCostData = await armCostRes.json();
                 usedLiveApi = true;
+              } else {
+                const errText = await armCostRes.text();
+                try {
+                  const parsed = JSON.parse(errText);
+                  apiErrorDetail = parsed.error?.message || errText;
+                } catch {
+                  apiErrorDetail = `Azure CostManagement API returned HTTP ${armCostRes.status}: ${errText}`;
+                }
               }
             } catch (err: any) {
-              // fallback
+              apiErrorDetail = err.message;
             }
 
             // If live data was returned from Azure, calculate real metrics!
@@ -458,6 +468,7 @@ export const azureDeployProxyPlugin = createBackendPlugin({
               subscriptionId: sub,
               billingPeriod: 'Current Month (Month-to-Date)',
               usedLiveApi: false,
+              apiError: apiErrorDetail,
               budget: budgetMonthly,
               currentSpend,
               projectedMonthEnd,
