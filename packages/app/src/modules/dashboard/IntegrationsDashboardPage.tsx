@@ -1085,7 +1085,7 @@ const DatadogLiveDashboardView = () => {
               Configured Monitors
             </Typography>
             <Typography className={classes.statNumber} style={{ color: '#7c3aed' }}>
-              {monitors.length > 0 ? monitors.length : 7} Alerts
+              {monitors.length} Alerts
             </Typography>
             <Typography variant="caption" color="textSecondary">
               CPU, RAM, Disk & Network

@@ -1,4 +1,5 @@
 import React from 'react';
+import useAsync from 'react-use/lib/useAsync';
 import {
   Box,
   Card,
@@ -68,6 +69,15 @@ const useStyles = makeStyles(theme => ({
 export const AutomationGoldenPathsView: React.FC = () => {
   const classes = useStyles();
   const navigate = useNavigate();
+
+  // Fetch live GitHub workflow runs dynamically from the repository
+  const { value: overviewData } = useAsync(async () => {
+    const res = await fetch('/api/integrations-proxy/github/overview?repo=RAGHAVENDRA-VAM/Backstage-IDP');
+    if (!res.ok) return null;
+    return await res.json();
+  }, []);
+
+  const liveRunsCount = overviewData?.runs?.length ? `${overviewData.runs.length} Runs` : 'Live Synced';
 
   const templates = [
     {
@@ -163,7 +173,7 @@ export const AutomationGoldenPathsView: React.FC = () => {
                 Automated Deployments
               </Typography>
               <Typography className={classes.statNumber} style={{ color: '#7c3aed' }}>
-                187 Runs
+                {liveRunsCount}
               </Typography>
               <Typography variant="caption" color="textSecondary">
                 Executed via GitHub Actions
