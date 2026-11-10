@@ -265,7 +265,7 @@ const JiraLiveDashboardView = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
           <Typography variant="h6" style={{ fontWeight: 800, color: '#0f3156' }}>
-            Jira Software Cloud — Project: SCRUM (M&M Insurance)
+            Jira Software Cloud — Live Backlog & Sprint Workspace
           </Typography>
           <Typography variant="body2" color="textSecondary">
             Live backlog, user stories, defects, and sprint intake tickets across all components synchronized in real-time.
@@ -438,7 +438,7 @@ const JiraLiveDashboardView = () => {
 const GitHubLiveDashboardView = () => {
   const classes = useStyles();
   const [activeSubTab, setActiveSubTab] = useState(0);
-  const [selectedRepo, setSelectedRepo] = useState('RAGHAVENDRA-VAM/Claims_UI');
+  const [selectedRepo, setSelectedRepo] = useState('');
   const [repoSearch, setRepoSearch] = useState('');
   const [registeringRepo, setRegisteringRepo] = useState<string | null>(null);
   const [registerStatus, setRegisterStatus] = useState<{ [repo: string]: string }>({});
@@ -455,6 +455,13 @@ const GitHubLiveDashboardView = () => {
   }, []);
 
   const allRepos = allReposData?.repos || [];
+
+  // Auto-select first repo from user's account if not set
+  React.useEffect(() => {
+    if (!selectedRepo && allRepos.length > 0) {
+      setSelectedRepo(allRepos[0].fullName);
+    }
+  }, [allRepos, selectedRepo]);
 
   // 2. Fetch specific selected repo details
   const {
