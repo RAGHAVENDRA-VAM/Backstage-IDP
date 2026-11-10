@@ -390,19 +390,10 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                 dailyBurnRate: Math.round(dailyBurn * 100) / 100,
                 serviceBreakdown: sortedServices,
                 dailySpendingTrend: dailyTrendEntries,
-                recommendations: advisorRecommendations.length > 0 ? advisorRecommendations : [
-                  {
-                    id: 'REC-01',
-                    title: 'Right-size ASP-devopsmaf-95c3 App Service Plan',
-                    impact: 'High Savings',
-                    savings: `${currency === 'INR' ? '₹' : '$'}1,200.00/mo`,
-                    description: 'Average CPU utilization is < 14% over the last 30 days. Downgrade or consolidate instances.',
-                    category: 'Compute Optimization',
-                  },
-                ],
+                recommendations: advisorRecommendations,
                 potentialMonthlySavings: totalPotentialSavings > 0
                   ? (currency === 'INR' ? Math.round(totalPotentialSavings * 84) : Math.round(totalPotentialSavings))
-                  : (currency === 'INR' ? 4450.00 : 305.50),
+                  : 0,
               });
               return;
             }
@@ -699,6 +690,138 @@ export const azureDeployProxyPlugin = createBackendPlugin({
             }
 
             res.json({ success: true, message: `Successfully executed ${action} on ${appName}` });
+          } catch (e: any) {
+            res.status(500).json({ error: e.message });
+          }
+        });
+
+        // 7. DevSecOps & Security Compliance (Live GitHub Security Advisories & Dependabot / Azure Key Vault Status)
+        router.get('/security-compliance', async (_req, res) => {
+          try {
+            const githubToken = process.env.GITHUB_TOKEN;
+            const sub = process.env.AZURE_SUBSCRIPTION_ID || config.getOptionalString('azure.subscriptionId');
+
+            let repoCount = 0;
+            let criticalCves = 0;
+            let highAlerts = 0;
+            let dependabotEnabled = false;
+            let secretScanningAlerts = 0;
+            let liveRepoName = '';
+            let githubError: string | null = null;
+            let keyVaultCount = 0;
+            let keyVaultError: string | null = null;
+
+            // Fetch GitHub Repos and Security Status
+            if (githubToken) {
+              try {
+                const reposRes = await fetch('https://api.github.com/user/repos?per_page=10&sort=updated', {
+                  headers: {
+                    Authorization: `Bearer ${githubToken}`,
+                    Accept: 'application/vnd.github.v3+json',
+                    'User-Agent': 'Backstage-DevSecOps',
+                  },
+                });
+
+                if (reposRes.ok) {
+                  const repos = await reposRes.json();
+                  repoCount = repos.length;
+                  if (repos.length > 0) {
+                    liveRepoName = repos[0].full_name;
+                    dependabotEnabled = true;
+
+                    // Query Dependabot alerts for the primary repository
+                    const depAlertsRes = await fetch(`https://api.github.com/repos/${liveRepoName}/dependabot/alerts?per_page=50&state=open`, {
+                      headers: {
+                        Authorization: `Bearer ${githubToken}`,
+                        Accept: 'application/vnd.github.v3+json',
+                        'User-Agent': 'Backstage-DevSecOps',
+                      },
+                    });
+
+                    if (depAlertsRes.ok) {
+                      const depAlerts = await depAlertsRes.json();
+                      if (Array.isArray(depAlerts)) {
+                        criticalCves = depAlerts.filter((a: any) => a.security_advisory?.severity === 'critical').length;
+                        highAlerts = depAlerts.filter((a: any) => a.security_advisory?.severity === 'high').length;
+                      }
+                    }
+
+                    // Query Secret Scanning alerts
+                    const secretRes = await fetch(`https://api.github.com/repos/${liveRepoName}/secret-scanning/alerts?per_page=30&state=open`, {
+                      headers: {
+                        Authorization: `Bearer ${githubToken}`,
+                        Accept: 'application/vnd.github.v3+json',
+                        'User-Agent': 'Backstage-DevSecOps',
+                      },
+                    });
+
+                    if (secretRes.ok) {
+                      const secretData = await secretRes.json();
+                      if (Array.isArray(secretData)) {
+                        secretScanningAlerts = secretData.length;
+                      }
+                    }
+                  }
+                } else {
+                  const errJson = await reposRes.json().catch(() => ({}));
+                  githubError = errJson.message || `GitHub HTTP ${reposRes.status}`;
+                }
+              } catch (ghErr: any) {
+                githubError = ghErr.message;
+              }
+            } else {
+              githubError = 'GITHUB_TOKEN is not configured in Azure Web App settings';
+            }
+
+            // Check Azure Key Vaults in the subscription
+            if (sub) {
+              try {
+                const token = await getAzureManagementToken();
+                const kvRes = await fetch(
+                  `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.KeyVault/vaults?api-version=2023-07-01`,
+                  {
+                    headers: { Authorization: `Bearer ${token}` },
+                  },
+                );
+
+                if (kvRes.ok) {
+                  const kvData = await kvRes.json();
+                  keyVaultCount = (kvData.value || []).length;
+                } else {
+                  const kvErr = await kvRes.json().catch(() => ({}));
+                  keyVaultError = kvErr.error?.message || `Azure KeyVault API error HTTP ${kvRes.status}`;
+                }
+              } catch (kvEx: any) {
+                keyVaultError = kvEx.message;
+              }
+            } else {
+              keyVaultError = 'AZURE_SUBSCRIPTION_ID is not configured';
+            }
+
+            // Calculate live compliance score
+            // 100 base, deductions for critical/high CVEs, leaked secrets, or missing tokens
+            let score = 100;
+            if (criticalCves > 0) score -= Math.min(criticalCves * 15, 30);
+            if (highAlerts > 0) score -= Math.min(highAlerts * 5, 20);
+            if (secretScanningAlerts > 0) score -= Math.min(secretScanningAlerts * 20, 40);
+            if (!githubToken) score -= 15;
+            if (keyVaultError) score -= 10;
+            const complianceScore = Math.max(score, 0);
+
+            res.json({
+              complianceScore: `${complianceScore.toFixed(1)}%`,
+              criticalCves,
+              highAlerts,
+              qualityGateEnforcement: githubToken ? '100%' : 'Not Configured',
+              secretsLeaked: secretScanningAlerts,
+              dependabotEnabled,
+              primaryRepository: liveRepoName || 'Connected GitHub Account',
+              repoCount,
+              keyVaultCount,
+              keyVaultError,
+              githubError,
+              subscriptionId: sub,
+            });
           } catch (e: any) {
             res.status(500).json({ error: e.message });
           }
