@@ -226,16 +226,22 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   // Fetch Web Apps / App Services
-  const { value: webAppsData, loading: webAppsLoading, retry: retryWebApps } = useAsync(async () => {
+  const { value: webAppsData, loading: webAppsLoading, error: webAppsError, retry: retryWebApps } = useAsync(async () => {
     const res = await fetch('/api/azure-deploy/web-apps');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
     return await res.json();
   }, []);
 
   // Fetch All Azure Resources
-  const { value: allResourcesData, loading: resourcesLoading, retry: retryResources } = useAsync(async () => {
+  const { value: allResourcesData, loading: resourcesLoading, error: resourcesError, retry: retryResources } = useAsync(async () => {
     const res = await fetch('/api/azure-deploy/resources');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
     return await res.json();
   }, []);
 
@@ -275,7 +281,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
     : rawAllResources;
 
   const typeSummary = allResourcesData?.typeSummary || {};
-  const totalResources = allResources.length || rawAllResources.length || 193;
+  const totalResources = allResources.length || rawAllResources.length || 0;
 
   const runningAppsCount = webApps.filter((w: any) => w.state.toLowerCase() === 'running').length;
 
@@ -340,8 +346,16 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
             {entityAppName && (
               <Chip label={`Target App: ${entityAppName}`} size="small" className={classes.badgePill} />
             )}
-            <Chip label="Subscription: 46269e09..." size="small" className={classes.badgePill} />
-            <Chip label="Resource Group: devops-maf" size="small" className={classes.badgePill} />
+            <Chip
+              label={`Subscription: ${(allResourcesData?.subscriptionId || 'Connected').slice(0, 13)}...`}
+              size="small"
+              className={classes.badgePill}
+            />
+            <Chip
+              label={`Resource Groups: ${new Set(rawWebApps.map((w: any) => w.resourceGroup)).size || 'Active'}`}
+              size="small"
+              className={classes.badgePill}
+            />
             <Chip label="ARM API v2022-03-01: Live" size="small" className={classes.badgePill} />
           </Box>
         </Box>
@@ -383,7 +397,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
               App Services Deployed
             </Typography>
             <Typography className={classes.statNumber}>
-              {webApps.length || 11}
+              {webApps.length}
             </Typography>
             <Typography variant="caption" color="textSecondary">
               Web Apps & APIs
@@ -480,6 +494,16 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                 </IconButton>
               </Box>
             </Box>
+
+            {webAppsError && (
+              <Box mb={2}>
+                <Alert severity="warning">
+                  <strong>Azure Access Notice:</strong> {webAppsError.message}
+                  <br />
+                  Please ensure your Service Principal (App Registration) has the <strong>Reader</strong> or <strong>Contributor</strong> role assigned on Subscription <code>{allResourcesData?.subscriptionId || 'in Azure'}</code> under <em>Access Control (IAM)</em>.
+                </Alert>
+              </Box>
+            )}
 
             {webAppsLoading ? (
               <Box display="flex" justifyContent="center" py={6}>
