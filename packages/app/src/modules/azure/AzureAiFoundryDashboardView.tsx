@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Alert from '@material-ui/lab/Alert';
 import {
   Box,
   Card,
@@ -109,6 +110,16 @@ export const AzureAiFoundryDashboardView = () => {
         </Box>
       </Box>
 
+      {aiData?.apiError && (
+        <Box mb={3}>
+          <Alert severity="warning">
+            <strong>Azure AI Foundry Telemetry Notice:</strong> {aiData.apiError}
+            <br />
+            To stream live deployments and token usage from Subscription <code>{aiData.subscriptionId}</code>, ensure your Service Principal has the <strong>Reader</strong> or <strong>Cognitive Services Contributor</strong> role assigned under <em>Azure Portal → Subscriptions → Access control (IAM)</em>.
+          </Alert>
+        </Box>
+      )}
+
       {loading ? (
         <Box display="flex" justifyContent="center" py={8}>
           <CircularProgress />
@@ -123,7 +134,7 @@ export const AzureAiFoundryDashboardView = () => {
                   GenAI Month-to-Date Spend
                 </Typography>
                 <Typography className={classes.statNumber} style={{ color: '#0f3156' }}>
-                  {aiData?.totalAiSpendFormatted || '$157.33'}
+                  {aiData?.totalAiSpendFormatted || '$0.00'}
                 </Typography>
                 <Box mt={1}>
                   <Box display="flex" justifyContent="space-between" mb={0.5}>

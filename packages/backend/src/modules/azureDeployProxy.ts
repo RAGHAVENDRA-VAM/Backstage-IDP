@@ -499,6 +499,7 @@ export const azureDeployProxyPlugin = createBackendPlugin({
 
             // Query Real Azure Cognitive Services & Azure OpenAI Accounts from the subscription
             let liveModels: any[] = [];
+            let cogApiError: string | null = null;
             try {
               const token = await getAzureManagementToken();
               const cogUrl = `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.CognitiveServices/accounts?api-version=2023-05-01`;
@@ -533,15 +534,15 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                           tpmQuota: d.sku?.capacity ? `${d.sku.capacity}K TPM` : 'Managed Quota',
                           promptCostPer1k: modelName.includes('mini') ? 0.00015 : (modelName.includes('embedding') ? 0.00002 : 0.0025),
                           completionCostPer1k: modelName.includes('mini') ? 0.0006 : (modelName.includes('embedding') ? 0.0 : 0.0100),
-                          totalTokens: `${(Math.floor(Math.random() * 20) + 10)}.${Math.floor(Math.random() * 9)}M`,
-                          promptTokens: '12.4M',
-                          completionTokens: '4.8M',
-                          spend: 42.50,
-                          spendCurrency: currency === 'INR' ? '₹3,570.00' : '$42.50',
+                          totalTokens: 'Live Metered',
+                          promptTokens: 'Live',
+                          completionTokens: 'Live',
+                          spend: 0,
+                          spendCurrency: '$0.00',
                           costPercentage: Math.floor(100 / Math.max(deps.length, 1)),
-                          workload: `Azure Cognitive Resource [${acc.name}] in ${acc.id.split('/')[4] || 'devops-maf'}`,
+                          workload: `Azure Cognitive Resource [${acc.name}] in ${acc.id.split('/')[4] || 'Azure'}`,
                           status: 'Healthy',
-                          latencyP95: `${Math.floor(Math.random() * 200) + 120} ms`,
+                          latencyP95: 'Live',
                         });
                       }
                     }
@@ -549,168 +550,32 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                     // skip individual deployment failure
                   }
                 }
+              } else {
+                const errText = await cogRes.text();
+                try {
+                  cogApiError = JSON.parse(errText)?.error?.message || errText;
+                } catch {
+                  cogApiError = `CognitiveServices API error HTTP ${cogRes.status}`;
+                }
               }
-            } catch (_cogErr) {
-              // fallback gracefully
+            } catch (cogErr: any) {
+              cogApiError = cogErr.message;
             }
 
-            // Real Model Portfolio deployed in Azure AI Foundry & Cognitive Studio
-            const models = liveModels.length > 0 ? liveModels : [
-              {
-                id: 'mdl-gpt4o',
-                name: 'gpt-4o',
-                version: '2024-08-06',
-                provider: 'OpenAI (Foundry Model Catalog)',
-                deploymentType: 'Global Standard (Pay-As-You-Go)',
-                tpmQuota: '450K TPM',
-                promptCostPer1k: 0.0025,
-                completionCostPer1k: 0.0100,
-                totalTokens: '18.4M',
-                promptTokens: '13.2M',
-                completionTokens: '5.2M',
-                spend: 85.00,
-                spendCurrency: currency === 'INR' ? '₹7,140.00' : '$85.00',
-                costPercentage: 54,
-                workload: 'Claims UI — GenAI Policy Extraction & Underwriting Analysis',
-                status: 'Healthy',
-                latencyP95: '640 ms',
-              },
-              {
-                id: 'mdl-gpt4o-mini',
-                name: 'gpt-4o-mini',
-                version: '2024-07-18',
-                provider: 'OpenAI (Foundry Model Catalog)',
-                deploymentType: 'Standard',
-                tpmQuota: '1,000K TPM',
-                promptCostPer1k: 0.00015,
-                completionCostPer1k: 0.0006,
-                totalTokens: '42.8M',
-                promptTokens: '34.1M',
-                completionTokens: '8.7M',
-                spend: 10.33,
-                spendCurrency: currency === 'INR' ? '₹867.72' : '$10.33',
-                costPercentage: 7,
-                workload: 'Customer Chatbot Intent Classification & Triage',
-                status: 'Healthy',
-                latencyP95: '210 ms',
-              },
-              {
-                id: 'mdl-embed-3-small',
-                name: 'text-embedding-3-small',
-                version: '1',
-                provider: 'OpenAI',
-                deploymentType: 'Standard',
-                tpmQuota: '350K TPM',
-                promptCostPer1k: 0.00002,
-                completionCostPer1k: 0.0,
-                totalTokens: '128.5M',
-                promptTokens: '128.5M',
-                completionTokens: '0M',
-                spend: 2.57,
-                spendCurrency: currency === 'INR' ? '₹215.88' : '$2.57',
-                costPercentage: 2,
-                workload: 'TechDocs Enterprise RAG Vector Search & Embeddings',
-                status: 'Healthy',
-                latencyP95: '45 ms',
-              },
-              {
-                id: 'mdl-phi-3-mini',
-                name: 'Phi-3-mini-4k-instruct',
-                version: '2',
-                provider: 'Microsoft Research (Open Weights)',
-                deploymentType: 'Serverless API (MaaS)',
-                tpmQuota: '200K TPM',
-                promptCostPer1k: 0.00015,
-                completionCostPer1k: 0.00015,
-                totalTokens: '8.2M',
-                promptTokens: '5.6M',
-                completionTokens: '2.6M',
-                spend: 1.23,
-                spendCurrency: currency === 'INR' ? '₹103.32' : '$1.23',
-                costPercentage: 1,
-                workload: 'Offline Batch Summaries & Risk Scoring Logs',
-                status: 'Healthy',
-                latencyP95: '125 ms',
-              },
-              {
-                id: 'mdl-search-rag',
-                name: 'Azure AI Search (Semantic Ranker)',
-                version: '2024-05-01-preview',
-                provider: 'Azure Cognitive Services',
-                deploymentType: 'Standard S1 Index',
-                tpmQuota: 'N/A (Managed Units)',
-                promptCostPer1k: 0.0,
-                completionCostPer1k: 0.0,
-                totalTokens: 'N/A',
-                promptTokens: 'N/A',
-                completionTokens: 'N/A',
-                spend: 58.20,
-                spendCurrency: currency === 'INR' ? '₹4,888.80' : '$58.20',
-                costPercentage: 36,
-                workload: 'Hybrid BM25 + Vector Retrieval Knowledge Index',
-                status: 'Healthy',
-                latencyP95: '88 ms',
-              },
-            ];
-
-            const totalAiSpend = 157.33;
-            const budgetMonthly = currency === 'INR' ? 25000.00 : 300.00;
-            const percentOfBudget = Math.round((totalAiSpend / (currency === 'INR' ? 300.00 : budgetMonthly)) * 100);
-
-            const dailyTokenTrend = [
-              { day: 'Day 1', promptTokens: 4.8, completionTokens: 1.4, cost: 4.2 },
-              { day: 'Day 3', promptTokens: 5.6, completionTokens: 1.8, cost: 5.1 },
-              { day: 'Day 5', promptTokens: 5.1, completionTokens: 1.6, cost: 4.8 },
-              { day: 'Day 8', promptTokens: 6.9, completionTokens: 2.3, cost: 6.4 },
-              { day: 'Day 10', promptTokens: 6.2, completionTokens: 2.1, cost: 5.9 },
-              { day: 'Day 12', promptTokens: 5.8, completionTokens: 1.9, cost: 5.4 },
-              { day: 'Day 15', promptTokens: 7.4, completionTokens: 2.8, cost: 7.1 },
-              { day: 'Day 17', promptTokens: 6.5, completionTokens: 2.2, cost: 6.0 },
-              { day: 'Day 19', promptTokens: 6.1, completionTokens: 2.0, cost: 5.7 },
-              { day: 'Day 21', promptTokens: 5.9, completionTokens: 1.9, cost: 5.5 },
-            ];
-
-            const projectAllocations = [
-              { project: 'Claims UI (GenAI Document Extractor)', share: 58, cost: '$91.25', model: 'gpt-4o' },
-              { project: 'Risk Analysis Copilot & Scoring', share: 22, cost: '$34.61', model: 'gpt-4o-mini + Phi-3' },
-              { project: 'Enterprise TechDocs RAG Search', share: 15, cost: '$23.60', model: 'text-embedding-3 + AI Search' },
-              { project: 'Developer Platform Sandbox & Testing', share: 5, cost: '$7.87', model: 'gpt-4o-mini' },
-            ];
-
-            const optimizations = [
-              {
-                id: 'AI-OPT-01',
-                title: 'Route High-Volume Triage Queries to gpt-4o-mini',
-                impact: 'High Savings',
-                savings: '$48.50/mo (62% reduction)',
-                category: 'Model Tier Rightsizing',
-                description: '38% of prompts sent to gpt-4o are simple short-form classifications that perform with 99.2% accuracy on gpt-4o-mini at 1/16th the token cost.',
-              },
-              {
-                id: 'AI-OPT-02',
-                title: 'Enable Prompt Caching on Repeated System Instructions',
-                impact: 'Medium Savings',
-                savings: '$24.00/mo',
-                category: 'Prompt Engineering & Cache',
-                description: 'System prompts in the Claims Extractor exceed 1,500 tokens and are reused frequently. Enabling Azure Prompt Caching grants 50% discount on cache hits.',
-              },
-              {
-                id: 'AI-OPT-03',
-                title: 'Implement Token Truncation & Max Output Constraints',
-                impact: 'Medium Savings',
-                savings: '$16.20/mo',
-                category: 'Inference Guardrail',
-                description: 'Setting max_tokens: 1024 on chat intent handlers prevents runaway completion generation loops.',
-              },
-            ];
+            // Only return real models found in Azure subscription
+            const models = liveModels;
+            const totalAiSpend = liveAiCostRows.reduce((acc, row) => acc + (Number(row[0]) || 0), 0);
+            const budgetMonthly = 300.00;
+            const percentOfBudget = budgetMonthly > 0 ? Math.round((totalAiSpend / budgetMonthly) * 100) : 0;
 
             res.json({
               currency,
               subscriptionId: sub,
+              apiError: cogApiError,
               hubName: process.env.AZURE_AI_HUB_NAME || (models.length > 0 ? `${models[0].provider.split('(')[1]?.replace(')', '') || 'Azure'}-AI-Hub` : 'Azure-AI-Foundry'),
               projectCount: models.length > 0 ? new Set(models.map((m: any) => m.workload)).size : 0,
               totalModelsDeployed: models.length,
-              totalTokensProcessed: usedLiveApi ? `${Math.round(totalAiSpend * 1200)}K` : '0',
+              totalTokensProcessed: models.length > 0 ? 'Live Telemetry' : '0',
               totalAiSpend,
               totalAiSpendFormatted: currency === 'INR' ? `₹${totalAiSpend.toFixed(2)}` : `$${totalAiSpend.toFixed(2)}`,
               budgetMonthly,
@@ -718,10 +583,10 @@ export const azureDeployProxyPlugin = createBackendPlugin({
               dailyBurnRate: Math.round((totalAiSpend / 30) * 100) / 100,
               usedLiveApi,
               models,
-              dailyTokenTrend: usedLiveApi ? dailyTokenTrend : [],
-              projectAllocations: usedLiveApi ? projectAllocations : [],
-              optimizations: usedLiveApi ? optimizations : [],
-              potentialSavings: currency === 'INR' ? '₹0.00' : '$0.00',
+              dailyTokenTrend: [],
+              projectAllocations: [],
+              optimizations: [],
+              potentialSavings: '$0.00',
             });
           } catch (e: any) {
             res.status(500).json({ error: e.message });
