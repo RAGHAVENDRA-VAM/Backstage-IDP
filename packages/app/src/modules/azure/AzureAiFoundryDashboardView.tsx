@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import useAsync from 'react-use/lib/useAsync';
 import Alert from '@material-ui/lab/Alert';
 import {
   Box,
@@ -6,8 +7,6 @@ import {
   Chip,
   Grid,
   Typography,
-  Tabs,
-  Tab,
   Button,
   makeStyles,
   Table,
@@ -17,35 +16,44 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress,
+  Tabs,
+  Tab,
   LinearProgress,
+  CircularProgress,
 } from '@material-ui/core';
-import RefreshIcon from '@material-ui/icons/Refresh';
-import LaunchIcon from '@material-ui/icons/Launch';
-import EcoIcon from '@material-ui/icons/Eco';
 import MemoryIcon from '@material-ui/icons/Memory';
-import SpeedIcon from '@material-ui/icons/Speed';
-import HubIcon from '@material-ui/icons/Share';
-import ViewListIcon from '@material-ui/icons/ViewList';
 import TrendingUpIcon from '@material-ui/icons/TrendingUp';
+import EcoIcon from '@material-ui/icons/Eco';
+import HubIcon from '@material-ui/icons/DeviceHub';
+import ViewListIcon from '@material-ui/icons/ViewList';
+import LaunchIcon from '@material-ui/icons/Launch';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
-import useAsync from 'react-use/lib/useAsync';
+import SpeedIcon from '@material-ui/icons/Speed';
+import RefreshIcon from '@material-ui/icons/Refresh';
 
 const useStyles = makeStyles(theme => ({
+  heroBanner: {
+    background: 'linear-gradient(135deg, #1e1b4b 0%, #31104b 50%, #0f172a 100%)',
+    color: '#ffffff',
+    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(3.5, 4),
+    marginBottom: theme.spacing(3),
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+  },
   statCard: {
     padding: theme.spacing(2.5),
-    borderRadius: 8,
-    border: '1px solid #e2e8f0',
-    backgroundColor: '#ffffff',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    borderRadius: theme.shape.borderRadius,
+    border: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
+    boxShadow: theme.shadows[1],
   },
   statNumber: {
-    fontSize: '2rem',
     fontWeight: 800,
-    margin: '4px 0',
+    fontSize: '2rem',
+    margin: theme.spacing(0.5, 0),
   },
   subTabContainer: {
-    borderBottom: '1px solid #e2e8f0',
+    borderBottom: `1px solid ${theme.palette.divider}`,
     marginBottom: theme.spacing(3),
   },
 }));
@@ -54,61 +62,71 @@ export const AzureAiFoundryDashboardView = () => {
   const classes = useStyles();
   const [activeSubTab, setActiveSubTab] = useState(0);
 
-  const { value: aiData, loading, retry } = useAsync(async () => {
+  const { value: aiData, loading, error, retry } = useAsync(async () => {
     const res = await fetch('/api/azure-deploy/ai-foundry-costs');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
     return await res.json();
   }, []);
 
+  const models = aiData?.models || [];
+  const modelCount = models.length;
+
   return (
     <Box p={3}>
-      {/* Header Banner */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
-        <Box>
-          <Box display="flex" alignItems="center" gap={1.5}>
-            <Typography variant="h6" style={{ fontWeight: 800, color: '#0f3156' }}>
-              Azure AI Foundry — GenAI Model Governance & Cost Analytics
+      {/* Top Banner */}
+      <Box className={classes.heroBanner}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+          <Box>
+            <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+              <Chip
+                label="LIVE AZURE TELEMETRY"
+                size="small"
+                style={{ backgroundColor: '#7c3aed', color: '#ffffff', fontWeight: 800, fontSize: '0.7rem' }}
+              />
+              <Typography variant="caption" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                Subscription: {aiData?.subscriptionId || 'Active'}
+              </Typography>
+            </Box>
+            <Typography variant="h5" style={{ fontWeight: 800, marginBottom: 6 }}>
+              Azure AI Foundry & GenAI FinOps Telemetry
             </Typography>
-            <Chip
-              label="Foundry Hub: Shield-Insurance-AI"
-              size="small"
-              style={{ backgroundColor: '#7c3aed', color: '#ffffff', fontWeight: 700, fontSize: '0.74rem' }}
-            />
-            <Chip
-              label="Live Quotas & MaaS APIs"
-              size="small"
-              style={{ backgroundColor: '#059669', color: '#ffffff', fontWeight: 700, fontSize: '0.74rem' }}
-            />
+            <Typography variant="body2" style={{ color: 'rgba(255, 255, 255, 0.85)', maxWidth: 850 }}>
+              Live model inference spend, metered token rates, and LLM budget guardrails across Azure OpenAI and Azure AI Studio hubs.
+            </Typography>
           </Box>
-          <Typography variant="body2" color="textSecondary" style={{ marginTop: 4 }}>
-            Continuous tracking of token consumption, Prompt/Completion unit economics, Azure OpenAI deployments, and automated GenAI rightsizing recommendations.
-          </Typography>
-        </Box>
-
-        <Box display="flex" gap={1.5} alignItems="center">
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<RefreshIcon fontSize="small" />}
-            onClick={retry}
-            style={{ textTransform: 'none', fontWeight: 600 }}
-          >
-            Sync Telemetry
-          </Button>
-          <Button
-            size="small"
-            variant="contained"
-            color="primary"
-            startIcon={<LaunchIcon style={{ fontSize: 14 }} />}
-            href="https://ai.azure.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textTransform: 'none', fontWeight: 700 }}
-          >
-            Open Azure AI Studio
-          </Button>
+          <Box display="flex" gap={1}>
+            <Button
+              variant="outlined"
+              onClick={() => retry()}
+              style={{ color: '#ffffff', borderColor: 'rgba(255, 255, 255, 0.4)', textTransform: 'none' }}
+            >
+              <RefreshIcon style={{ marginRight: 6, fontSize: 18 }} />
+              Refresh
+            </Button>
+            <Button
+              variant="contained"
+              href="https://ai.azure.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ backgroundColor: '#ffffff', color: '#1e1b4b', fontWeight: 700, textTransform: 'none' }}
+            >
+              <LaunchIcon style={{ marginRight: 6, fontSize: 18, color: '#7c3aed' }} />
+              Launch Azure AI Studio
+            </Button>
+          </Box>
         </Box>
       </Box>
+
+      {error && (
+        <Box mb={3}>
+          <Alert severity="error">
+            <strong>Error loading Azure AI Foundry data:</strong> {error.message}
+          </Alert>
+        </Box>
+      )}
 
       {aiData?.apiError && (
         <Box mb={3}>
@@ -142,12 +160,12 @@ export const AzureAiFoundryDashboardView = () => {
                       Budget: {aiData?.currency === 'INR' ? '₹25,000' : '$300.00'}
                     </Typography>
                     <Typography variant="caption" style={{ fontWeight: 700, color: '#059669' }}>
-                      {aiData?.percentOfBudget || 52}% Used
+                      {aiData?.percentOfBudget || 0}% Used
                     </Typography>
                   </Box>
                   <LinearProgress
                     variant="determinate"
-                    value={aiData?.percentOfBudget || 52}
+                    value={aiData?.percentOfBudget || 0}
                     style={{ height: 6, borderRadius: 3, backgroundColor: '#e2e8f0' }}
                   />
                 </Box>
@@ -160,10 +178,10 @@ export const AzureAiFoundryDashboardView = () => {
                   Total Tokens Processed
                 </Typography>
                 <Typography className={classes.statNumber} style={{ color: '#7c3aed' }}>
-                  {aiData?.totalTokensProcessed || '197.9M'}
+                  {aiData?.totalTokensProcessed || '0'}
                 </Typography>
                 <Typography variant="caption" style={{ color: '#059669', fontWeight: 600 }}>
-                  Across 5 Deployed Foundry Models
+                  {modelCount > 0 ? `Across ${modelCount} Deployed Foundry Models` : 'No Deployed Models in Subscription'}
                 </Typography>
               </Card>
             </Grid>
@@ -171,13 +189,13 @@ export const AzureAiFoundryDashboardView = () => {
             <Grid item xs={12} sm={6} md={3}>
               <Card className={classes.statCard}>
                 <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
-                  Average Latency (P95)
+                  Deployed Models Count
                 </Typography>
                 <Typography className={classes.statNumber} style={{ color: '#0284c7' }}>
-                  245 ms
+                  {modelCount}
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
-                  Optimal GenAI SLA (&lt; 800ms)
+                  {modelCount > 0 ? 'Active Cognitive Services Deployments' : 'Zero Active AI Endpoints'}
                 </Typography>
               </Card>
             </Grid>
@@ -189,12 +207,12 @@ export const AzureAiFoundryDashboardView = () => {
                 </Typography>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Typography className={classes.statNumber} style={{ color: '#059669' }}>
-                    {aiData?.potentialSavings || '$88.70/mo'}
+                    {aiData?.potentialSavings || '$0.00'}
                   </Typography>
                   <EcoIcon style={{ color: '#059669', fontSize: 24 }} />
                 </Box>
                 <Typography variant="caption" style={{ color: '#059669', fontWeight: 700 }}>
-                  3 Optimization Opportunities
+                  {(aiData?.optimizations || []).length} Optimization Opportunities
                 </Typography>
               </Card>
             </Grid>
@@ -241,120 +259,103 @@ export const AzureAiFoundryDashboardView = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {(aiData?.models || []).map((m: any) => (
-                      <TableRow key={m.id} hover>
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <MemoryIcon style={{ color: '#7c3aed', fontSize: 20 }} />
-                            <Box>
-                              <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f3156' }}>
-                                {m.name}
-                              </Typography>
-                              <Typography variant="caption" color="textSecondary">
-                                Version: {m.version} | {m.deploymentType}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" style={{ fontWeight: 500 }}>
-                            {m.provider}
+                    {models.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} align="center" style={{ padding: 36 }}>
+                          <Typography variant="body2" color="textSecondary">
+                            {aiData?.apiError
+                              ? 'Live model query blocked by Azure authorization. See the permission notice above.'
+                              : 'No Azure AI or Cognitive Services models currently deployed in this subscription.'}
                           </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={m.tpmQuota} size="small" variant="outlined" style={{ fontWeight: 600 }} />
-                        </TableCell>
-                        <TableCell style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                          ${m.promptCostPer1k.toFixed(5)}
-                        </TableCell>
-                        <TableCell style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                          ${m.completionCostPer1k.toFixed(5)}
-                        </TableCell>
-                        <TableCell style={{ fontWeight: 700, color: '#7c3aed' }}>
-                          {m.totalTokens}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="subtitle2" style={{ fontWeight: 800, color: '#0f3156' }}>
-                            {m.spendCurrency}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            {m.costPercentage}% of AI budget
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            icon={<CheckCircleIcon style={{ fontSize: 14, color: '#059669' }} />}
-                            label={m.status}
-                            size="small"
-                            style={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 700 }}
-                          />
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      models.map((m: any) => (
+                        <TableRow key={m.id} hover>
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <MemoryIcon style={{ color: '#7c3aed', fontSize: 20 }} />
+                              <Box>
+                                <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f3156' }}>
+                                  {m.name}
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  Version: {m.version} | {m.deploymentType}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" style={{ fontWeight: 500 }}>
+                              {m.provider}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={m.tpmQuota} size="small" variant="outlined" style={{ fontWeight: 600 }} />
+                          </TableCell>
+                          <TableCell style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                            ${m.promptCostPer1k.toFixed(5)}
+                          </TableCell>
+                          <TableCell style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                            ${m.completionCostPer1k.toFixed(5)}
+                          </TableCell>
+                          <TableCell style={{ fontWeight: 700, color: '#7c3aed' }}>
+                            {m.totalTokens}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="subtitle2" style={{ fontWeight: 800, color: '#0f3156' }}>
+                              {m.spendCurrency}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {m.costPercentage}% of AI budget
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              icon={<CheckCircleIcon style={{ fontSize: 14, color: '#059669' }} />}
+                              label={m.status}
+                              size="small"
+                              style={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 700 }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
             </Box>
           )}
 
-          {/* TAB 1: CONSUMPTION & TOKEN TREND AREA CHART */}
+          {/* TAB 1: CONSUMPTION & TOKEN TREND */}
           {activeSubTab === 1 && (
             <Grid container spacing={3}>
               <Grid item xs={12} md={7}>
                 <Card variant="outlined" style={{ borderRadius: 8, padding: 24, height: '100%' }}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                     <Typography variant="subtitle1" style={{ fontWeight: 700, color: '#0f3156' }}>
-                      Daily Token Velocity (Prompt vs Completion)
+                      Daily Token Velocity
                     </Typography>
-                    <Chip label="Tokens (Millions)" size="small" style={{ backgroundColor: '#ede9fe', color: '#6d28d9', fontWeight: 700 }} />
+                    <Chip label="Live Inference" size="small" style={{ backgroundColor: '#ede9fe', color: '#6d28d9', fontWeight: 700 }} />
                   </Box>
                   <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
                     30-day inference volume curve across Azure OpenAI endpoints.
                   </Typography>
 
-                  <Box py={2}>
-                    <svg viewBox="0 0 500 150" style={{ width: '100%', height: 160, overflow: 'visible' }}>
-                      <defs>
-                        <linearGradient id="aiTokenGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.35" />
-                          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      <line x1="0" y1="30" x2="500" y2="30" stroke="#f1f5f9" strokeWidth="1" />
-                      <line x1="0" y1="75" x2="500" y2="75" stroke="#f1f5f9" strokeWidth="1" />
-                      <line x1="0" y1="120" x2="500" y2="120" stroke="#f1f5f9" strokeWidth="1" />
-
-                      <path
-                        d="M0,115 Q50,90 100,100 T200,75 T300,85 T400,60 T500,70 L500,140 L0,140 Z"
-                        fill="url(#aiTokenGrad)"
-                      />
-                      <path
-                        d="M0,115 Q50,90 100,100 T200,75 T300,85 T400,60 T500,70"
-                        fill="none"
-                        stroke="#7c3aed"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      />
-                      <circle cx="100" cy="100" r="4" fill="#7c3aed" />
-                      <circle cx="200" cy="75" r="4" fill="#7c3aed" />
-                      <circle cx="300" cy="85" r="4" fill="#7c3aed" />
-                      <circle cx="400" cy="60" r="4" fill="#7c3aed" />
-                      <circle cx="500" cy="70" r="5" fill="#4c1d95" />
-                    </svg>
-                    <Box display="flex" justifyContent="space-between" mt={1}>
-                      <Typography variant="caption" color="textSecondary">Day 1 (6.2M)</Typography>
-                      <Typography variant="caption" color="textSecondary">Day 10 (8.3M)</Typography>
-                      <Typography variant="caption" color="textSecondary">Day 15 (10.2M)</Typography>
-                      <Typography variant="caption" style={{ color: '#7c3aed', fontWeight: 700 }}>Current (7.8M)</Typography>
+                  {modelCount === 0 ? (
+                    <Box py={6} textAlign="center">
+                      <Typography variant="body2" color="textSecondary">
+                        No active token velocity. Deploy a model in Azure AI Studio to stream live telemetry.
+                      </Typography>
                     </Box>
-                  </Box>
-
-                  <Paper variant="outlined" style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
-                    <Typography variant="caption" color="textSecondary">
-                      Cache Hit Ratio: <strong>41.8%</strong> (Prompt caching saved an estimated $24.00 this month)
-                    </Typography>
-                    <Chip label="High Cache Affinity" size="small" style={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 700 }} />
-                  </Paper>
+                  ) : (
+                    <Paper variant="outlined" style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
+                      <Typography variant="caption" color="textSecondary">
+                        Active Model Deployments: <strong>{modelCount}</strong>
+                      </Typography>
+                      <Chip label="Telemetry Active" size="small" style={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 700 }} />
+                    </Paper>
+                  )}
                 </Card>
               </Grid>
 
@@ -367,36 +368,34 @@ export const AzureAiFoundryDashboardView = () => {
                     Distribution between Prompt tokens (Input) and Completion tokens (Generated Output).
                   </Typography>
 
-                  <Box mb={3}>
-                    <Box display="flex" justifyContent="space-between" mb={0.5}>
-                      <Typography variant="body2" style={{ fontWeight: 600 }}>
-                        Prompt Tokens (Input Context)
-                      </Typography>
-                      <Typography variant="body2" style={{ fontWeight: 700, color: '#7c3aed' }}>
-                        181.4M (91.6%)
+                  {modelCount === 0 ? (
+                    <Box py={4} textAlign="center">
+                      <Typography variant="body2" color="textSecondary">
+                        No token consumption recorded for subscription {aiData?.subscriptionId}.
                       </Typography>
                     </Box>
-                    <LinearProgress variant="determinate" value={91} style={{ height: 8, borderRadius: 4, backgroundColor: '#ede9fe' }} />
-                  </Box>
-
-                  <Box mb={3}>
-                    <Box display="flex" justifyContent="space-between" mb={0.5}>
-                      <Typography variant="body2" style={{ fontWeight: 600 }}>
-                        Completion Tokens (Output Answers)
-                      </Typography>
-                      <Typography variant="body2" style={{ fontWeight: 700, color: '#0284c7' }}>
-                        16.5M (8.4%)
-                      </Typography>
+                  ) : (
+                    <Box mb={3}>
+                      <Box display="flex" justifyContent="space-between" mb={0.5}>
+                        <Typography variant="body2" style={{ fontWeight: 600 }}>
+                          Prompt & Completion Metering
+                        </Typography>
+                        <Typography variant="body2" style={{ fontWeight: 700, color: '#7c3aed' }}>
+                          Streaming Live
+                        </Typography>
+                      </Box>
+                      <LinearProgress variant="indeterminate" style={{ height: 8, borderRadius: 4, backgroundColor: '#ede9fe' }} />
                     </Box>
-                    <LinearProgress variant="determinate" value={9} style={{ height: 8, borderRadius: 4, backgroundColor: '#e0f2fe' }} />
-                  </Box>
+                  )}
 
-                  <Paper variant="outlined" style={{ padding: 16, backgroundColor: '#fdf4ff', borderRadius: 6, border: '1px solid #f0abfc' }}>
+                  <Paper variant="outlined" style={{ padding: 16, backgroundColor: '#fdf4ff', borderRadius: 6, border: '1px solid #f0abfc', marginTop: 16 }}>
                     <Typography variant="caption" style={{ fontWeight: 700, color: '#86198f' }}>
                       Economic Takeaway:
                     </Typography>
                     <Typography variant="caption" display="block" style={{ color: '#4a044e', marginTop: 4 }}>
-                      Input tokens comprise 91% of your token footprint due to long policy PDF document contexts. Utilizing prompt caching or summarization pipelines directly controls 90%+ of your future invoice.
+                      {modelCount > 0
+                        ? 'Token consumption is metered in real-time. Utilizing prompt caching and lighter deployment SKUs optimizes overall AI invoice.'
+                        : 'Deploy models in Azure AI Foundry to monitor prompt vs completion unit economics.'}
                     </Typography>
                   </Paper>
                 </Card>
@@ -416,31 +415,39 @@ export const AzureAiFoundryDashboardView = () => {
                 </Typography>
               </Box>
 
-              <Grid container spacing={3}>
-                {(aiData?.projectAllocations || []).map((p: any, idx: number) => (
-                  <Grid item xs={12} sm={6} md={3} key={idx}>
-                    <Card variant="outlined" style={{ borderRadius: 8, padding: 20 }}>
-                      <Box display="flex" alignItems="center" gap={1} mb={1}>
-                        <SpeedIcon style={{ color: '#0284c7' }} />
-                        <Typography variant="subtitle2" style={{ fontWeight: 700 }}>
-                          {p.project}
+              {(aiData?.projectAllocations || []).length === 0 ? (
+                <Card variant="outlined" style={{ padding: 36, textAlign: 'center' }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No service cost allocations found. As catalog workloads invoke Azure AI endpoints, costs will display here dynamically.
+                  </Typography>
+                </Card>
+              ) : (
+                <Grid container spacing={3}>
+                  {(aiData?.projectAllocations || []).map((p: any, idx: number) => (
+                    <Grid item xs={12} sm={6} md={3} key={idx}>
+                      <Card variant="outlined" style={{ borderRadius: 8, padding: 20 }}>
+                        <Box display="flex" alignItems="center" gap={1} mb={1}>
+                          <SpeedIcon style={{ color: '#0284c7' }} />
+                          <Typography variant="subtitle2" style={{ fontWeight: 700 }}>
+                            {p.project}
+                          </Typography>
+                        </Box>
+                        <Typography variant="h5" style={{ fontWeight: 800, color: '#0f3156', margin: '8px 0' }}>
+                          {p.cost}
                         </Typography>
-                      </Box>
-                      <Typography variant="h5" style={{ fontWeight: 800, color: '#0f3156', margin: '8px 0' }}>
-                        {p.cost}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary" display="block" style={{ marginBottom: 8 }}>
-                        Primary Model: <strong>{p.model}</strong>
-                      </Typography>
-                      <Box display="flex" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="caption" color="textSecondary">Share of AI Spend</Typography>
-                        <Typography variant="caption" style={{ fontWeight: 700 }}>{p.share}%</Typography>
-                      </Box>
-                      <LinearProgress variant="determinate" value={p.share} style={{ height: 6, borderRadius: 3 }} />
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
+                        <Typography variant="caption" color="textSecondary" display="block" style={{ marginBottom: 8 }}>
+                          Primary Model: <strong>{p.model}</strong>
+                        </Typography>
+                        <Box display="flex" justifyContent="space-between" mb={0.5}>
+                          <Typography variant="caption" color="textSecondary">Share of AI Spend</Typography>
+                          <Typography variant="caption" style={{ fontWeight: 700 }}>{p.share}%</Typography>
+                        </Box>
+                        <LinearProgress variant="determinate" value={p.share} style={{ height: 6, borderRadius: 3 }} />
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
             </Box>
           )}
 
@@ -452,71 +459,79 @@ export const AzureAiFoundryDashboardView = () => {
                   AI Foundry Cost Optimization Recommendations & Guardrails
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
-                  Automated architectural recommendations to achieve higher accuracy at up to 60-80% lower token spend.
+                  Automated architectural recommendations to achieve higher accuracy at lower token spend.
                 </Typography>
               </Box>
 
-              <TableContainer component={Paper} variant="outlined" style={{ borderRadius: 8 }}>
-                <Table size="medium">
-                  <TableHead style={{ backgroundColor: '#f8fafc' }}>
-                    <TableRow>
-                      <TableCell style={{ fontWeight: 700, width: 120 }}>Rule ID</TableCell>
-                      <TableCell style={{ fontWeight: 700 }}>Recommendation Details</TableCell>
-                      <TableCell style={{ fontWeight: 700, width: 180 }}>Category</TableCell>
-                      <TableCell style={{ fontWeight: 700, width: 140 }}>Impact</TableCell>
-                      <TableCell style={{ fontWeight: 700, width: 180 }}>Projected Savings</TableCell>
-                      <TableCell style={{ fontWeight: 700, width: 120 }}>Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {(aiData?.optimizations || []).map((opt: any) => (
-                      <TableRow key={opt.id} hover>
-                        <TableCell style={{ fontFamily: 'monospace', fontWeight: 700, color: '#7c3aed' }}>
-                          {opt.id}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f3156' }}>
-                            {opt.title}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            {opt.description}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={opt.category} size="small" variant="outlined" />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={opt.impact}
-                            size="small"
-                            style={{
-                              backgroundColor: opt.impact.includes('High') ? '#dcfce7' : '#fef3c7',
-                              color: opt.impact.includes('High') ? '#166534' : '#92400e',
-                              fontWeight: 700,
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell style={{ fontWeight: 800, color: '#059669', fontSize: '0.95rem' }}>
-                          {opt.savings}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                            href="https://ai.azure.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ textTransform: 'none', fontWeight: 700 }}
-                          >
-                            Apply in Studio
-                          </Button>
-                        </TableCell>
+              {(aiData?.optimizations || []).length === 0 ? (
+                <Card variant="outlined" style={{ padding: 36, textAlign: 'center' }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No active FinOps optimization recommendations for the current AI deployments.
+                  </Typography>
+                </Card>
+              ) : (
+                <TableContainer component={Paper} variant="outlined" style={{ borderRadius: 8 }}>
+                  <Table size="medium">
+                    <TableHead style={{ backgroundColor: '#f8fafc' }}>
+                      <TableRow>
+                        <TableCell style={{ fontWeight: 700, width: 120 }}>Rule ID</TableCell>
+                        <TableCell style={{ fontWeight: 700 }}>Recommendation Details</TableCell>
+                        <TableCell style={{ fontWeight: 700, width: 180 }}>Category</TableCell>
+                        <TableCell style={{ fontWeight: 700, width: 140 }}>Impact</TableCell>
+                        <TableCell style={{ fontWeight: 700, width: 180 }}>Projected Savings</TableCell>
+                        <TableCell style={{ fontWeight: 700, width: 120 }}>Action</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {(aiData?.optimizations || []).map((opt: any) => (
+                        <TableRow key={opt.id} hover>
+                          <TableCell style={{ fontFamily: 'monospace', fontWeight: 700, color: '#7c3aed' }}>
+                            {opt.id}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f3156' }}>
+                              {opt.title}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {opt.description}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={opt.category} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={opt.impact}
+                              size="small"
+                              style={{
+                                backgroundColor: opt.impact.includes('High') ? '#dcfce7' : '#fef3c7',
+                                color: opt.impact.includes('High') ? '#166534' : '#92400e',
+                                fontWeight: 700,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell style={{ fontWeight: 800, color: '#059669', fontSize: '0.95rem' }}>
+                            {opt.savings}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                              href="https://ai.azure.com"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ textTransform: 'none', fontWeight: 700 }}
+                            >
+                              Apply in Studio
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </Box>
           )}
         </>
