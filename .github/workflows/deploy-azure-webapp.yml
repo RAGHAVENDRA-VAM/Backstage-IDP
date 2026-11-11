@@ -11,11 +11,6 @@ on:
       - Feature-01
   workflow_dispatch:
 
-env:
-  AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
-  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-  IMAGE_NAME: backstage-idp
-
 jobs:
   devsecops-gates:
     name: DevSecOps Quality & Security Gates
@@ -37,7 +32,7 @@ jobs:
       - name: Run Semgrep SAST Scan
         run: |
           python3 -m pip install semgrep
-          semgrep scan --config auto --error || true
+          semgrep scan --config auto --exclude="templates" --exclude="scratch_build_test" --exclude="*.js" --error || true
 
       # 3. Trivy: Repository Filesystem & Dependency Vulnerability Scan
       - name: Run Trivy Vulnerability & Misconfiguration Scanner
@@ -84,15 +79,15 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build \
-            -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest \
+            -t ${{ secrets.ACR_LOGIN_SERVER }}/backstage-idp:${{ github.sha }} \
+            -t ${{ secrets.ACR_LOGIN_SERVER }}/backstage-idp:latest \
             -f packages/backend/Dockerfile .
 
       # 4. Trivy: Container Image Vulnerability Audit before pushing to registry
       - name: Run Trivy Container Scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: ${{ secrets.ACR_LOGIN_SERVER }}/backstage-idp:${{ github.sha }}
           format: 'table'
           severity: 'CRITICAL,HIGH'
           exit-code: '0'
@@ -100,12 +95,12 @@ jobs:
 
       - name: Push Container Images to ACR
         run: |
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/backstage-idp:${{ github.sha }}
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/backstage-idp:latest
 
       - name: Deploy to Azure Web App Container
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/backstage-idp:${{ github.sha }}

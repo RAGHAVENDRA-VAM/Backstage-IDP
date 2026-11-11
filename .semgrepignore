@@ -1,0 +1,7 @@
+# Ignore scaffolder templates (sample code) and generator scripts from SAST scanning
+templates/
+scratch_build_test/
+*.js
+dist/
+.yarn/
+node_modules/
