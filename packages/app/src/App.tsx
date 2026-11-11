@@ -44,6 +44,7 @@ import searchPlugin from '@backstage/plugin-search/alpha';
 import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
 import scaffolderPlugin from '@backstage/plugin-scaffolder/alpha';
 import catalogImportPlugin from '@backstage/plugin-catalog-import/alpha';
+import orgPlugin from '@backstage/plugin-org/alpha';
 import { datadogConvertedPlugin } from './modules/datadog';
 import { customCatalogTabsModule } from './modules/community-tabs';
 import { githubReadmeModule } from './modules/github-readme';
@@ -72,5 +73,6 @@ export default createApp({
     userSettingsPlugin,
     scaffolderPlugin,
     catalogImportPlugin,
+    orgPlugin,
   ],
 });
