@@ -22,7 +22,8 @@ FROM node:24-trixie-slim
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install -y --no-install-recommends libsqlite3-dev && \
+    apt-get install -y --no-install-recommends libsqlite3-dev python3 python3-pip python3-venv git && \
+    python3 -m pip install --no-cache-dir --break-system-packages mkdocs mkdocs-techdocs-core && \
     rm -rf /var/lib/apt/lists/*
 
 # From here on we use the least-privileged `node` user to run the backend.

@@ -165,3 +165,24 @@ spec:
   lifecycle: production
   owner: platform-engineering
   system: shield-insurance-core
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: shield-insurance-core
+  title: "Shield Insurance Core Platform"
+  description: "Core insurance processing system encompassing Claims UI, Risk Analysis, Incident Engine, and Policy Center."
+spec:
+  owner: platform-engineering
+  domain: insurance-operations
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: platform-governance
+  title: "Platform Governance & CI/CD System"
+  description: "DevSecOps quality gates, webhooks, and autonomous DevOps failure recovery agents."
+spec:
+  owner: platform-engineering
+  domain: platform-engineering
