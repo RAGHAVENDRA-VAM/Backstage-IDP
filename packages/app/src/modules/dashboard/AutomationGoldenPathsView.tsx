@@ -157,7 +157,7 @@ export const AutomationGoldenPathsView: React.FC = () => {
                 Self-Service Golden Paths
               </Typography>
               <Typography className={classes.statNumber} style={{ color: '#0284c7' }}>
-                3 Live
+                {templates.length} Live
               </Typography>
               <Typography variant="caption" color="textSecondary">
                 Standardized enterprise blueprints

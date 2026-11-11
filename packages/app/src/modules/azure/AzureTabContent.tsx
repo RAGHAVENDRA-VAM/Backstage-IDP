@@ -212,8 +212,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
 
   const entityAppName = !isStandalone ? (
     entity?.metadata?.annotations?.['azure.com/app-service-name'] ||
-    (entity?.metadata?.name?.toLowerCase().includes('risk') ? 'devops-risk-analyzer-api' :
-     entity?.metadata?.name?.toLowerCase().includes('claim') ? 'valora-insurance-ui' : null)
+    entity?.metadata?.name || null
   ) : null;
 
   const entityTitle = entity?.metadata?.title || entity?.metadata?.name || 'Shield Insurance';
