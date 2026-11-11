@@ -86,9 +86,11 @@ export const AzureAiFoundryDashboardView = () => {
                 size="small"
                 style={{ backgroundColor: '#7c3aed', color: '#ffffff', fontWeight: 800, fontSize: '0.7rem' }}
               />
-              <Typography variant="caption" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                Subscription: {aiData?.subscriptionId || 'Active'}
-              </Typography>
+              <Chip
+                label="PRODUCTION CLOUD"
+                size="small"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#ffffff', fontWeight: 700, fontSize: '0.7rem' }}
+              />
             </Box>
             <Typography variant="h5" style={{ fontWeight: 800, marginBottom: 6 }}>
               Azure AI Foundry & GenAI FinOps Telemetry
