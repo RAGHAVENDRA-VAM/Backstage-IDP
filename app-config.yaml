@@ -103,49 +103,49 @@ catalog:
     - allow: [Component, System, API, Resource, Location, Template, Group, User]
   locations:
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/examples/entities.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/examples/entities.yaml
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/org-data.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/org-data.yaml
       rules:
         - allow: [Group, User]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/all-templates.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/all-templates.yaml
       rules:
         - allow: [Template, Location]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/golden-path-webapp/template.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/golden-path-webapp/template.yaml
       rules:
         - allow: [Template]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/deploy-app-to-azure-webapp/template.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/deploy-app-to-azure-webapp/template.yaml
       rules:
         - allow: [Template]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/ado-work-item/template.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/ado-work-item/template.yaml
       rules:
         - allow: [Template]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/react-web-app/template.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/react-web-app/template.yaml
       rules:
         - allow: [Template]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/node-express-microservice/template.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/node-express-microservice/template.yaml
       rules:
         - allow: [Template]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/java-springboot-enterprise/template.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/java-springboot-enterprise/template.yaml
       rules:
         - allow: [Template]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/dotnet-webapi-enterprise/template.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/dotnet-webapi-enterprise/template.yaml
       rules:
         - allow: [Template]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/enterprise-rag-application/template.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/enterprise-rag-application/template.yaml
       rules:
         - allow: [Template]
     - type: url
-      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/main/templates/techdocs-onboarding/template.yaml
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/techdocs-onboarding/template.yaml
       rules:
         - allow: [Template]
 

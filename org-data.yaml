@@ -99,7 +99,7 @@ kind: User
 metadata:
   name: pankaj-kumar
   title: Pankaj Kumar
-  description: Director - Cloud Engineering (Admin)
+  description: Platform Engineer (Admin)
   annotations:
     github.com/user-login: pankaj-kumar
   links:
