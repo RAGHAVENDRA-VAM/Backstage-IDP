@@ -1590,7 +1590,7 @@ export const IntegrationsDashboardPage = () => {
   const totalGithubRepos = githubReposData?.total ?? githubReposData?.repos?.length ?? 54;
   const currentAzureSpend = azureCostData?.currentSpend
     ? `$${azureCostData.currentSpend.toLocaleString()}/mo`
-    : '$1,245.80/mo';
+    : '$0.00/mo';
 
 // Dynamic Tab definitions tailored strictly by Group / Persona
   const availableTabs = React.useMemo(() => {

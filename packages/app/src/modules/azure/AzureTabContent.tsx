@@ -654,20 +654,20 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                         Current Spend (MTD)
                       </Typography>
                       <Typography className={classes.statNumber} style={{ color: '#0f3156' }}>
-                        {costData?.currency === 'INR' ? '₹' : '$'}{costData?.currentSpend?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '1,245.80'}
+                        {costData?.currency === 'INR' ? '₹' : '$'}{costData?.currentSpend !== undefined ? costData.currentSpend.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00'}
                       </Typography>
                       <Box mt={1}>
                         <Box display="flex" justifyContent="space-between" mb={0.5}>
                           <Typography variant="caption" color="textSecondary">
-                            Budget: {costData?.currency === 'INR' ? '₹' : '$'}{costData?.budget?.toLocaleString() || '2,000'}
+                            Budget: {costData?.currency === 'INR' ? '₹' : '$'}{costData?.budget?.toLocaleString() || '0'}
                           </Typography>
                           <Typography variant="caption" style={{ fontWeight: 700, color: '#059669' }}>
-                            {costData?.percentOfBudget || 62}%
+                            {costData?.percentOfBudget || 0}%
                           </Typography>
                         </Box>
                         <LinearProgress
                           variant="determinate"
-                          value={Math.min(costData?.percentOfBudget || 62, 100)}
+                          value={Math.min(costData?.percentOfBudget || 0, 100)}
                           style={{ height: 8, borderRadius: 4, backgroundColor: '#e2e8f0' }}
                         />
                       </Box>
