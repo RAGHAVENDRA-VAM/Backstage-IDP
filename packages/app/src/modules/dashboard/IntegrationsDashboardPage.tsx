@@ -1586,8 +1586,14 @@ export const IntegrationsDashboardPage = () => {
     return await res.json();
   }, []);
 
-  const totalJiraCount = jiraIssuesData?.total ?? jiraIssuesData?.issues?.length ?? 25;
-  const totalGithubRepos = githubReposData?.total ?? githubReposData?.repos?.length ?? 54;
+  const { value: azureAiData } = useAsync(async () => {
+    const res = await fetch('/api/azure-deploy/ai-foundry-costs');
+    if (!res.ok) return null;
+    return await res.json();
+  }, []);
+
+  const totalJiraCount = jiraIssuesData?.total ?? jiraIssuesData?.issues?.length ?? 0;
+  const totalGithubRepos = githubReposData?.total ?? githubReposData?.repos?.length ?? 0;
   const currentAzureSpend = azureCostData?.currentSpend
     ? `$${azureCostData.currentSpend.toLocaleString()}/mo`
     : '$0.00/mo';
@@ -1917,14 +1923,20 @@ export const IntegrationsDashboardPage = () => {
                       </Box>
                       <Box flex={1}>
                         <Typography className={classes.cardTitle}>Azure AI Foundry</Typography>
-                        <Chip label="5 Models Live" size="small" className={classes.statusBadgeActive} />
+                        <Chip
+                          label={azureAiData?.models?.length ? `${azureAiData.models.length} Models Live` : 'Live Telemetry'}
+                          size="small"
+                          className={classes.statusBadgeActive}
+                        />
                       </Box>
                     </Box>
                     <Typography className={classes.cardDesc}>
                       Prompt/Completion token velocity, inference latency, unit cost curves, and rightsizing guardrails.
                     </Typography>
                     <Box className={classes.cardFooter}>
-                      <Typography variant="caption" style={{ fontWeight: 600 }}>197.9M Tokens</Typography>
+                      <Typography variant="caption" style={{ fontWeight: 600 }}>
+                        {azureAiData?.totalTokensProcessed || '0 Tokens'}
+                      </Typography>
                       <Button
                         size="small"
                         variant="contained"
