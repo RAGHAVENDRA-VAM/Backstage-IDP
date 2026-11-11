@@ -186,3 +186,22 @@ metadata:
 spec:
   owner: platform-engineering
   domain: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: insurance-operations
+  title: "Insurance Operations Domain"
+  description: "Core business domain covering digital FNOL claims intake, automated underwriting decisioning, policy lifecycle rating, and settlement workflows."
+spec:
+  owner: platform-engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: platform-engineering
+  title: "Platform Engineering Domain"
+  description: "Enterprise engineering platform domain managing developer self-service golden paths, cloud infrastructure governance, and CI/CD DevSecOps automation."
+spec:
+  owner: platform-engineering
+
