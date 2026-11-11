@@ -17,7 +17,7 @@ metadata:
     azure.com/subscription-id: '46269e09-e1e1-4067-af90-78fd27b1b64d'
     datadoghq.com/dashboard-url: 'https://p.datadoghq.com/sb/f2fdc87e-bdb2-11f1-880c-ce62a0ab8181-2feb325f332f971e08c696cf64e6f65c'
     datadoghq.com/graph-token: 'claims_ui_token'
-    backstage.io/techdocs-ref: url:https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/tree/Feature-01/docs
+    backstage.io/techdocs-ref: url:https://github.com/RAGHAVENDRA-VAM/Claims_UI/tree/main
   links:
     - url: https://github.com/RAGHAVENDRA-VAM/Claims_UI
       title: GitHub Repository
