@@ -100,7 +100,7 @@ catalog:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
   rules:
-    - allow: [Component, System, API, Resource, Location, Template, Group, User]
+    - allow: [Component, System, Domain, API, Resource, Location, Template, Group, User]
   locations:
     - type: url
       target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/examples/entities.yaml

@@ -57,7 +57,7 @@ auth:
 
 catalog:
   rules:
-    - allow: [Component, System, API, Resource, Location, Template, Group, User]
+    - allow: [Component, System, Domain, API, Resource, Location, Template, Group, User]
   locations:
     # 1. Local container files (guaranteed to exist inside container image at /app/)
     - type: file
