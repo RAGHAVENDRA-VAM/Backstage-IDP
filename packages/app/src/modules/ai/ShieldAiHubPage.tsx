@@ -973,8 +973,17 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                   )}
 
                   {scaffoldResult && (
-                    <div>
-                      <Paper variant="outlined" style={{ marginBottom: 12 }}>
+                    <Box display="flex" flexDirection="column" style={{ flex: 1 }}>
+                      {/* File Tabs Navigation Bar */}
+                      <Paper
+                        variant="outlined"
+                        style={{
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '8px 8px 0 0',
+                          borderBottom: 'none',
+                          padding: '4px 8px 0',
+                        }}
+                      >
                         <Tabs
                           value={activeFileTab}
                           onChange={(_, v) => setActiveFileTab(v)}
@@ -982,44 +991,82 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                           textColor="primary"
                           variant="scrollable"
                           scrollButtons="auto"
+                          style={{ minHeight: 38 }}
                         >
                           {scaffoldResult.files.map((file: any, index: number) => (
-                            <Tab key={index} label={file.path} />
+                            <Tab
+                              key={index}
+                              label={file.path}
+                              style={{
+                                textTransform: 'none',
+                                fontFamily: 'Consolas, Monaco, monospace',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                minHeight: 38,
+                                padding: '6px 14px',
+                              }}
+                            />
                           ))}
                         </Tabs>
                       </Paper>
 
-                      <div className={classes.codeBlock} style={{ minHeight: 380, maxHeight: 460 }}>
+                      {/* Code Terminal Viewport */}
+                      <Box
+                        style={{
+                          backgroundColor: '#090d16',
+                          color: '#f8fafc',
+                          padding: '16px 20px',
+                          borderRadius: '0 0 8px 8px',
+                          border: '1px solid #1e293b',
+                          fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                          fontSize: '0.84rem',
+                          lineHeight: 1.55,
+                          overflowX: 'auto',
+                          minHeight: 340,
+                          maxHeight: 460,
+                          position: 'relative',
+                        }}
+                      >
                         <Tooltip title="Copy File Content">
                           <IconButton
                             size="small"
-                            className={classes.copyBtn}
                             onClick={() => copyToClipboard(scaffoldResult.files[activeFileTab].content)}
+                            style={{
+                              position: 'absolute',
+                              top: 10,
+                              right: 10,
+                              color: '#94a3b8',
+                              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            }}
                           >
                             <FileCopyIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <pre style={{ margin: 0 }}>
+                        <pre style={{ margin: 0, fontFamily: 'inherit', whiteSpace: 'pre-wrap' }}>
                           {scaffoldResult.files[activeFileTab].content}
                         </pre>
-                      </div>
+                      </Box>
 
-                      <Box display="flex" justifyContent="space-between" alignItems="center" marginTop={2}>
+                      {/* Compliance Footer Bar */}
+                      <Box display="flex" justifyContent="space-between" alignItems="center" marginTop={2} flexWrap="wrap" gap={1}>
                         <Chip
-                          icon={<CheckCircleIcon style={{ color: '#10b981' }} />}
+                          icon={<CheckCircleIcon style={{ color: '#10b981', fontSize: 16 }} />}
                           label="Adheres to SEC-008 & Azure West US 3 Standards"
                           variant="outlined"
+                          style={{ fontWeight: 700, fontSize: '0.75rem', borderColor: '#bbf7d0', backgroundColor: '#f0fdf4', color: '#166534' }}
                         />
                         <Button
-                          variant="outlined"
+                          variant="contained"
                           color="primary"
-                          startIcon={<FileCopyIcon />}
+                          size="small"
+                          startIcon={<FileCopyIcon style={{ fontSize: 16 }} />}
                           onClick={() => copyToClipboard(scaffoldResult.files[activeFileTab].content)}
+                          style={{ textTransform: 'none', fontWeight: 700, fontSize: '0.8rem' }}
                         >
                           Copy {scaffoldResult.files[activeFileTab].path}
                         </Button>
                       </Box>
-                    </div>
+                    </Box>
                   )}
                 </CardContent>
               </Card>
