@@ -1951,7 +1951,7 @@ export const IntegrationsDashboardPage = () => {
                 </Card>
               </Grid>
 
-              {/* Shield AI Suite Card */}
+              {/* Acme AI Suite Card */}
               <Grid item xs={12} sm={6} md={4}>
                 <Card className={classes.card}>
                   <CardContent>
@@ -1960,7 +1960,7 @@ export const IntegrationsDashboardPage = () => {
                         <BubbleChartIcon fontSize="medium" />
                       </Box>
                       <Box flex={1}>
-                        <Typography className={classes.cardTitle}>Shield AI Suite</Typography>
+                        <Typography className={classes.cardTitle}>Acme AI Suite</Typography>
                         <Chip label="GPT-4o Copilot" size="small" className={classes.statusBadgeActive} />
                       </Box>
                     </Box>

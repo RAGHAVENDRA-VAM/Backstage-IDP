@@ -19,7 +19,7 @@ export const LogoIcon = () => {
   return (
     <img
       src="/shield-logo.png"
-      alt="Shield Logo"
+      alt="Acme Logo"
       className={classes.logoImg}
     />
   );

@@ -1,5 +1,5 @@
 app:
-  title: Shield Insurance Developer Portal
+  title: Acme Insurance Developer Portal
   baseUrl: http://localhost:3000
   extensions:
     - core:root-redirect:
@@ -25,7 +25,7 @@ app:
           defaultContentOrder: natural
 
 organization:
-  name: Shield Insurance
+  name: Acme Insurance
 
 
 backend:

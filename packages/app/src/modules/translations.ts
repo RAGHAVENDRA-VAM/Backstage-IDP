@@ -11,7 +11,7 @@ export const customTranslationsModule = createFrontendModule({
         resource: createTranslationMessages({
           ref: catalogTranslationRef,
           messages: {
-            'indexPage.title': 'Shield Insurance',
+            'indexPage.title': 'Acme Insurance',
           },
 
         }),

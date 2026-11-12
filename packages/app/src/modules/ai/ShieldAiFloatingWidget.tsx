@@ -173,7 +173,7 @@ interface Message {
   content: string;
 }
 
-export const ShieldAiFloatingWidget: React.FC = () => {
+export const AcmeAiFloatingWidget: React.FC = () => {
   const classes = useStyles();
   const navigate = useNavigate();
   const location = useLocation();
@@ -237,7 +237,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
         ...prev,
         {
           role: 'assistant',
-          content: `Error communicating with Shield AI: ${e.message}`,
+          content: `Error communicating with Acme AI: ${e.message}`,
         },
       ]);
     } finally {
@@ -269,7 +269,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
             onClick={() => setOpen(true)}
           >
             <BubbleChartIcon />
-            <span>Shield AI</span>
+            <span>Acme AI</span>
           </Fab>
         )}
       </div>
@@ -282,7 +282,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
               <BubbleChartIcon />
               <div>
                 <Typography variant="subtitle2" style={{ fontWeight: 700, lineHeight: 1.2 }}>
-                  Shield AI Copilot
+                  Acme AI Copilot
                 </Typography>
                 <Typography variant="caption" style={{ opacity: 0.85, fontSize: '0.72rem' }}>
                   Platform Engineering Assistant
@@ -353,7 +353,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
               <div className={classes.assistantBubble} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CircularProgress size={16} />
                 <Typography variant="caption" color="textSecondary">
-                  Shield AI is thinking...
+                  Acme AI is thinking...
                 </Typography>
               </div>
             )}
@@ -379,7 +379,7 @@ export const ShieldAiFloatingWidget: React.FC = () => {
             <TextField
               variant="outlined"
               size="small"
-              placeholder="Ask Shield AI..."
+              placeholder="Ask Acme AI..."
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyPress}

@@ -234,7 +234,7 @@ export const HomePage: React.FC = () => {
           <Chip label="Cloud-Native Golden Paths" size="small" className={classes.heroBadge} />
         </Box>
         <Typography variant="h3" className={classes.heroTitle}>
-          Shield Insurance Developer Portal
+          Acme Insurance Developer Portal
         </Typography>
         <Typography variant="body1" className={classes.heroSubtitle}>
           The unified internal developer platform for insurance engineering. Accelerating policy issuance, underwriting automation, and claims processing with pre-approved cloud golden paths and continuous governance.

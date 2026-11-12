@@ -231,7 +231,7 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
             }
             res.json({
               configured,
-              model: configured ? deployment : 'Shield Embedded Engine',
+              model: configured ? deployment : 'Acme Embedded Engine',
               endpoint: configured ? endpoint.replace(/^https?:\/\//, '').split('/')[0] : undefined,
               provider: configured ? 'Azure AI Foundry' : 'Embedded Engine',
               testResult,
@@ -275,7 +275,7 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
             }
 
             // Universal AI Response (Azure AI Foundry or Local High-Performance Model)
-            const systemPrompt = `You are Shield AI Copilot, the official enterprise AI assistant for the ValueMomentum Shield Developer Portal (IDP).
+            const systemPrompt = `You are Acme AI Copilot, the official enterprise AI assistant for the ValueMomentum Acme Developer Portal (IDP).
 You possess deep, comprehensive real-time knowledge of every page, tab, metric, and service across the entire IDP:
 
 1. DASHBOARD & COMMAND CENTER TABS:
@@ -333,7 +333,7 @@ Answer all questions authoritatively, concisely, and professionally based on thi
                 `*All services report live APM metrics to Datadog and track sprint tickets in Jira (Project: SCRUM).*`;
             } else if (lowerUserMsg.includes('deploy') || lowerUserMsg.includes('publish') || lowerUserMsg.includes('release')) {
               reply = `### How to Deploy Your Application:\n\n` +
-                `You have **two easy ways** to deploy in the Shield IDP:\n\n` +
+                `You have **two easy ways** to deploy in the Acme IDP:\n\n` +
                 `1. **Self-Service Golden Path (Recommended)**:\n` +
                 `   - Click on the **Create** tab in the sidebar.\n` +
                 `   - Select the **"Deploy App to Azure Web App"** template.\n` +
@@ -350,7 +350,7 @@ Answer all questions authoritatively, concisely, and professionally based on thi
                 `- **Azure Advisor**: 49 recommendations active, including VM rightsizing on \`chatpdf123\` saving ₹1,200/mo.\n` +
                 `- **Azure AI Foundry**: Real Cognitive Services deployed models (\`gpt-5-mini\`, \`gpt-4.1-mini\`, \`Kimi-K2.6\`) tracked with prompt/completion token quotas.`;
             } else {
-              reply = `### Shield AI Copilot Operational\n\n` +
+              reply = `### Acme AI Copilot Operational\n\n` +
                 `I am monitoring your Backstage Catalog, Azure Web Apps, and Datadog APM.\n\n` +
                 `Ask me anything about:\n` +
                 `- **Service Ownership**: "Who owns the Claims UI?"\n` +
@@ -375,7 +375,7 @@ Answer all questions authoritatively, concisely, and professionally based on thi
             const { logText = '', serviceName = 'application', environment = 'production' } = req.body;
 
             // 1. Attempt Real AI Diagnostic via Foundry if configured
-            const prompt = `You are a Senior DevOps & SRE Site Reliability Architect at Shield Insurance.
+            const prompt = `You are a Senior DevOps & SRE Site Reliability Architect at Acme Insurance.
 Analyze the following error log / stack trace and provide a structured JSON response with EXACTLY these keys:
 {
   "summary": "1-line concise summary of the failure",

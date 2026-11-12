@@ -215,7 +215,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
     entity?.metadata?.name || null
   ) : null;
 
-  const entityTitle = entity?.metadata?.title || entity?.metadata?.name || 'Shield Insurance';
+  const entityTitle = entity?.metadata?.title || entity?.metadata?.name || 'Acme Insurance';
 
   const [selectedTab, setSelectedTab] = useState(0); // 0: App Services & Logs, 1: All Azure Resources
   const [searchQuery, setSearchQuery] = useState('');
@@ -338,7 +338,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
           <Typography className={classes.bannerSubtitle}>
             {entityAppName
               ? `Dedicated cloud infrastructure, App Service hosting (${entityAppName}), resource dependencies, and live diagnostics stream for ${entityTitle}.`
-              : 'Full subscription visibility into Shield Insurance cloud infrastructure: App Services, managed environments, serverless endpoints, database instances, and live diagnostics log streaming.'}
+              : 'Full subscription visibility into Acme Insurance cloud infrastructure: App Services, managed environments, serverless endpoints, database instances, and live diagnostics log streaming.'}
           </Typography>
 
           <Box className={classes.badgeRow}>

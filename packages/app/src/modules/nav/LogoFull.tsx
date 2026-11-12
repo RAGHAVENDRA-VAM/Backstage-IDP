@@ -53,12 +53,12 @@ export const LogoFull = () => {
     <Box className={classes.container}>
       <img
         src="/shield-logo.png"
-        alt="Shield Insurance"
+        alt="Acme Insurance"
         className={classes.logoImg}
       />
       <Box className={classes.textWrapper}>
         <Typography className={classes.brandText}>
-          Shield Insurance
+          Acme Insurance
         </Typography>
         <Typography className={classes.subText}>
           Developer Portal

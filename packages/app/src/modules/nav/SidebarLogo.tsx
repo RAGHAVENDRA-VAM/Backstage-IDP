@@ -30,7 +30,7 @@ export const SidebarLogo = () => {
 
   return (
     <div className={classes.root}>
-      <Link to="/" underline="none" className={classes.link} aria-label="Shield Insurance Home">
+      <Link to="/" underline="none" className={classes.link} aria-label="Acme Insurance Home">
         {isOpen ? <LogoFull /> : <LogoIcon />}
       </Link>
     </div>

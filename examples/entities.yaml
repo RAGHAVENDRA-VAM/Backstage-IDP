@@ -1,5 +1,5 @@
 # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
-# Enterprise Shield Insurance Core Applications & Services
+# Enterprise Acme Insurance Core Applications & Services
 # Mapped to Live Jira SCRUM Board, GitHub Actions CI/CD, Azure Cloud Deployments & Datadog APM Telemetry
 ---
 apiVersion: backstage.io/v1alpha1
@@ -28,7 +28,7 @@ spec:
   type: website
   lifecycle: production
   owner: platform-engineering
-  system: shield-insurance-core
+  system: acme-insurance-core
 ---
 apiVersion: backstage.io/v1alpha1
 kind: Component
@@ -55,7 +55,7 @@ spec:
   type: service
   lifecycle: production
   owner: platform-engineering
-  system: shield-insurance-core
+  system: acme-insurance-core
 ---
 apiVersion: backstage.io/v1alpha1
 kind: Component
@@ -82,7 +82,7 @@ spec:
   type: service
   lifecycle: production
   owner: platform-engineering
-  system: shield-insurance-core
+  system: acme-insurance-core
 ---
 apiVersion: backstage.io/v1alpha1
 kind: Component
@@ -142,7 +142,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: policycenter
-  title: "Shield Policy Center"
+  title: "Acme Policy Center"
   description: "Policy lifecycle administration, underwriting rules engine, and policy rating service connected with Jira, Azure infrastructure, and Datadog."
   annotations:
     github.com/project-slug: 'RAGHAVENDRA-VAM/policycenter'
@@ -163,14 +163,14 @@ spec:
   type: service
   lifecycle: production
   owner: platform-engineering
-  system: shield-insurance-core
+  system: acme-insurance-core
 
 ---
 apiVersion: backstage.io/v1alpha1
 kind: System
 metadata:
-  name: shield-insurance-core
-  title: "Shield Insurance Core Platform"
+  name: acme-insurance-core
+  title: "Acme Insurance Core Platform"
   description: "Core insurance processing system encompassing Claims UI, Risk Analysis, Incident Engine, and Policy Center."
 spec:
   owner: platform-engineering

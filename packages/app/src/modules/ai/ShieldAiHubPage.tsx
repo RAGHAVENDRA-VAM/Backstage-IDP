@@ -180,7 +180,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export const ShieldAiHubPage: React.FC = () => {
+export const AcmeAiHubPage: React.FC = () => {
   const classes = useStyles();
   const [tabIndex, setTabIndex] = useState(0);
 
@@ -349,7 +349,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
   return (
     <Page themeId="home">
       <Header
-        title="Shield AI Hub"
+        title="Acme AI Hub"
         subtitle="Autonomous Platform Engineering, Incident Diagnostics, TechDocs RAG & Golden Path Scaffolding"
       >
         <Box display="flex" alignItems="center" gap={1}>
@@ -383,7 +383,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
             variant="scrollable"
             scrollButtons="auto"
           >
-            <Tab icon={<BubbleChartIcon />} label="Shield AI Copilot" />
+            <Tab icon={<BubbleChartIcon />} label="Acme AI Copilot" />
             <Tab icon={<BugReportIcon />} label="CI/CD & Azure Log Diagnostics" />
             <Tab icon={<MenuBookIcon />} label="TechDocs & Architecture RAG" />
             <Tab icon={<CodeIcon />} label="AI Golden Path Scaffolder" />
@@ -418,7 +418,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                   <div className={classes.assistantBubble} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <CircularProgress size={18} />
                     <Typography variant="body2" color="textSecondary">
-                      Shield AI Copilot is thinking...
+                      Acme AI Copilot is thinking...
                     </Typography>
                   </div>
                 )}
@@ -598,7 +598,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                     >
                       <CircularProgress size={42} style={{ marginBottom: 16 }} />
                       <Typography variant="body1" style={{ fontWeight: 600 }}>
-                        Triaging error logs with Shield AI diagnostic engine...
+                        Triaging error logs with Acme AI diagnostic engine...
                       </Typography>
                     </Box>
                   )}
@@ -689,7 +689,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                     Enterprise Architecture & TechDocs Semantic RAG
                   </Typography>
                   <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
-                    Ask natural-language questions across Shield Insurance's Architecture Decision Records (ADRs), Security Policies, FinOps Directives, and API Contracts.
+                    Ask natural-language questions across Acme Insurance's Architecture Decision Records (ADRs), Security Policies, FinOps Directives, and API Contracts.
                   </Typography>
 
                   <Box display="flex" gap={1} marginBottom={2}>

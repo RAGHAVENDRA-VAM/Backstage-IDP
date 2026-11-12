@@ -1,5 +1,5 @@
 app:
-  title: Shield Insurance Developer Portal
+  title: Acme Insurance Developer Portal
   # Should be the same as backend.baseUrl when using the `app-backend` plugin.
   baseUrl: ${APP_CONFIG_app_baseUrl}
   extensions:
@@ -26,7 +26,7 @@ app:
           defaultContentOrder: natural
 
 organization:
-  name: Shield Insurance
+  name: Acme Insurance
 
 
 backend:
