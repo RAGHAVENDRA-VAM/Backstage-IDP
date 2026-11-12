@@ -300,15 +300,31 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
 
             // Extract conversation context (all past user & assistant messages)
             const conversationHistoryText = messages.map(m => `${m.role}: ${m.content}`).join('\n');
+            const fullHistoryLower = (conversationHistoryText + '\n' + lastUserMessage).toLowerCase();
 
-            // 1. Check if user is asking to trigger any template or deploy an application
+            // 1. Check if user is asking to trigger any template or deploy an application OR confirming a previous deployment request
             const isScaffoldIntent =
               lowerUserMsg.includes('deploy') ||
               lowerUserMsg.includes('publish') ||
               lowerUserMsg.includes('scaffold') ||
               lowerUserMsg.includes('create') ||
               lowerUserMsg.includes('provision') ||
-              lowerUserMsg.includes('template');
+              lowerUserMsg.includes('template') ||
+              // Check if user is saying yes/confirm/sure/proceed following a deployment context in conversation history
+              ((fullHistoryLower.includes('deploy') || fullHistoryLower.includes('valora') || fullHistoryLower.includes('claims_ui') || fullHistoryLower.includes('template')) &&
+                (lowerUserMsg === 'sure' ||
+                 lowerUserMsg.startsWith('sure') ||
+                 lowerUserMsg === 'yes' ||
+                 lowerUserMsg.startsWith('yes') ||
+                 lowerUserMsg === 'ok' ||
+                 lowerUserMsg === 'proceed' ||
+                 lowerUserMsg.includes('proceed') ||
+                 lowerUserMsg === 'confirm' ||
+                 lowerUserMsg.includes('confirm') ||
+                 lowerUserMsg === 'main' ||
+                 lowerUserMsg === 'production' ||
+                 lowerUserMsg === 'non-production' ||
+                 lowerUserMsg.includes('dry')));
 
             if (isScaffoldIntent) {
               const allTemplates = getAvailableTemplates();
@@ -367,14 +383,18 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                   return;
                 }
 
-                // If user confirmed (e.g. "sure", "proceed", "confirm", "yes", "deploy it") OR gave all values
+                // If user confirmed (e.g. "sure", "proceed", "confirm", "yes", "deploy it", "main", "non-production") OR gave all values
                 const hasConfirmIntent =
                   lowerUserMsg.includes('sure') ||
                   lowerUserMsg.includes('yes') ||
+                  lowerUserMsg.includes('ok') ||
                   lowerUserMsg.includes('proceed') ||
                   lowerUserMsg.includes('confirm') ||
                   lowerUserMsg.includes('go ahead') ||
                   lowerUserMsg.includes('execute') ||
+                  lowerUserMsg.includes('main') ||
+                  lowerUserMsg.includes('production') ||
+                  lowerUserMsg.includes('dry') ||
                   (repoFullName && webAppName && lowerUserMsg.includes('deploy'));
 
                 if (hasConfirmIntent) {
