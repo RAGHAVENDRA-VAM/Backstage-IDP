@@ -978,9 +978,9 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                       <Paper
                         variant="outlined"
                         style={{
-                          backgroundColor: '#f8fafc',
+                          backgroundColor: '#f1f5f9',
                           borderRadius: '8px 8px 0 0',
-                          borderBottom: 'none',
+                          borderBottom: '1px solid #cbd5e1',
                           padding: '4px 8px 0',
                         }}
                       >
@@ -991,22 +991,32 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                           textColor="primary"
                           variant="scrollable"
                           scrollButtons="auto"
-                          style={{ minHeight: 38 }}
+                          style={{ minHeight: 42 }}
                         >
-                          {scaffoldResult.files.map((file: any, index: number) => (
-                            <Tab
-                              key={index}
-                              label={file.path}
-                              style={{
-                                textTransform: 'none',
-                                fontFamily: 'Consolas, Monaco, monospace',
-                                fontSize: '0.8rem',
-                                fontWeight: 700,
-                                minHeight: 38,
-                                padding: '6px 14px',
-                              }}
-                            />
-                          ))}
+                          {scaffoldResult.files.map((file: any, index: number) => {
+                            const isSelected = activeFileTab === index;
+                            return (
+                              <Tab
+                                key={index}
+                                label={file.path}
+                                style={{
+                                  textTransform: 'none',
+                                  fontFamily: 'Consolas, Monaco, monospace',
+                                  fontSize: '0.85rem',
+                                  fontWeight: isSelected ? 800 : 600,
+                                  minHeight: 42,
+                                  padding: '8px 16px',
+                                  color: isSelected ? '#0078D4' : '#334155',
+                                  backgroundColor: isSelected ? '#ffffff' : 'transparent',
+                                  borderRadius: '6px 6px 0 0',
+                                  marginRight: 4,
+                                  border: isSelected ? '1px solid #cbd5e1' : 'none',
+                                  borderBottom: isSelected ? '1px solid #ffffff' : 'none',
+                                  marginBottom: isSelected ? -1 : 0,
+                                }}
+                              />
+                            );
+                          })}
                         </Tabs>
                       </Paper>
 
@@ -1015,15 +1025,15 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                         style={{
                           backgroundColor: '#090d16',
                           color: '#f8fafc',
-                          padding: '16px 20px',
+                          padding: '20px 24px',
                           borderRadius: '0 0 8px 8px',
                           border: '1px solid #1e293b',
                           fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                          fontSize: '0.84rem',
-                          lineHeight: 1.55,
+                          fontSize: '0.86rem',
+                          lineHeight: 1.6,
                           overflowX: 'auto',
-                          minHeight: 340,
-                          maxHeight: 460,
+                          minHeight: 380,
+                          maxHeight: 520,
                           position: 'relative',
                         }}
                       >
@@ -1033,10 +1043,11 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                             onClick={() => copyToClipboard(scaffoldResult.files[activeFileTab].content)}
                             style={{
                               position: 'absolute',
-                              top: 10,
-                              right: 10,
+                              top: 12,
+                              right: 12,
                               color: '#94a3b8',
-                              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                              backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
                             }}
                           >
                             <FileCopyIcon fontSize="small" />
