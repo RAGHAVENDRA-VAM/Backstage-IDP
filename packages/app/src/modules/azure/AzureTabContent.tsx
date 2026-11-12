@@ -752,8 +752,8 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                                 </Typography>
                               </Box>
                               <Box display="flex" alignItems="center" gap={1.5}>
-                                <Typography variant="caption" style={{ color: s.trend?.startsWith('+') ? '#d97706' : '#059669', fontWeight: 600 }}>
-                                  {s.trend}
+                                <Typography variant="caption" style={{ color: '#059669', fontWeight: 600 }}>
+                                  {s.percentage}%
                                 </Typography>
                                 <Typography variant="body2" style={{ fontWeight: 700, minWidth: 70, textAlign: 'right' }}>
                                   {costData?.currency === 'INR' ? '₹' : '$'}{s.cost.toFixed(2)}
@@ -786,57 +786,114 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
                           <Chip label="Current Month" size="small" style={{ backgroundColor: '#e0f2fe', color: '#0369a1', fontWeight: 700 }} />
                         </Box>
                         <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
-                          Day-by-day Azure consumption pattern with average \$41.52 daily baseline.
+                          Day-by-day Azure consumption pattern with average {costData?.currency === 'INR' ? '₹' : '$'}{costData?.dailyBurnRate ? costData.dailyBurnRate.toFixed(2) : '0.00'} daily baseline.
                         </Typography>
                       </Box>
 
                       {/* SVG Line / Area Graph */}
-                      <Box py={2}>
-                        <svg viewBox="0 0 500 150" style={{ width: '100%', height: 160, overflow: 'visible' }}>
-                          <defs>
-                            <linearGradient id="azureCostGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#059669" stopOpacity="0.3" />
-                              <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
-                            </linearGradient>
-                          </defs>
-                          {/* Grid Lines */}
-                          <line x1="0" y1="30" x2="500" y2="30" stroke="#f1f5f9" strokeWidth="1" />
-                          <line x1="0" y1="75" x2="500" y2="75" stroke="#f1f5f9" strokeWidth="1" />
-                          <line x1="0" y1="120" x2="500" y2="120" stroke="#f1f5f9" strokeWidth="1" />
+                      {(() => {
+                        const trendData: Array<{ day: string; cost: number }> = costData?.dailySpendingTrend || [];
+                        const currSymbol = costData?.currency === 'INR' ? '₹' : '$';
 
-                          {/* Area Fill */}
-                          <path
-                            d="M0,110 Q50,95 100,105 T200,85 T300,90 T400,70 T500,80 L500,140 L0,140 Z"
-                            fill="url(#azureCostGrad)"
-                          />
-                          {/* Stroke Line */}
-                          <path
-                            d="M0,110 Q50,95 100,105 T200,85 T300,90 T400,70 T500,80"
-                            fill="none"
-                            stroke="#059669"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                          />
-                          {/* Interactive Points */}
-                          <circle cx="100" cy="105" r="4" fill="#059669" />
-                          <circle cx="200" cy="85" r="4" fill="#059669" />
-                          <circle cx="300" cy="90" r="4" fill="#059669" />
-                          <circle cx="400" cy="70" r="4" fill="#059669" />
-                          <circle cx="500" cy="80" r="5" fill="#005B4B" />
-                        </svg>
-                        <Box display="flex" justifyContent="space-between" mt={1}>
-                          <Typography variant="caption" color="textSecondary">Day 1 (\$38.20)</Typography>
-                          <Typography variant="caption" color="textSecondary">Day 10 (\$42.00)</Typography>
-                          <Typography variant="caption" color="textSecondary">Day 15 (\$46.20)</Typography>
-                          <Typography variant="caption" style={{ color: '#059669', fontWeight: 700 }}>Current (\$39.40)</Typography>
-                        </Box>
-                      </Box>
+                        if (trendData.length === 0) {
+                          return (
+                            <Box py={4} textAlign="center">
+                              <Typography variant="body2" color="textSecondary">
+                                No daily cost entries recorded for current billing period.
+                              </Typography>
+                            </Box>
+                          );
+                        }
+
+                        const maxCost = Math.max(...trendData.map(d => d.cost), 1);
+                        const width = 500;
+                        const height = 150;
+                        const paddingX = 20;
+                        const paddingY = 25;
+                        const plotW = width - paddingX * 2;
+                        const plotH = height - paddingY * 2;
+
+                        const points = trendData.map((d, i) => {
+                          const x = paddingX + (i / Math.max(trendData.length - 1, 1)) * plotW;
+                          const y = height - paddingY - (d.cost / maxCost) * plotH;
+                          return { x, y, day: d.day, cost: d.cost };
+                        });
+
+                        const pathD = points.reduce((acc, p, i) => {
+                          return i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`;
+                        }, '');
+
+                        const areaD = `${pathD} L ${points[points.length - 1].x} ${height - paddingY} L ${points[0].x} ${height - paddingY} Z`;
+
+                        // Key sample indices for bottom labels: first, middle, last
+                        const sampleIndices = Array.from(new Set([
+                          0,
+                          Math.floor(points.length / 2),
+                          points.length - 1,
+                        ]));
+
+                        return (
+                          <Box py={2}>
+                            <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 160, overflow: 'visible' }}>
+                              <defs>
+                                <linearGradient id="azureCostGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#059669" stopOpacity="0.3" />
+                                  <stop offset="100%" stopColor="#059669" stopOpacity="0.0" />
+                                </linearGradient>
+                              </defs>
+                              {/* Grid Lines */}
+                              <line x1="0" y1={paddingY} x2={width} y2={paddingY} stroke="#f1f5f9" strokeWidth="1" />
+                              <line x1="0" y1={paddingY + plotH / 2} x2={width} y2={paddingY + plotH / 2} stroke="#f1f5f9" strokeWidth="1" />
+                              <line x1="0" y1={height - paddingY} x2={width} y2={height - paddingY} stroke="#f1f5f9" strokeWidth="1" />
+
+                              {/* Area Fill */}
+                              <path d={areaD} fill="url(#azureCostGrad)" />
+                              {/* Stroke Line */}
+                              <path d={pathD} fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                              {/* Points */}
+                              {points.map((p, idx) => (
+                                <circle
+                                  key={idx}
+                                  cx={p.x}
+                                  cy={p.y}
+                                  r={idx === points.length - 1 ? 5 : 4}
+                                  fill={idx === points.length - 1 ? '#005B4B' : '#059669'}
+                                />
+                              ))}
+                            </svg>
+                            <Box display="flex" justifyContent="space-between" mt={1}>
+                              {sampleIndices.map((idx) => {
+                                const p = points[idx];
+                                const isCurrent = idx === points.length - 1;
+                                return (
+                                  <Typography
+                                    key={idx}
+                                    variant="caption"
+                                    style={isCurrent ? { color: '#059669', fontWeight: 700 } : { color: '#64748b' }}
+                                  >
+                                    {p.day} ({currSymbol}{p.cost.toFixed(2)})
+                                  </Typography>
+                                );
+                              })}
+                            </Box>
+                          </Box>
+                        );
+                      })()}
 
                       <Paper variant="outlined" style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography variant="caption" color="textSecondary">
-                          Spend stability index: <strong>94.2%</strong> (Low volatility, consistent predictable workload)
+                          Spend stability index: <strong>{costData?.percentOfBudget !== undefined ? `${Math.max(100 - costData.percentOfBudget, 0).toFixed(1)}%` : '100%'}</strong> (Budget adherence based on live MTD trend)
                         </Typography>
-                        <Chip label="Stable" size="small" style={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 700, height: 20 }} />
+                        <Chip
+                          label={costData?.percentOfBudget && costData.percentOfBudget > 90 ? 'Alert' : 'Stable'}
+                          size="small"
+                          style={{
+                            backgroundColor: costData?.percentOfBudget && costData.percentOfBudget > 90 ? '#fee2e2' : '#d1fae5',
+                            color: costData?.percentOfBudget && costData.percentOfBudget > 90 ? '#991b1b' : '#065f46',
+                            fontWeight: 700,
+                            height: 20
+                          }}
+                        />
                       </Paper>
                     </Card>
                   </Grid>
