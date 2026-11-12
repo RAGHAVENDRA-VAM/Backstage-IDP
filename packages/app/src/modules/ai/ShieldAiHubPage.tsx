@@ -676,9 +676,22 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                             RECOMMENDED RESOLUTION STEPS
                           </Typography>
                         </Box>
-                        <Typography variant="body2" style={{ color: '#14532d', lineHeight: 1.6, marginTop: 4 }}>
-                          {logAnalysis.suggestedFix}
-                        </Typography>
+                        {typeof logAnalysis.suggestedFix === 'string' && logAnalysis.suggestedFix.includes('.') ? (
+                          <Box component="ul" style={{ margin: '8px 0 0 0', paddingLeft: 20, color: '#14532d' }}>
+                            {logAnalysis.suggestedFix
+                              .split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
+                              .filter((step: string) => step.trim().length > 0)
+                              .map((step: string, sIdx: number) => (
+                                <li key={sIdx} style={{ marginBottom: 6, lineHeight: 1.5, fontSize: '0.88rem' }}>
+                                  {step.trim()}
+                                </li>
+                              ))}
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" style={{ color: '#14532d', lineHeight: 1.6, marginTop: 4 }}>
+                            {logAnalysis.suggestedFix}
+                          </Typography>
+                        )}
                       </Paper>
 
                       {/* 4. Patch Section */}
