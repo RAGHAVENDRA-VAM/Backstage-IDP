@@ -609,72 +609,110 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
 
                   {logAnalysis && (
                     <Box display="flex" flexDirection="column" gap={2}>
-                      <Box display="flex" alignItems="center" justifyContent="space-between">
-                        <Box display="flex" alignItems="center">
+                      <Box display="flex" alignItems="center" justifyContent="space-between" pb={1} style={{ borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+                        <Box display="flex" alignItems="center" gap={1.5}>
                           <Chip
-                            label={logAnalysis.severity}
+                            label={logAnalysis.severity.toUpperCase()}
+                            size="small"
                             style={{
                               backgroundColor:
                                 logAnalysis.severity === 'critical'
                                   ? '#ef4444'
                                   : logAnalysis.severity === 'high'
-                                  ? '#f97316'
-                                  : '#eab308',
+                                  ? '#ea580c'
+                                  : '#f59e0b',
                               color: '#ffffff',
-                              fontWeight: 700,
-                              marginRight: 10,
+                              fontWeight: 800,
+                              fontSize: '0.72rem',
+                              letterSpacing: '0.5px',
                             }}
                           />
-                          <Typography variant="subtitle1" style={{ fontWeight: 700 }}>
+                          <Typography variant="subtitle1" style={{ fontWeight: 800, color: '#0f172a' }}>
                             {logAnalysis.summary}
                           </Typography>
                         </Box>
                       </Box>
 
-                      <Paper variant="outlined" style={{ padding: 12, backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                        <Typography variant="caption" style={{ fontWeight: 700, color: '#dc2626' }}>
-                          ROOT CAUSE BREAKDOWN
-                        </Typography>
-                        <Typography variant="body2" style={{ marginTop: 4 }}>
+                      {/* 1. Root Cause Section */}
+                      <Paper variant="outlined" style={{ padding: '14px 18px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
+                        <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                          <ErrorOutlineIcon style={{ color: '#dc2626', fontSize: 18 }} />
+                          <Typography variant="caption" style={{ fontWeight: 800, color: '#b91c1c', letterSpacing: '0.5px' }}>
+                            ROOT CAUSE ANALYSIS
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" style={{ color: '#7f1d1d', lineHeight: 1.6, marginTop: 4 }}>
                           {logAnalysis.rootCause}
                         </Typography>
                       </Paper>
 
-                      <div>
-                        <Typography variant="caption" style={{ fontWeight: 700 }}>
-                          LOCATED OFFENDING TRACE
+                      {/* 2. Offending Trace Section */}
+                      <Box>
+                        <Typography variant="caption" style={{ fontWeight: 800, color: '#475569', letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>
+                          OFFENDING TRACE LOCATION
                         </Typography>
-                        <div className={classes.codeBlock}>
+                        <Box
+                          style={{
+                            backgroundColor: '#0f172a',
+                            color: '#f8fafc',
+                            padding: '12px 16px',
+                            borderRadius: 8,
+                            fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                            fontSize: '0.85rem',
+                            overflowX: 'auto',
+                            border: '1px solid #1e293b',
+                            lineHeight: 1.5,
+                          }}
+                        >
                           <code>{logAnalysis.offendingLine}</code>
-                        </div>
-                      </div>
+                        </Box>
+                      </Box>
 
-                      <Paper variant="outlined" style={{ padding: 12, borderLeft: '4px solid #10b981' }}>
-                        <Typography variant="caption" style={{ fontWeight: 700, color: '#059669' }}>
-                          RECOMMENDED RESOLUTION
-                        </Typography>
-                        <Typography variant="body2" style={{ marginTop: 4 }}>
+                      {/* 3. Recommended Resolution */}
+                      <Paper variant="outlined" style={{ padding: '14px 18px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
+                        <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                          <CheckCircleIcon style={{ color: '#16a34a', fontSize: 18 }} />
+                          <Typography variant="caption" style={{ fontWeight: 800, color: '#15803d', letterSpacing: '0.5px' }}>
+                            RECOMMENDED RESOLUTION STEPS
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" style={{ color: '#14532d', lineHeight: 1.6, marginTop: 4 }}>
                           {logAnalysis.suggestedFix}
                         </Typography>
                       </Paper>
 
-                      <div>
-                        <Typography variant="caption" style={{ fontWeight: 700 }}>
-                          READY-TO-APPLY CODE / SCRIPT PATCH
-                        </Typography>
-                        <div className={classes.codeBlock}>
-                          <Tooltip title="Copy Code Patch">
-                            <IconButton
-                              size="small"
-                              className={classes.copyBtn}
-                              onClick={() => copyToClipboard(logAnalysis.codePatch)}
-                            >
-                              <FileCopyIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <pre style={{ margin: 0 }}>{logAnalysis.codePatch}</pre>
-                        </div>
-                      </div>
+                      {/* 4. Patch Section */}
+                      <Box>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.75}>
+                          <Typography variant="caption" style={{ fontWeight: 800, color: '#475569', letterSpacing: '0.5px' }}>
+                            READY-TO-APPLY CODE / SCRIPT PATCH
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<FileCopyIcon style={{ fontSize: 14 }} />}
+                            onClick={() => copyToClipboard(logAnalysis.codePatch)}
+                            style={{ textTransform: 'none', fontSize: '0.75rem', fontWeight: 700 }}
+                          >
+                            Copy Patch
+                          </Button>
+                        </Box>
+                        <Box
+                          style={{
+                            backgroundColor: '#090d16',
+                            color: '#38bdf8',
+                            padding: '14px 18px',
+                            borderRadius: 8,
+                            fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                            fontSize: '0.82rem',
+                            overflowX: 'auto',
+                            border: '1px solid #1e293b',
+                            maxHeight: 220,
+                          }}
+                        >
+                          <pre style={{ margin: 0, fontFamily: 'inherit', whiteSpace: 'pre-wrap' }}>{logAnalysis.codePatch}</pre>
+                        </Box>
+                      </Box>
                     </Box>
                   )}
                 </CardContent>
