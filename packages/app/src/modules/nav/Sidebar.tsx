@@ -16,7 +16,7 @@ import BubbleChartIcon from '@material-ui/icons/BubbleChart';
 import { SidebarSearchModal } from '@backstage/plugin-search';
 import { UserSettingsSignInAvatar } from '@backstage/plugin-user-settings';
 import { NotificationsSidebarItem } from '@backstage/plugin-notifications';
-import { ShieldAiFloatingWidget } from '../ai/ShieldAiFloatingWidget';
+import { AcmeAiFloatingWidget as ShieldAiFloatingWidget } from '../ai';
 import { useUserRole } from '../RoleContext';
 
 export const SidebarContent = NavContentBlueprint.make({

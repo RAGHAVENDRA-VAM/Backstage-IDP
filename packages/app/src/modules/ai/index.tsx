@@ -1,6 +1,6 @@
 import React from 'react';
 import { createFrontendPlugin, PageBlueprint, createRouteRef } from '@backstage/frontend-plugin-api';
-import { ShieldAiHubPage as AcmeAiHubPage } from './ShieldAiHubPage';
+import { AcmeAiHubPage } from './ShieldAiHubPage';
 import BubbleChartIcon from '@material-ui/icons/BubbleChart';
 
 export const shieldAiRouteRef = createRouteRef({ id: 'shield-ai' });
@@ -27,5 +27,8 @@ export const aiModule = createFrontendPlugin({
   extensions: [shieldAiPage],
 });
 
-export { ShieldAiFloatingWidget as AcmeAiFloatingWidget, ShieldAiFloatingWidget } from './ShieldAiFloatingWidget';
-export { ShieldAiHubPage as AcmeAiHubPage, ShieldAiHubPage } from './ShieldAiHubPage';
+export { AcmeAiFloatingWidget } from './ShieldAiFloatingWidget';
+export { AcmeAiHubPage } from './ShieldAiHubPage';
+export { AcmeAiFloatingWidget as ShieldAiFloatingWidget } from './ShieldAiFloatingWidget';
+export { AcmeAiHubPage as ShieldAiHubPage } from './ShieldAiHubPage';
+
