@@ -882,39 +882,47 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                     Synthesize compliant enterprise boilerplate, Dockerfiles, and Azure CI/CD workflows tailored to your specification.
                   </Typography>
 
-                  <Box display="flex" flexDirection="column" gap={2}>
-                    <TextField
-                      fullWidth
-                      label="Service Name"
-                      variant="outlined"
-                      size="small"
-                      value={scaffoldService}
-                      onChange={e => setScaffoldService(e.target.value)}
-                    />
+                  <Box display="flex" flexDirection="column">
+                    <Box mb={2}>
+                      <TextField
+                        fullWidth
+                        label="Service Name"
+                        variant="outlined"
+                        size="small"
+                        value={scaffoldService}
+                        onChange={e => setScaffoldService(e.target.value)}
+                      />
+                    </Box>
 
-                    <FormControl fullWidth variant="outlined" size="small">
-                      <InputLabel>Language & Framework</InputLabel>
-                      <Select
-                        value={scaffoldLang}
-                        onChange={e => setScaffoldLang(e.target.value as string)}
-                        label="Language & Framework"
-                      >
-                        <MenuItem value="typescript">TypeScript (Express.js / Node 20)</MenuItem>
-                        <MenuItem value="java">Java 21 (Spring Boot 3.2)</MenuItem>
-                        <MenuItem value="python">Python (FastAPI + Pydantic)</MenuItem>
-                      </Select>
-                    </FormControl>
+                    <Box mb={2}>
+                      <FormControl fullWidth variant="outlined" size="small">
+                        <InputLabel>Language & Framework</InputLabel>
+                        <Select
+                          value={scaffoldLang}
+                          onChange={e => setScaffoldLang(e.target.value as string)}
+                          label="Language & Framework"
+                        >
+                          <MenuItem value="typescript">TypeScript (Express.js / Node 20)</MenuItem>
+                          <MenuItem value="java">Java 21 (Spring Boot 3.2)</MenuItem>
+                          <MenuItem value="python">Python (FastAPI + Pydantic)</MenuItem>
+                          <MenuItem value="dotnet">.NET 8 (C# Web API)</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Box>
 
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={5}
-                      label="Architecture Requirements & Data Models"
-                      variant="outlined"
-                      value={scaffoldPrompt}
-                      onChange={e => setScaffoldPrompt(e.target.value)}
-                      placeholder="e.g. Create a high-throughput claims settlement service with PostgreSQL connection pool, OAuth2 token verification, and health check..."
-                    />
+                    <Box mb={2}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        minRows={5}
+                        maxRows={7}
+                        label="Architecture Requirements & Data Models"
+                        variant="outlined"
+                        value={scaffoldPrompt}
+                        onChange={e => setScaffoldPrompt(e.target.value)}
+                        placeholder="e.g. Create a high-throughput claims settlement service with PostgreSQL connection pool, OAuth2 token verification, and health check..."
+                      />
+                    </Box>
 
                     <Button
                       variant="contained"
@@ -922,7 +930,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                       onClick={handleScaffoldCode}
                       disabled={scaffoldLoading || !scaffoldPrompt.trim()}
                       startIcon={scaffoldLoading ? <CircularProgress size={16} color="inherit" /> : <CodeIcon />}
-                      style={{ marginTop: 8, textTransform: 'none', fontWeight: 700 }}
+                      style={{ textTransform: 'none', fontWeight: 700, padding: '10px 16px' }}
                     >
                       {scaffoldLoading ? 'Synthesizing Architecture...' : 'Generate Golden Path Service'}
                     </Button>
