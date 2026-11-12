@@ -336,27 +336,71 @@ export const AzureAiFoundryDashboardView = () => {
                 <Card variant="outlined" style={{ borderRadius: 8, padding: 24, height: '100%' }}>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                     <Typography variant="subtitle1" style={{ fontWeight: 700, color: '#0f3156' }}>
-                      Daily Token Velocity
+                      Active Model Deployment Fleet & Capacity
                     </Typography>
-                    <Chip label="Live Inference" size="small" style={{ backgroundColor: '#ede9fe', color: '#6d28d9', fontWeight: 700 }} />
+                    <Chip label="Live ARM Inventory" size="small" style={{ backgroundColor: '#ede9fe', color: '#6d28d9', fontWeight: 700 }} />
                   </Box>
                   <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
-                    30-day inference volume curve across Azure OpenAI endpoints.
+                    Live Azure OpenAI and Cognitive model endpoints provisioned under subscription {aiData?.subscriptionId}.
                   </Typography>
 
                   {modelCount === 0 ? (
                     <Box py={6} textAlign="center">
                       <Typography variant="body2" color="textSecondary">
-                        No active token velocity. Deploy a model in Azure AI Studio to stream live telemetry.
+                        No active models deployed. Deploy a model in Azure AI Studio or Azure OpenAI to stream telemetry.
                       </Typography>
                     </Box>
                   ) : (
-                    <Paper variant="outlined" style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
-                      <Typography variant="caption" color="textSecondary">
-                        Active Model Deployments: <strong>{modelCount}</strong>
-                      </Typography>
-                      <Chip label="Telemetry Active" size="small" style={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 700 }} />
-                    </Paper>
+                    <Box>
+                      <TableContainer component={Paper} variant="outlined" style={{ borderRadius: 6, maxHeight: 280, overflowY: 'auto' }}>
+                        <Table size="small" stickyHeader>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell style={{ fontWeight: 700, backgroundColor: '#f8fafc' }}>Model</TableCell>
+                              <TableCell style={{ fontWeight: 700, backgroundColor: '#f8fafc' }}>Resource Hub</TableCell>
+                              <TableCell style={{ fontWeight: 700, backgroundColor: '#f8fafc' }}>Provisioned Quota</TableCell>
+                              <TableCell style={{ fontWeight: 700, backgroundColor: '#f8fafc' }}>Type</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {models.map((m: any, idx: number) => (
+                              <TableRow key={idx} hover>
+                                <TableCell style={{ fontWeight: 700, color: '#0f3156' }}>
+                                  {m.name}
+                                  <Typography variant="caption" display="block" color="textSecondary">
+                                    v{m.version}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="body2" style={{ fontSize: '0.8rem' }}>
+                                    {m.provider}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={m.tpmQuota}
+                                    size="small"
+                                    style={{ backgroundColor: '#e0f2fe', color: '#0369a1', fontWeight: 700, fontSize: '0.75rem' }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="caption" color="textSecondary">
+                                    {m.deploymentType}
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+
+                      <Paper variant="outlined" style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
+                        <Typography variant="caption" color="textSecondary">
+                          Active Endpoints: <strong>{modelCount} Deployed</strong> across resource groups
+                        </Typography>
+                        <Chip label="Telemetry Active" size="small" style={{ backgroundColor: '#d1fae5', color: '#065f46', fontWeight: 700 }} />
+                      </Paper>
+                    </Box>
                   )}
                 </Card>
               </Grid>
@@ -364,42 +408,58 @@ export const AzureAiFoundryDashboardView = () => {
               <Grid item xs={12} md={5}>
                 <Card variant="outlined" style={{ borderRadius: 8, padding: 24, height: '100%' }}>
                   <Typography variant="subtitle1" style={{ fontWeight: 700, color: '#0f3156', marginBottom: 8 }}>
-                    Token Composition Analysis
+                    Inference Metering & Economics
                   </Typography>
-                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: 20 }}>
-                    Distribution between Prompt tokens (Input) and Completion tokens (Generated Output).
+                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
+                    Provisioned capacity and per-unit inference rates for detected Azure AI models.
                   </Typography>
 
                   {modelCount === 0 ? (
                     <Box py={4} textAlign="center">
                       <Typography variant="body2" color="textSecondary">
-                        No token consumption recorded for subscription {aiData?.subscriptionId}.
+                        No active models detected in this subscription.
                       </Typography>
                     </Box>
                   ) : (
-                    <Box mb={3}>
-                      <Box display="flex" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="body2" style={{ fontWeight: 600 }}>
-                          Prompt & Completion Metering
+                    <Box>
+                      <Paper variant="outlined" style={{ padding: 14, backgroundColor: '#faf5ff', borderRadius: 6, border: '1px solid #e9d5ff', marginBottom: 14 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography variant="caption" style={{ fontWeight: 700, color: '#6b21a8' }}>
+                            Fleet Capacity
+                          </Typography>
+                          <Typography variant="subtitle2" style={{ fontWeight: 800, color: '#6b21a8' }}>
+                            {models.filter((m: any) => m.tpmQuota?.includes('TPM')).length} Managed Quota Endpoints
+                          </Typography>
+                        </Box>
+                        <Typography variant="caption" color="textSecondary" display="block" style={{ marginTop: 4 }}>
+                          All {modelCount} models are actively responding on Pay-As-You-Go Azure Cognitive endpoints.
                         </Typography>
-                        <Typography variant="body2" style={{ fontWeight: 700, color: '#7c3aed' }}>
-                          Streaming Live
+                      </Paper>
+
+                      <Paper variant="outlined" style={{ padding: 14, backgroundColor: '#f0fdf4', borderRadius: 6, border: '1px solid #bbf7d0', marginBottom: 14 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography variant="caption" style={{ fontWeight: 700, color: '#166534' }}>
+                            AI Spend (MTD)
+                          </Typography>
+                          <Typography variant="subtitle2" style={{ fontWeight: 800, color: '#166534' }}>
+                            {aiData?.totalAiSpendFormatted || '$0.00'}
+                          </Typography>
+                        </Box>
+                        <Typography variant="caption" color="textSecondary" display="block" style={{ marginTop: 4 }}>
+                          Directly queried from Azure Cost Management API under ServiceName filters.
                         </Typography>
-                      </Box>
-                      <LinearProgress variant="indeterminate" style={{ height: 8, borderRadius: 4, backgroundColor: '#ede9fe' }} />
+                      </Paper>
+
+                      <Paper variant="outlined" style={{ padding: 14, backgroundColor: '#eff6ff', borderRadius: 6, border: '1px solid #bfdbfe' }}>
+                        <Typography variant="caption" style={{ fontWeight: 700, color: '#1e40af' }}>
+                          Pricing SKUs:
+                        </Typography>
+                        <Typography variant="caption" display="block" style={{ color: '#1e3a8a', marginTop: 4 }}>
+                          Deployments are billed based on processed token volume. Azure AI Foundry standard rate applies per 1,000 tokens.
+                        </Typography>
+                      </Paper>
                     </Box>
                   )}
-
-                  <Paper variant="outlined" style={{ padding: 16, backgroundColor: '#fdf4ff', borderRadius: 6, border: '1px solid #f0abfc', marginTop: 16 }}>
-                    <Typography variant="caption" style={{ fontWeight: 700, color: '#86198f' }}>
-                      Economic Takeaway:
-                    </Typography>
-                    <Typography variant="caption" display="block" style={{ color: '#4a044e', marginTop: 4 }}>
-                      {modelCount > 0
-                        ? 'Token consumption is metered in real-time. Utilizing prompt caching and lighter deployment SKUs optimizes overall AI invoice.'
-                        : 'Deploy models in Azure AI Foundry to monitor prompt vs completion unit economics.'}
-                    </Typography>
-                  </Paper>
                 </Card>
               </Grid>
             </Grid>
