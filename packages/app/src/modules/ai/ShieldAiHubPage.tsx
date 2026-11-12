@@ -995,10 +995,11 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                         >
                           {scaffoldResult.files.map((file: any, index: number) => {
                             const isSelected = activeFileTab === index;
+                            const fileName = file.path || file.filename || `File ${index + 1}`;
                             return (
                               <Tab
                                 key={index}
-                                label={file.path}
+                                label={fileName}
                                 style={{
                                   textTransform: 'none',
                                   fontFamily: 'Consolas, Monaco, monospace',
@@ -1074,7 +1075,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                           onClick={() => copyToClipboard(scaffoldResult.files[activeFileTab].content)}
                           style={{ textTransform: 'none', fontWeight: 700, fontSize: '0.8rem' }}
                         >
-                          Copy {scaffoldResult.files[activeFileTab].path}
+                          Copy {scaffoldResult.files[activeFileTab]?.path || scaffoldResult.files[activeFileTab]?.filename || 'File'}
                         </Button>
                       </Box>
                     </Box>
