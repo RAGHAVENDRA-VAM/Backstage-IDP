@@ -127,6 +127,123 @@ export const adoProxyPlugin = createBackendPlugin({
           }
         });
 
+        // Get Pipelines for a given ADO project, optionally filtered by repository
+        router.get('/pipelines', async (req, res) => {
+          const { organization, project, repositoryId, repositoryName } = req.query;
+
+          if (!organization || !project) {
+            res.status(400).json({ error: 'organization and project are required' });
+            return;
+          }
+
+          try {
+            const token = getAdoToken();
+
+            if (!token) {
+              res.status(500).json({ error: 'No ADO token configured' });
+              return;
+            }
+
+            const authHeader = `Basic ${Buffer.from(`:${token}`).toString('base64')}`;
+
+            // Strategy 1: Build Definitions API with repositoryId filter
+            let pipelinesUrl = `https://dev.azure.com/${organization}/${project}/_apis/build/definitions?api-version=7.1`;
+            if (repositoryId) {
+              pipelinesUrl += `&repositoryId=${encodeURIComponent(String(repositoryId))}&repositoryType=TfsGit`;
+            }
+
+            let response = await fetch(pipelinesUrl, {
+              headers: { Authorization: authHeader },
+            });
+
+            if (!response.ok) {
+              // Fallback to generic definitions list
+              response = await fetch(`https://dev.azure.com/${organization}/${project}/_apis/build/definitions?api-version=7.1`, {
+                headers: { Authorization: authHeader },
+              });
+            }
+
+            if (!response.ok) {
+              const err = await response.text();
+              console.error('ADO Pipelines API error:', err);
+              res.status(response.status).json({ error: 'Failed to fetch ADO pipelines' });
+              return;
+            }
+
+            const data = await response.json();
+            let definitions = data.value || [];
+
+            // If repositoryName was provided and multiple pipelines returned, prioritize matches
+            if (repositoryName && definitions.length > 0) {
+              const rName = String(repositoryName).toLowerCase();
+              const filtered = definitions.filter((d: any) => {
+                const defRepoName = (d.repository?.name || '').toLowerCase();
+                const defName = (d.name || '').toLowerCase();
+                return defRepoName === rName || defName.includes(rName);
+              });
+              if (filtered.length > 0) {
+                definitions = filtered;
+              }
+            }
+
+            const pipelines = definitions.map((d: any) => ({
+              id: d.id,
+              name: d.name,
+              path: d.path,
+              url: d._links?.web?.href || `https://dev.azure.com/${organization}/${project}/_build?definitionId=${d.id}`,
+              repository: d.repository ? { id: d.repository.id, name: d.repository.name } : undefined,
+            }));
+
+            res.json({ pipelines });
+          } catch (e: any) {
+            console.error('ADO Pipelines proxy error:', e);
+            res.status(500).json({ error: e.message });
+          }
+        });
+
+        // Get status of a specific pipeline run
+        router.get('/pipeline-run-status', async (req, res) => {
+          const { organization, project, pipelineId, runId } = req.query;
+
+          if (!organization || !project || !pipelineId || !runId) {
+            res.status(400).json({ error: 'organization, project, pipelineId, and runId are required' });
+            return;
+          }
+
+          try {
+            const token = getAdoToken();
+            if (!token) {
+              res.status(500).json({ error: 'No ADO token configured' });
+              return;
+            }
+
+            const authHeader = `Basic ${Buffer.from(`:${token}`).toString('base64')}`;
+            const url = `https://dev.azure.com/${organization}/${project}/_apis/pipelines/${pipelineId}/runs/${runId}?api-version=7.1`;
+
+            const response = await fetch(url, {
+              headers: { Authorization: authHeader },
+            });
+
+            if (!response.ok) {
+              res.status(response.status).json({ error: 'Failed to fetch pipeline run status' });
+              return;
+            }
+
+            const data = await response.json();
+            res.json({
+              id: data.id,
+              name: data.name,
+              state: data.state, // inProgress, completed, cancelling, notStarted
+              result: data.result, // succeeded, failed, canceled
+              createdDate: data.createdDate,
+              finishedDate: data.finishedDate,
+              webUrl: data._links?.web?.href || `https://dev.azure.com/${organization}/${project}/_build/results?buildId=${data.id}`,
+            });
+          } catch (e: any) {
+            res.status(500).json({ error: e.message });
+          }
+        });
+
         router.get('/work-items', async (req, res) => {
           const { organization, project, type } = req.query;
 

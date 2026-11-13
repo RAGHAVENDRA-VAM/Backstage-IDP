@@ -129,6 +129,10 @@ catalog:
       rules:
         - allow: [Template]
     - type: url
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/trigger-ado-pipeline/template.yaml
+      rules:
+        - allow: [Template]
+    - type: url
       target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/react-web-app/template.yaml
       rules:
         - allow: [Template]

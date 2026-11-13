@@ -1,0 +1,85 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: trigger-ado-pipeline
+  title: Trigger Azure DevOps Pipeline
+  description: Select an Azure DevOps project, repository, and pipeline to trigger the pipeline run directly. Backstage streams execution status and validates success or failure in the portal.
+  tags:
+    - azure
+    - ado
+    - pipeline
+    - ci-cd
+    - devops
+    - azure-devops
+spec:
+  owner: user:raghavendra-vam
+  type: service
+
+  parameters:
+    - title: 1. Select Azure DevOps Source & Pipeline
+      required:
+        - organization
+        - project
+        - repository
+      properties:
+        organization:
+          title: Azure DevOps Organization
+          type: string
+          description: Your Azure DevOps organization name (e.g. ValueMomentum)
+          default: 'ValueMomentum'
+          ui:autofocus: true
+        project:
+          title: Azure DevOps Project
+          type: string
+          description: Select project from dropdown
+          ui:field: AdoProjectPicker
+        repository:
+          title: Azure DevOps Git Repository
+          type: string
+          description: Select existing Git repository from dropdown
+          ui:field: AdoRepoPicker
+        pipelineName:
+          title: Pipeline / Workflow
+          type: string
+          description: Select existing build or release pipeline (or leave blank to auto-detect for repo)
+          ui:field: AdoPipelinePicker
+        branch:
+          title: Target Branch
+          type: string
+          description: Git branch to trigger pipeline on
+          default: 'main'
+
+    - title: 2. Execution Settings
+      properties:
+        waitForCompletion:
+          title: Stream Status to Backstage IDP
+          type: boolean
+          description: When enabled, Backstage will monitor the pipeline until completion and report Success or Failure live.
+          default: true
+        timeoutMinutes:
+          title: Execution Timeout (Minutes)
+          type: number
+          description: Maximum minutes to wait before completing task
+          default: 10
+
+  steps:
+    - id: trigger-pipeline
+      name: Trigger Azure DevOps Pipeline Run
+      action: azure:pipeline:trigger
+      input:
+        organization: ${{ parameters.organization }}
+        project: ${{ parameters.project }}
+        repository: ${{ parameters.repository }}
+        pipelineName: ${{ parameters.pipelineName }}
+        branch: ${{ parameters.branch }}
+        waitForCompletion: ${{ parameters.waitForCompletion }}
+        timeoutMinutes: ${{ parameters.timeoutMinutes }}
+
+  output:
+    links:
+      - title: View Pipeline Run in Azure DevOps
+        url: ${{ steps['trigger-pipeline'].output.runUrl }}
+        icon: dashboard
+      - title: View Source Repository
+        url: https://dev.azure.com/${{ parameters.organization }}/${{ parameters.project }}/_git/${{ parameters.repository }}
+        icon: cloud

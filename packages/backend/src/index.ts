@@ -23,6 +23,7 @@ import { createAzureWorkItemAction } from './actions/azureWorkItem';
 import { createAzureSecretsAction } from './actions/azureSecrets';
 import { createAzureSecretsPushAction } from './actions/azureSecretsPush';
 import { createAzureAppDeployAction } from './actions/azureAppDeploy';
+import { createAzurePipelineTriggerAction } from './actions/azurePipelineTrigger';
 
 const scaffolderModuleCustomActions = createBackendModule({
   pluginId: 'scaffolder',
@@ -38,6 +39,7 @@ const scaffolderModuleCustomActions = createBackendModule({
         scaffolder.addActions(createAzureSecretsAction());
         scaffolder.addActions(createAzureSecretsPushAction());
         scaffolder.addActions(createAzureAppDeployAction({ config }));
+        scaffolder.addActions(createAzurePipelineTriggerAction({ config }));
       },
     });
   },

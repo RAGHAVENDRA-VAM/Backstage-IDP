@@ -11,6 +11,7 @@ spec:
 
     # 2. Azure DevOps Integration
     - ./templates/ado-work-item/template.yaml
+    - ./templates/trigger-ado-pipeline/template.yaml
 
     # 3. The Frontend Path
     - ./templates/react-web-app/template.yaml

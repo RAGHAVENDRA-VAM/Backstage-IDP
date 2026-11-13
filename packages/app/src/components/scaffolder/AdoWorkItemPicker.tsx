@@ -348,6 +348,128 @@ export const AdoRepoPicker = ({
   );
 };
 
+export const AdoPipelinePicker = ({
+  onChange,
+  rawErrors,
+  required,
+  formData,
+  formContext,
+}: FieldExtensionComponentProps<string>) => {
+  const fetchApi = useApi(fetchApiRef);
+  const discoveryApi = useApi(discoveryApiRef);
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<{ id: number; name: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const organization = formContext?.formData?.organization;
+  const project = formContext?.formData?.project;
+  const repository = formContext?.formData?.repository;
+
+  useEffect(() => {
+    let active = true;
+
+    if (!organization || !project) {
+      setOptions([]);
+      return undefined;
+    }
+
+    setLoading(true);
+    setError(undefined);
+
+    (async () => {
+      try {
+        const baseUrl = await discoveryApi.getBaseUrl('ado-proxy');
+        let queryUrl = `${baseUrl}/pipelines?organization=${encodeURIComponent(organization)}&project=${encodeURIComponent(project)}`;
+        if (repository) {
+          queryUrl += `&repositoryName=${encodeURIComponent(repository)}`;
+        }
+
+        const res = await fetchApi.fetch(queryUrl);
+        if (!res.ok) {
+          throw new Error('Failed to fetch pipelines');
+        }
+
+        const data = await res.json();
+        if (active) {
+          setOptions(data.pipelines || []);
+          if (data.pipelines && data.pipelines.length > 0 && !formData) {
+            // Auto-select the first matching pipeline
+            onChange(data.pipelines[0].name);
+          }
+        }
+      } catch (err: any) {
+        if (active) {
+          setError(err.message || 'Error loading pipelines');
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [fetchApi, discoveryApi, organization, project, repository]);
+
+  if (!organization || !project) {
+    return (
+      <TextField
+        fullWidth
+        disabled
+        label="Azure DevOps Pipeline"
+        helperText="Please select an Organization and Project first"
+        variant="outlined"
+      />
+    );
+  }
+
+  const selectedOption = options.find((o) => o.name === formData) || (formData ? { id: 0, name: formData } : null);
+
+  return (
+    <Autocomplete
+      id="ado-pipeline-picker"
+      open={open}
+      freeSolo
+      onOpen={() => setOpen(true)}
+      onClose={() => setOpen(false)}
+      getOptionSelected={(option, value) => option.name === value.name}
+      getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
+      options={options}
+      loading={loading}
+      value={selectedOption}
+      onChange={(_, newValue) => {
+        if (typeof newValue === 'string') {
+          onChange(newValue);
+        } else {
+          onChange(newValue ? newValue.name : undefined);
+        }
+      }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Select Pipeline / Workflow"
+          variant="outlined"
+          required={required}
+          error={(rawErrors?.length ?? 0) > 0 || !!error}
+          helperText={error || "Select an existing build or release pipeline for this repository"}
+          InputProps={{
+            ...params.InputProps,
+            endAdornment: (
+              <React.Fragment>
+                {loading ? <CircularProgress color="inherit" size={20} /> : null}
+                {params.InputProps.endAdornment}
+              </React.Fragment>
+            ),
+          }}
+        />
+      )}
+    />
+  );
+};
+
 export const adoWorkItemPickerModule = createFrontendModule({
   pluginId: 'scaffolder',
   extensions: [
@@ -375,6 +497,15 @@ export const adoWorkItemPickerModule = createFrontendModule({
         field: async () => createFormField({
           name: 'AdoRepoPicker',
           component: AdoRepoPicker,
+        }),
+      },
+    }),
+    FormFieldBlueprint.make({
+      name: 'adoPipelinePicker',
+      params: {
+        field: async () => createFormField({
+          name: 'AdoPipelinePicker',
+          component: AdoPipelinePicker,
         }),
       },
     }),
