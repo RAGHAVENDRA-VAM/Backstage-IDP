@@ -325,36 +325,41 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
         function matchTemplateFromText(allTemplates: TemplateMeta[], text: string): TemplateMeta | null {
           const lower = text.toLowerCase().trim();
 
-          // Azure App Deploy priority
+          // 1. Explicit title or ID exact match
+          let m = allTemplates.find(t => t.id.toLowerCase() === lower || t.title.toLowerCase() === lower);
+          if (m) return m;
+
+          // 2. Direct match for Azure Web App deployment requests
           if (
             lower.includes('claims_ui') ||
             lower.includes('valora') ||
-            (lower.includes('deploy') && (lower.includes('webapp') || lower.includes('web app') || lower.includes('azure webapp')))
+            lower.includes('azure web app') ||
+            lower.includes('azure webapp') ||
+            (lower.includes('deploy') && (lower.includes('application') || lower.includes('app') || lower.includes('webapp')))
           ) {
             const appDeploy = allTemplates.find(t => t.id === 'deploy-app-to-azure-webapp');
             if (appDeploy) return appDeploy;
           }
 
-          // Work Item priority
+          // 3. Work Item priority
           if (lower.includes('work item') || lower.includes('workitem') || lower.includes('ado bug') || lower.includes('ado task')) {
             const wi = allTemplates.find(t => t.id === 'ado-work-item-creator');
             if (wi) return wi;
           }
 
-          // Exact ID or Title match
-          let m = allTemplates.find(t => t.id.toLowerCase() === lower || t.title.toLowerCase() === lower);
-          if (m) return m;
-
-          // Substring in ID
+          // 4. Substring in ID
           m = allTemplates.find(t => lower.includes(t.id.toLowerCase()));
           if (m) return m;
 
-          // Substring in Title
+          // 5. Substring in Title
           m = allTemplates.find(t => lower.includes(t.title.toLowerCase()));
           if (m) return m;
 
-          // Keyword scoring
-          const words = lower.split(/[^a-zA-Z0-9_-]+/).filter(w => w.length >= 3 && !['template', 'trigger', 'deploy', 'create', 'please', 'need', 'want', 'enterprise'].includes(w));
+          // 6. Keyword scoring with stop words
+          const stopWords = ['template', 'trigger', 'deploy', 'create', 'please', 'need', 'want', 'enterprise', 'application', 'the', 'app', 'service'];
+          const words = lower.split(/[^a-zA-Z0-9_-]+/).filter(w => w.length >= 3 && !stopWords.includes(w));
+          if (words.length === 0) return null;
+
           let best: TemplateMeta | null = null;
           let bestScore = 0;
           for (const t of allTemplates) {
@@ -410,7 +415,7 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
 
           // Smart heuristic extractions for common patterns
           if (!extracted.repoFullName) {
-            const m = fullText.match(/([a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+)/);
+            const m = fullText.match(/(?:repo|repository)\s*[:=]?\s*([a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+)/i) || fullText.match(/([a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+)/);
             if (m && !m[1].includes('http') && !m[1].includes('dev.azure.com')) {
               extracted.repoFullName = m[1];
             } else if (fullText.toLowerCase().includes('claims_ui')) {
@@ -418,12 +423,20 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
             }
           }
           if (!extracted.webAppName) {
-            const m = fullText.match(/to\s+([a-zA-Z0-9_-]+)/i) || fullText.match(/webapp\s+[:=]?\s*([a-zA-Z0-9_-]+)/i) || fullText.match(/valora-insurance-ui/i);
-            if (m) extracted.webAppName = m[1] || m[0];
+            const m = fullText.match(/(?:webapp|web-app|target web app|target app|app name)\s*[:=]?\s*([a-zA-Z0-9_-]+)/i);
+            if (m) {
+              extracted.webAppName = m[1];
+            } else if (fullText.toLowerCase().includes('valora-insurance-ui') || fullText.toLowerCase().includes('valora')) {
+              extracted.webAppName = 'valora-insurance-ui';
+            }
           }
           if (!extracted.resourceGroup) {
-            const m = fullText.match(/in\s+([a-zA-Z0-9_-]+)/i) || fullText.match(/(?:group|rg)\s*[:=]?\s*([a-zA-Z0-9_-]+)/i) || fullText.match(/devops-maf/i);
-            if (m) extracted.resourceGroup = m[1] || m[0];
+            const m = fullText.match(/(?:resource group|resourcegroup|group|rg)\s*[:=]?\s*([a-zA-Z0-9_-]+)/i);
+            if (m) {
+              extracted.resourceGroup = m[1];
+            } else if (fullText.toLowerCase().includes('devops-maf')) {
+              extracted.resourceGroup = 'devops-maf';
+            }
           }
 
           // Generic name / title fallback
