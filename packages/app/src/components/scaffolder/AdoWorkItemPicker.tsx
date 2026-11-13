@@ -240,6 +240,114 @@ export const AdoProjectPicker = ({
   );
 };
 
+// --- 3. Azure DevOps Git Repository Picker ---
+export const AdoRepoPicker = ({
+  onChange,
+  rawErrors,
+  required,
+  formData,
+  formContext,
+}: FieldExtensionComponentProps<string>) => {
+  const fetchApi = useApi(fetchApiRef);
+  const discoveryApi = useApi(discoveryApiRef);
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<{ id: string; name: string; defaultBranch?: string; webUrl?: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const organization = formContext?.formData?.organization;
+  const project = formContext?.formData?.project;
+
+  useEffect(() => {
+    let active = true;
+
+    if (!organization || !project) {
+      setOptions([]);
+      return undefined;
+    }
+
+    setLoading(true);
+    setError(undefined);
+
+    (async () => {
+      try {
+        const baseUrl = await discoveryApi.getBaseUrl('ado-proxy');
+        const url = `${baseUrl}/repositories?organization=${encodeURIComponent(organization)}&project=${encodeURIComponent(project)}`;
+
+        const response = await fetchApi.fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch repositories: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        if (active) {
+          setOptions(data.repositories || []);
+          setLoading(false);
+        }
+      } catch (e: any) {
+        if (active) {
+          setError(e.message);
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [organization, project, fetchApi, discoveryApi]);
+
+  if (!organization || !project) {
+    return (
+      <TextField
+        fullWidth
+        disabled
+        label="Azure DevOps Repository"
+        helperText="Please select an Organization and Project first"
+        variant="outlined"
+      />
+    );
+  }
+
+  const selectedOption = options.find((o) => o.name === formData) || (formData ? { id: formData, name: formData } : null);
+
+  return (
+    <Autocomplete
+      id="ado-repo-picker"
+      open={open}
+      onOpen={() => setOpen(true)}
+      onClose={() => setOpen(false)}
+      getOptionSelected={(option, value) => option.name === value.name}
+      getOptionLabel={(option) => option.name}
+      options={options}
+      loading={loading}
+      value={selectedOption}
+      onChange={(_, newValue) => {
+        onChange(newValue ? newValue.name : undefined);
+      }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Select Azure DevOps Git Repository"
+          variant="outlined"
+          required={required}
+          error={(rawErrors?.length ?? 0) > 0 || !!error}
+          helperText={error || "Select an existing Git repository from the chosen ADO project"}
+          InputProps={{
+            ...params.InputProps,
+            endAdornment: (
+              <React.Fragment>
+                {loading ? <CircularProgress color="inherit" size={20} /> : null}
+                {params.InputProps.endAdornment}
+              </React.Fragment>
+            ),
+          }}
+        />
+      )}
+    />
+  );
+};
+
 export const adoWorkItemPickerModule = createFrontendModule({
   pluginId: 'scaffolder',
   extensions: [
@@ -258,6 +366,15 @@ export const adoWorkItemPickerModule = createFrontendModule({
         field: async () => createFormField({
           name: 'AdoProjectPicker',
           component: AdoProjectPicker,
+        }),
+      },
+    }),
+    FormFieldBlueprint.make({
+      name: 'adoRepoPicker',
+      params: {
+        field: async () => createFormField({
+          name: 'AdoRepoPicker',
+          component: AdoRepoPicker,
         }),
       },
     }),

@@ -10,6 +10,9 @@ export const createAzureAppDeployAction = () => {
       repoFullName: string;
       webAppName: string;
       resourceGroup?: string;
+      organization?: string;
+      project?: string;
+      branch?: string;
     },
     {
       webAppUrl?: string;
@@ -17,16 +20,16 @@ export const createAzureAppDeployAction = () => {
     }
   >({
     id: 'azure:app:deploy',
-    description: 'Deploys an existing GitHub application repository to a selected Azure Web App via direct ZipDeploy',
+    description: 'Deploys an existing GitHub or Azure DevOps application repository to a selected Azure Web App via direct ZipDeploy',
     schema: {
       input: {
         type: 'object',
         required: ['repoFullName', 'webAppName'],
         properties: {
           repoFullName: {
-            title: 'GitHub Repository Full Name',
+            title: 'Repository Name / Full Name',
             type: 'string',
-            description: 'Owner and repository name, e.g. RAGHAVENDRA-VAM/my-app',
+            description: 'Owner and repo name for GitHub (owner/repo) or Git repository name for Azure DevOps',
           },
           webAppName: {
             title: 'Target Azure Web App Name',
@@ -37,6 +40,21 @@ export const createAzureAppDeployAction = () => {
             title: 'Azure Resource Group',
             type: 'string',
             description: 'The Resource Group containing the Web App',
+          },
+          organization: {
+            title: 'Azure DevOps Organization',
+            type: 'string',
+            description: 'Optional ADO organization name',
+          },
+          project: {
+            title: 'Azure DevOps Project',
+            type: 'string',
+            description: 'Optional ADO project name',
+          },
+          branch: {
+            title: 'Source Branch',
+            type: 'string',
+            description: 'Branch to pull source from (defaults to main)',
           },
         },
       },
@@ -55,22 +73,27 @@ export const createAzureAppDeployAction = () => {
       },
     },
     async handler(ctx) {
-      const { repoFullName, webAppName } = ctx.input;
+      const { repoFullName, webAppName, organization, project, branch } = ctx.input;
       let targetRg = ctx.input.resourceGroup;
+      const isAdo = Boolean(organization && project);
 
-      ctx.logger.info(`🚀 Starting automated deployment of [${repoFullName}] to Azure Web App [${webAppName}]...`);
+      ctx.logger.info(`🚀 Starting automated deployment of [${repoFullName}] (${isAdo ? `Azure DevOps: ${organization}/${project}` : 'GitHub'}) to Azure Web App [${webAppName}]...`);
 
       const tenant = process.env.AZURE_TENANT_ID;
       const client = process.env.AZURE_CLIENT_ID;
       const secret = process.env.AZURE_CLIENT_SECRET;
       const sub = process.env.AZURE_SUBSCRIPTION_ID;
       const githubToken = process.env.GITHUB_TOKEN;
+      const adoToken = process.env.AZURE_DEVOPS_TOKEN || process.env.AZURE_TOKEN;
 
       if (!tenant || !client || !secret || !sub) {
         throw new Error('Azure Service Principal environment variables (AZURE_TENANT_ID, AZURE_CLIENT_ID, etc.) are missing.');
       }
-      if (!githubToken) {
+      if (!isAdo && !githubToken) {
         throw new Error('GITHUB_TOKEN is missing in environment.');
+      }
+      if (isAdo && !adoToken) {
+        throw new Error('Azure DevOps PAT token (AZURE_DEVOPS_TOKEN / AZURE_TOKEN) is missing in environment.');
       }
 
       // 1. Get Azure Management Token
@@ -170,37 +193,62 @@ export const createAzureAppDeployAction = () => {
       }
       ctx.logger.info(`Resolved Azure SCM Host: [${scmHost}]`);
 
-      // 4. Download source code zip from GitHub
-      ctx.logger.info(`Downloading application archive from GitHub [${repoFullName}]...`);
-      const zipRes = await fetch(`https://api.github.com/repos/${repoFullName}/zipball/main`, {
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-          'User-Agent': 'Backstage-Azure-Deployer',
-        },
-      });
+      // 4. Download source code zip from GitHub or Azure DevOps
+      let rawZipBuffer: Buffer;
+      const targetBranch = branch || 'main';
 
-      if (!zipRes.ok) {
-        throw new Error(`Failed to download repository zip from GitHub: ${zipRes.statusText}`);
+      if (isAdo) {
+        ctx.logger.info(`Downloading application archive from Azure DevOps [${organization}/${project}/_git/${repoFullName}] (branch: ${targetBranch})...`);
+        const adoZipUrl = `https://dev.azure.com/${encodeURIComponent(organization!)}/${encodeURIComponent(project!)}/_apis/git/repositories/${encodeURIComponent(repoFullName)}/items?path=/&recursionLevel=full&versionDescriptor[version]=${encodeURIComponent(targetBranch)}&$format=zip&api-version=7.1`;
+        const zipRes = await fetch(adoZipUrl, {
+          headers: {
+            Authorization: `Basic ${Buffer.from(`:${adoToken}`).toString('base64')}`,
+            'User-Agent': 'Backstage-Azure-Deployer',
+          },
+        });
+
+        if (!zipRes.ok) {
+          throw new Error(`Failed to download repository zip from Azure DevOps: ${zipRes.status} ${zipRes.statusText}`);
+        }
+        rawZipBuffer = Buffer.from(await zipRes.arrayBuffer());
+      } else {
+        ctx.logger.info(`Downloading application archive from GitHub [${repoFullName}]...`);
+        const zipRes = await fetch(`https://api.github.com/repos/${repoFullName}/zipball/${encodeURIComponent(targetBranch)}`, {
+          headers: {
+            Authorization: `Bearer ${githubToken}`,
+            'User-Agent': 'Backstage-Azure-Deployer',
+          },
+        });
+
+        if (!zipRes.ok) {
+          throw new Error(`Failed to download repository zip from GitHub: ${zipRes.statusText}`);
+        }
+        rawZipBuffer = Buffer.from(await zipRes.arrayBuffer());
       }
 
-      const rawZipBuffer = Buffer.from(await zipRes.arrayBuffer());
       ctx.logger.info(`Downloaded raw zip archive (${rawZipBuffer.length} bytes). Flattening root structure...`);
 
-      // 5. Flatten the GitHub zip archive so files sit at the root of wwwroot
+      // 5. Flatten the zip archive so files sit at the root of wwwroot
       const rawZip = new AdmZip(rawZipBuffer);
       const entries = rawZip.getEntries();
       const cleanZip = new AdmZip();
 
-      const prefix = entries[0]?.entryName.split('/')[0] + '/';
+      // Check if all files share a common root directory (standard for GitHub zipballs, sometimes ADO)
+      const firstEntryName = entries[0]?.entryName || '';
+      const hasSinglePrefix = firstEntryName.includes('/') && entries.every(e => e.entryName.startsWith(firstEntryName.split('/')[0] + '/'));
+      const prefix = hasSinglePrefix ? firstEntryName.split('/')[0] + '/' : '';
+
       let isNode = false;
       let isPython = false;
       let isDotNet = false;
       let isJava = false;
-
       let isReactSpa = false;
+
       for (const entry of entries) {
-        if (!entry.isDirectory && entry.entryName.startsWith(prefix)) {
-          const relativePath = entry.entryName.slice(prefix.length);
+        if (!entry.isDirectory) {
+          const relativePath = prefix && entry.entryName.startsWith(prefix)
+            ? entry.entryName.slice(prefix.length)
+            : entry.entryName;
           if (relativePath) {
             cleanZip.addFile(relativePath, entry.getData());
             if (relativePath === 'package.json') isNode = true;
@@ -549,7 +597,9 @@ http.createServer((req, res) => {
       }
 
       const liveUrl = `https://${defaultHostName}`;
-      const repoUrl = `https://github.com/${repoFullName}`;
+      const repoUrl = isAdo
+        ? `https://dev.azure.com/${organization}/${project}/_git/${repoFullName}`
+        : `https://github.com/${repoFullName}`;
 
       // 10. Automatically register/sync Component into Backstage Catalog with all tabs enabled
       try {
@@ -571,7 +621,7 @@ metadata:
   title: "${repoShort}"
   description: "Cloud Web App & Microservice hosted on Azure (${webAppName})"
   annotations:
-    github.com/project-slug: '${repoFullName}'
+    ${isAdo ? `dev.azure.com/project-repo: '${organization}/${project}/${repoFullName}'` : `github.com/project-slug: '${repoFullName}'`}
     azure.com/app-service-name: '${webAppName}'
     azure.com/resource-group: '${targetRg}'
     jira/project-key: 'SCRUM'
@@ -579,8 +629,8 @@ metadata:
     datadoghq.com/graph-token: 'your_graph_token_here'
   links:
     - url: ${repoUrl}
-      title: GitHub Repository
-      icon: github
+      title: ${isAdo ? 'Azure DevOps Repository' : 'GitHub Repository'}
+      icon: ${isAdo ? 'cloud' : 'github'}
     - url: ${liveUrl}
       title: Live Azure Web App
       icon: web

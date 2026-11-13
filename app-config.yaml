@@ -121,6 +121,10 @@ catalog:
       rules:
         - allow: [Template]
     - type: url
+      target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/deploy-ado-repo-to-azure-webapp/template.yaml
+      rules:
+        - allow: [Template]
+    - type: url
       target: https://github.com/RAGHAVENDRA-VAM/Backstage-IDP/blob/Feature-01/templates/ado-work-item/template.yaml
       rules:
         - allow: [Template]

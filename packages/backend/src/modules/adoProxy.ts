@@ -79,6 +79,54 @@ export const adoProxyPlugin = createBackendPlugin({
           }
         });
 
+        // Get Git Repositories for a given ADO project
+        router.get('/repositories', async (req, res) => {
+          const { organization, project } = req.query;
+
+          if (!organization || !project) {
+            res.status(400).json({ error: 'organization and project are required' });
+            return;
+          }
+
+          try {
+            const token = getAdoToken();
+
+            if (!token) {
+              res.status(500).json({ error: 'No ADO token configured' });
+              return;
+            }
+
+            const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories?api-version=7.1`;
+            
+            const response = await fetch(url, {
+              headers: {
+                'Authorization': `Basic ${Buffer.from(`:${token}`).toString('base64')}`
+              }
+            });
+
+            if (!response.ok) {
+              const err = await response.text();
+              console.error('ADO API error:', err);
+              res.status(response.status).json({ error: 'Failed to fetch ADO repositories' });
+              return;
+            }
+
+            const data = await response.json();
+            const repositories = (data.value || []).map((r: any) => ({
+              id: r.id,
+              name: r.name,
+              defaultBranch: r.defaultBranch,
+              webUrl: r.webUrl,
+              remoteUrl: r.remoteUrl,
+            }));
+
+            res.json({ repositories });
+          } catch (e: any) {
+            console.error('ADO proxy error:', e);
+            res.status(500).json({ error: e.message });
+          }
+        });
+
         router.get('/work-items', async (req, res) => {
           const { organization, project, type } = req.query;
 

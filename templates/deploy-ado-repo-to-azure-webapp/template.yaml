@@ -1,0 +1,81 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: deploy-ado-repo-to-azure-webapp
+  title: Deploy Azure DevOps Repository to Azure Web App
+  description: Deploy an existing application repository from Azure DevOps to an active Azure App Service / Web App with Kudu ZipDeploy.
+  tags:
+    - azure
+    - ado
+    - deployment
+    - azure-devops
+    - app-service
+    - cloud
+spec:
+  owner: user:raghavendra-vam
+  type: service
+
+  parameters:
+    - title: 1. Select Azure DevOps Source Repository
+      required:
+        - organization
+        - project
+        - repository
+      properties:
+        organization:
+          title: Azure DevOps Organization
+          type: string
+          description: Your Azure DevOps organization name (e.g. dev.azure.com/my-org)
+          default: 'ValueMomentum'
+          ui:autofocus: true
+        project:
+          title: Azure DevOps Project
+          type: string
+          description: Select project from dropdown
+          ui:field: AdoProjectPicker
+        repository:
+          title: Azure DevOps Git Repository
+          type: string
+          description: Select existing Git repository from dropdown
+          ui:field: AdoRepoPicker
+        branch:
+          title: Source Branch
+          type: string
+          description: Git branch to deploy from
+          default: 'main'
+
+    - title: 2. Select Azure Cloud Destination
+      required:
+        - webAppName
+      properties:
+        resourceGroup:
+          title: Azure Resource Group
+          type: string
+          description: Choose the Azure Resource Group (optional filter)
+          ui:field: AzureResourceGroupPicker
+        webAppName:
+          title: Target Azure Web App
+          type: string
+          description: Choose the active Azure Web App where the application will be hosted
+          ui:field: AzureWebAppPicker
+
+  steps:
+    - id: deploy
+      name: Deploy ADO Repository to Azure Web App
+      action: azure:app:deploy
+      input:
+        repoFullName: ${{ parameters.repository }}
+        webAppName: ${{ parameters.webAppName }}
+        resourceGroup: ${{ parameters.resourceGroup }}
+        organization: ${{ parameters.organization }}
+        project: ${{ parameters.project }}
+        branch: ${{ parameters.branch }}
+
+  output:
+    links:
+      - title: View Live Azure Web App
+        url: ${{ steps['deploy'].output.webAppUrl }}
+        icon: dashboard
+      - title: View Azure DevOps Repository
+        url: https://dev.azure.com/${{ parameters.organization }}/${{ parameters.project }}/_git/${{ parameters.repository }}
+        icon: cloud
