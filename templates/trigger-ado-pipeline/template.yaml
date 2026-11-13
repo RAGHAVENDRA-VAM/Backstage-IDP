@@ -39,16 +39,17 @@ spec:
           type: string
           description: Select existing Git repository from dropdown
           ui:field: AdoRepoPicker
+        branch:
+          title: Target Branch
+          type: string
+          description: Git branch containing the pipeline definition and application code
+          default: 'main'
+          ui:field: AdoBranchPicker
         pipelineName:
           title: Pipeline / Workflow
           type: string
           description: Select the pipeline associated with the repository
           ui:field: AdoPipelinePicker
-        branch:
-          title: Target Branch
-          type: string
-          description: Git branch to trigger pipeline on
-          default: 'main'
 
     - title: 2. Execution Settings
       properties:

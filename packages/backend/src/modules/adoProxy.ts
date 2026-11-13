@@ -127,9 +127,56 @@ export const adoProxyPlugin = createBackendPlugin({
           }
         });
 
+        // Get Branches for a given ADO repository
+        router.get('/branches', async (req, res) => {
+          const { organization, project, repository } = req.query;
+
+          if (!organization || !project || !repository) {
+            res.status(400).json({ error: 'organization, project, and repository are required' });
+            return;
+          }
+
+          try {
+            const token = getAdoToken();
+            if (!token) {
+              res.status(500).json({ error: 'No ADO token configured' });
+              return;
+            }
+
+            const authHeader = `Basic ${Buffer.from(`:${token}`).toString('base64')}`;
+            const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${encodeURIComponent(String(repository))}/refs?filter=heads/&api-version=7.1`;
+
+            const response = await fetch(url, {
+              headers: { Authorization: authHeader },
+            });
+
+            if (!response.ok) {
+              const err = await response.text();
+              console.error('ADO Branches API error:', err);
+              res.status(response.status).json({ error: 'Failed to fetch ADO branches' });
+              return;
+            }
+
+            const data = await response.json();
+            const branches = (data.value || []).map((b: any) => {
+              const shortName = b.name.replace(/^refs\/heads\//, '');
+              return {
+                name: shortName,
+                refName: b.name,
+                objectId: b.objectId,
+              };
+            });
+
+            res.json({ branches });
+          } catch (e: any) {
+            console.error('ADO branches error:', e);
+            res.status(500).json({ error: e.message });
+          }
+        });
+
         // Get Pipelines for a given ADO project, optionally filtered by repository
         router.get('/pipelines', async (req, res) => {
-          const { organization, project, repositoryId, repositoryName } = req.query;
+          const { organization, project, repositoryId, repositoryName, branch } = req.query;
 
           if (!organization || !project) {
             res.status(400).json({ error: 'organization and project are required' });
@@ -145,6 +192,7 @@ export const adoProxyPlugin = createBackendPlugin({
             }
 
             const authHeader = `Basic ${Buffer.from(`:${token}`).toString('base64')}`;
+            const targetBranch = branch ? String(branch).replace(/^refs\/heads\//, '') : 'main';
 
             // Strategy 1: Build Definitions API with repositoryId filter
             let pipelinesUrl = `https://dev.azure.com/${organization}/${project}/_apis/build/definitions?api-version=7.1`;
@@ -163,17 +211,48 @@ export const adoProxyPlugin = createBackendPlugin({
               });
             }
 
-            if (!response.ok) {
-              const err = await response.text();
-              console.error('ADO Pipelines API error:', err);
-              res.status(response.status).json({ error: 'Failed to fetch ADO pipelines' });
-              return;
+            let definitions: any[] = [];
+            if (response.ok) {
+              const data = await response.json();
+              definitions = data.value || [];
             }
 
-            const data = await response.json();
-            let definitions = data.value || [];
+            // Strategy 2: If repositoryName or repositoryId is provided, inspect YAML files in the repository branch
+            // to discover all pipeline files in the branch code (e.g. azure-pipelines.yml, pipelines/*.yml, .azure/pipeline.yml)
+            const discoveredYamlPipelines: Array<{ id: number; name: string; path: string; file: string }> = [];
+            if (repositoryName || repositoryId) {
+              const repoIdentifier = repositoryName || repositoryId;
+              try {
+                const itemsUrl = `https://dev.azure.com/${encodeURIComponent(String(organization))}/${encodeURIComponent(String(project))}/_apis/git/repositories/${encodeURIComponent(String(repoIdentifier))}/items?path=/&recursionLevel=full&versionDescriptor.version=${encodeURIComponent(targetBranch)}&versionDescriptor.versionType=branch&api-version=7.1`;
+                const itemsRes = await fetch(itemsUrl, {
+                  headers: { Authorization: authHeader },
+                });
 
-            // If repositoryName was provided and multiple pipelines returned, prioritize matches
+                if (itemsRes.ok) {
+                  const itemsData = await itemsRes.json();
+                  const yamlFiles = (itemsData.value || []).filter((item: any) => {
+                    if (item.isFolder) return false;
+                    const p = (item.path || '').toLowerCase();
+                    return p.endsWith('.yml') || p.endsWith('.yaml');
+                  });
+
+                  for (const yf of yamlFiles) {
+                    const fileName = yf.path.split('/').pop();
+                    // Check if it's a pipeline file or azure-pipelines
+                    discoveredYamlPipelines.push({
+                      id: 0,
+                      name: `${fileName} (${yf.path})`,
+                      path: yf.path,
+                      file: yf.path,
+                    });
+                  }
+                }
+              } catch (e: any) {
+                console.warn('Notice while inspecting branch yaml files:', e.message);
+              }
+            }
+
+            // Filter definitions matching repository name if found
             if (repositoryName && definitions.length > 0) {
               const rName = String(repositoryName).toLowerCase();
               const filtered = definitions.filter((d: any) => {
@@ -193,6 +272,19 @@ export const adoProxyPlugin = createBackendPlugin({
               url: d._links?.web?.href || `https://dev.azure.com/${organization}/${project}/_build?definitionId=${d.id}`,
               repository: d.repository ? { id: d.repository.id, name: d.repository.name } : undefined,
             }));
+
+            // Merge discovered branch yaml pipelines if definitions don't cover them
+            for (const dp of discoveredYamlPipelines) {
+              if (!pipelines.some(p => p.name === dp.name)) {
+                pipelines.push({
+                  id: dp.id,
+                  name: dp.name,
+                  path: dp.path,
+                  url: `https://dev.azure.com/${organization}/${project}/_git/${repositoryName}?path=${encodeURIComponent(dp.path)}&version=GB${encodeURIComponent(targetBranch)}`,
+                  repository: { id: String(repositoryId || ''), name: String(repositoryName || '') },
+                });
+              }
+            }
 
             res.json({ pipelines });
           } catch (e: any) {

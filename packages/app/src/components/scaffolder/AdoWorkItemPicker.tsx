@@ -470,6 +470,126 @@ export const AdoPipelinePicker = ({
   );
 };
 
+export const AdoBranchPicker = ({
+  onChange,
+  rawErrors,
+  required,
+  formData,
+  formContext,
+}: FieldExtensionComponentProps<string>) => {
+  const fetchApi = useApi(fetchApiRef);
+  const discoveryApi = useApi(discoveryApiRef);
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<{ name: string; refName: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const organization = formContext?.formData?.organization;
+  const project = formContext?.formData?.project;
+  const repository = formContext?.formData?.repository;
+
+  useEffect(() => {
+    let active = true;
+
+    if (!organization || !project || !repository) {
+      setOptions([]);
+      return undefined;
+    }
+
+    setLoading(true);
+    setError(undefined);
+
+    (async () => {
+      try {
+        const baseUrl = await discoveryApi.getBaseUrl('ado-proxy');
+        const queryUrl = `${baseUrl}/branches?organization=${encodeURIComponent(organization)}&project=${encodeURIComponent(project)}&repository=${encodeURIComponent(repository)}`;
+
+        const res = await fetchApi.fetch(queryUrl);
+        if (!res.ok) {
+          throw new Error('Failed to fetch branches');
+        }
+
+        const data = await res.json();
+        if (active) {
+          setOptions(data.branches || []);
+          if (data.branches && data.branches.length > 0 && !formData) {
+            // Default to main or master or first branch
+            const defaultBranch = data.branches.find((b: any) => b.name === 'main' || b.name === 'master') || data.branches[0];
+            onChange(defaultBranch.name);
+          }
+        }
+      } catch (err: any) {
+        if (active) {
+          setError(err.message || 'Error loading branches');
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [fetchApi, discoveryApi, organization, project, repository]);
+
+  if (!organization || !project || !repository) {
+    return (
+      <TextField
+        fullWidth
+        disabled
+        label="Git Branch"
+        helperText="Please select an Organization, Project, and Repository first"
+        variant="outlined"
+      />
+    );
+  }
+
+  const selectedOption = options.find((o) => o.name === formData) || (formData ? { name: formData, refName: `refs/heads/${formData}` } : null);
+
+  return (
+    <Autocomplete
+      id="ado-branch-picker"
+      open={open}
+      freeSolo
+      onOpen={() => setOpen(true)}
+      onClose={() => setOpen(false)}
+      getOptionSelected={(option, value) => option.name === value.name}
+      getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
+      options={options}
+      loading={loading}
+      value={selectedOption}
+      onChange={(_, newValue) => {
+        if (typeof newValue === 'string') {
+          onChange(newValue);
+        } else {
+          onChange(newValue ? newValue.name : undefined);
+        }
+      }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Select Git Branch"
+          variant="outlined"
+          required={required}
+          error={(rawErrors?.length ?? 0) > 0 || !!error}
+          helperText={error || "Select the branch containing your pipeline code (e.g. main)"}
+          InputProps={{
+            ...params.InputProps,
+            endAdornment: (
+              <React.Fragment>
+                {loading ? <CircularProgress color="inherit" size={20} /> : null}
+                {params.InputProps.endAdornment}
+              </React.Fragment>
+            ),
+          }}
+        />
+      )}
+    />
+  );
+};
+
 export const adoWorkItemPickerModule = createFrontendModule({
   pluginId: 'scaffolder',
   extensions: [
@@ -497,6 +617,15 @@ export const adoWorkItemPickerModule = createFrontendModule({
         field: async () => createFormField({
           name: 'AdoRepoPicker',
           component: AdoRepoPicker,
+        }),
+      },
+    }),
+    FormFieldBlueprint.make({
+      name: 'adoBranchPicker',
+      params: {
+        field: async () => createFormField({
+          name: 'AdoBranchPicker',
+          component: AdoBranchPicker,
         }),
       },
     }),
