@@ -642,14 +642,11 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
               const fullContextText = conversationHistoryText + '\n' + lastUserMessage;
               const { extracted, missing, errors } = extractParametersFromText(fullContextText, matchedTemplate);
 
-              // 1. If any parameters are misspelled or invalid, return clear enterprise validation errors
+              // 1. If any parameters are misspelled or invalid, return clean, natural enterprise feedback
               if (errors.length > 0) {
+                const issues = errors.map(err => `- **${err.title}**: ${err.message}`).join('\n');
                 res.json({
-                  reply: `### Parameter Validation Error\n\n` +
-                    `The parameters provided for template **${matchedTemplate.title}** (\`${matchedTemplate.id}\`) contain invalid or misspelled values:\n\n` +
-                    errors.map((err, idx) => `${idx + 1}. **${err.title}**: ${err.message}`).join('\n\n') +
-                    `\n\n**Action Required**:\n` +
-                    `Please correct the values above to proceed. You can enter corrected values line-by-line (e.g. \`Parameter: Value\`).`,
+                  reply: `I could not validate some parameters for **${matchedTemplate.title}**:\n\n${issues}\n\nPlease check the values and send the corrected details.`,
                   provider: 'acme-autonomous-scaffolder',
                   status: 'VALIDATION_ERROR',
                   errors,
@@ -704,16 +701,11 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                           .map(r => `\`${r.full_name}\``);
 
                         const suggestionText = similarRepos.length > 0
-                          ? `\n- **Did you mean**: ${similarRepos.join(', ')}?`
+                          ? ` Did you mean **${similarRepos[0]}**?`
                           : '';
 
                         res.json({
-                          reply: `### Parameter Validation Error: Repository Not Found\n\n` +
-                            `The specified GitHub repository **\`${targetRepo}\`** could not be found or is inaccessible on GitHub.\n\n` +
-                            `- **Provided Value**: \`${targetRepo}\`\n` +
-                            `- **Status**: \`404 Not Found\`${suggestionText}\n\n` +
-                            `**Action Required**:\n` +
-                            `Please verify that the repository exists and matches the exact casing (e.g. \`RAGHAVENDRA-VAM/Ops_Bot\` or \`RAGHAVENDRA-VAM/Claims_UI\`).`,
+                          reply: `I couldn't find the repository **\`${targetRepo}\`** on GitHub.${suggestionText}\n\nPlease check the spelling or provide a valid repository (e.g. \`RAGHAVENDRA-VAM/Claims_UI\`).`,
                           provider: 'acme-autonomous-scaffolder',
                           status: 'VALIDATION_ERROR',
                           templateId: matchedTemplate.id,
@@ -723,12 +715,7 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                       }
                     } else {
                       res.json({
-                        reply: `### Parameter Validation Error: Repository Not Found\n\n` +
-                          `The specified GitHub repository **\`${targetRepo}\`** could not be found on GitHub.\n\n` +
-                          `- **Provided Value**: \`${targetRepo}\`\n` +
-                          `- **Status**: \`404 Not Found\`\n\n` +
-                          `**Action Required**:\n` +
-                          `Please check the repository name and provide an accessible repository (e.g. \`RAGHAVENDRA-VAM/Claims_UI\` or \`RAGHAVENDRA-VAM/Ops_Bot\`).`,
+                        reply: `I couldn't find the repository **\`${targetRepo}\`** on GitHub.\n\nPlease check the spelling or provide a valid repository (e.g. \`RAGHAVENDRA-VAM/Claims_UI\`).`,
                         provider: 'acme-autonomous-scaffolder',
                         status: 'VALIDATION_ERROR',
                         templateId: matchedTemplate.id,
@@ -773,12 +760,7 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                       if (!matchingSite) {
                         const availableNames = (sitesData.value || []).map((s: any) => `\`${s.name}\``).join(', ');
                         res.json({
-                          reply: `### Parameter Validation Error: Azure Web App Not Found\n\n` +
-                            `The target Azure Web App **\`${extracted.webAppName}\`** was not found under Azure subscription \`${sub}\`.\n\n` +
-                            `- **Provided Value**: \`${extracted.webAppName}\`\n` +
-                            `- **Active Web Apps in Subscription**: ${availableNames || 'None'}\n\n` +
-                            `**Action Required**:\n` +
-                            `Please correct the Web App name to match an active Azure App Service, or provision a new one via [**Create &rarr; Azure Web App Infrastructure**](/create).`,
+                          reply: `The Web App **\`${extracted.webAppName}\`** does not exist in your Azure subscription.\n\nAvailable Web Apps: ${availableNames || 'None'}\n\nPlease check the name or provide one of the active Web Apps above.`,
                           provider: 'acme-autonomous-scaffolder',
                           status: 'VALIDATION_ERROR',
                           templateId: matchedTemplate.id,
@@ -940,17 +922,12 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                   }
 
                   res.json({
-                    reply: `### Template Execution Succeeded\n\n` +
-                      `The automated golden path workflow for **${matchedTemplate.title}** has been successfully triggered.\n\n` +
-                      `**Execution Parameters**:\n` +
-                      `- **Template ID**: \`${matchedTemplate.id}\`\n` +
-                      `- **Source Repository**: [\`${repoFullName}\`](https://github.com/${repoFullName})\n` +
+                    reply: `**${matchedTemplate.title}** triggered successfully.\n\n` +
+                      `- **Repository**: [\`${repoFullName}\`](https://github.com/${repoFullName})\n` +
                       `- **Target Web App**: \`${webAppName}\`\n` +
-                      `- **Azure Resource Group**: \`${resourceGroup}\`\n` +
-                      `- **Execution Status**: Active & Container Recycling\n\n` +
-                      `**Live Destination Endpoint**:\n` +
-                      `[**${liveUrl}**](${liveUrl})\n\n` +
-                      `Logs are streaming live to Azure Monitor and Datadog APM. You can track this service under **Catalog &rarr; Claims UI Portal &rarr; Azure**.`,
+                      `- **Resource Group**: \`${resourceGroup}\`\n\n` +
+                      `**Live URL**: [**${liveUrl}**](${liveUrl})\n\n` +
+                      `Deployment packaging and container recycling are underway.`,
                     provider: 'acme-autonomous-scaffolder',
                     model: 'autonomous-executor-v2',
                     deploymentStatus: 'SUCCESS',
@@ -994,16 +971,10 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                   }
 
                   res.json({
-                    reply: `### Template Execution Succeeded\n\n` +
-                      `The golden path template **${matchedTemplate.title}** has executed successfully.\n\n` +
-                      `**Work Item Details**:\n` +
-                      `- **Work Item ID**: \`#${workItemId}\`\n` +
-                      `- **Organization**: \`${org}\`\n` +
-                      `- **Project**: \`${project}\`\n` +
-                      `- **Type**: \`${type}\`\n` +
-                      `- **Title**: ${title}\n\n` +
-                      `**Direct Azure DevOps Link**:\n` +
-                      `[**${workItemUrl}**](${workItemUrl})`,
+                    reply: `Created ${type} **#${workItemId}** in Azure DevOps.\n\n` +
+                      `- **Title**: ${title}\n` +
+                      `- **Project**: \`${org}/${project}\`\n\n` +
+                      `**View Work Item**: [**#${workItemId}**](${workItemUrl})`,
                     provider: 'acme-autonomous-scaffolder',
                     deploymentStatus: 'SUCCESS',
                     workItemUrl,
