@@ -21,12 +21,13 @@ spec:
         - organization
         - project
         - repository
+        - pipelineName
       properties:
         organization:
           title: Azure DevOps Organization
           type: string
-          description: Your Azure DevOps organization name (e.g. ValueMomentum)
-          default: 'ValueMomentum'
+          description: Your Azure DevOps organization name (e.g. ValueMomentum-DCS)
+          default: 'ValueMomentum-DCS'
           ui:autofocus: true
         project:
           title: Azure DevOps Project
@@ -41,7 +42,7 @@ spec:
         pipelineName:
           title: Pipeline / Workflow
           type: string
-          description: Select existing build or release pipeline (or leave blank to auto-detect for repo)
+          description: Select the pipeline associated with the repository
           ui:field: AdoPipelinePicker
         branch:
           title: Target Branch
