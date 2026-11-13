@@ -335,14 +335,15 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
             lower.includes('valora') ||
             lower.includes('azure web app') ||
             lower.includes('azure webapp') ||
-            (lower.includes('deploy') && (lower.includes('application') || lower.includes('app') || lower.includes('webapp')))
+            /deploy.*(?:app|apl|webapp|web app|service)/i.test(lower) ||
+            /deploy/i.test(lower)
           ) {
             const appDeploy = allTemplates.find(t => t.id === 'deploy-app-to-azure-webapp');
             if (appDeploy) return appDeploy;
           }
 
           // 3. Work Item priority
-          if (lower.includes('work item') || lower.includes('workitem') || lower.includes('ado bug') || lower.includes('ado task')) {
+          if (/work\s*item|workitem|ado\s*task|ado\s*bug/i.test(lower)) {
             const wi = allTemplates.find(t => t.id === 'ado-work-item-creator');
             if (wi) return wi;
           }
@@ -376,6 +377,26 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
             }
           }
           return bestScore >= 3 ? best : null;
+        }
+
+        // Helper: Render enterprise-grade template specification prompt for chat
+        function renderTemplateSpecification(template: TemplateMeta): string {
+          let out = `### Template: ${template.title}\n\n`;
+          out += `**Template ID**: \`${template.id}\`  \n`;
+          out += `**Description**: ${template.description}\n\n`;
+          out += `Enter the parameters below into the chat:\n\n`;
+          template.params.forEach((p, idx) => {
+            const reqTag = p.required ? '*(Required)*' : '*(Optional)*';
+            const enumText = p.enum ? ` - Allowed: \`${p.enum.join('`, `')}\`` : '';
+            const desc = p.description ? ` - ${p.description}` : '';
+            out += `${idx + 1}. **${p.title}** ${reqTag}${enumText}${desc}\n`;
+          });
+          out += `\n**Quick Copy Template** (copy below, fill values, and send):\n\`\`\`text\n`;
+          template.params.forEach(p => {
+            out += `${p.title}: \n`;
+          });
+          out += `\`\`\`\n\n*You can also run this template interactively with dropdown pickers under [**Create / Scaffolder**](/create).*`;
+          return out;
         }
 
         // Extract parameters from multiline text and conversation history
@@ -560,17 +581,7 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
               // 2. If required parameters are missing, prompt user clearly in structured format
               if (missing.length > 0) {
                 res.json({
-                  reply: `### Template Execution Specification: ${matchedTemplate.title}\n\n` +
-                    `**Template ID**: \`${matchedTemplate.id}\`\n` +
-                    `**Description**: ${matchedTemplate.description}\n\n` +
-                    `To trigger this template, please provide the following required parameters:\n\n` +
-                    missing.map((p, idx) => {
-                      const enumText = p.enum ? ` *(Allowed: ${p.enum.join(', ')})*` : '';
-                      const descText = p.description ? ` - ${p.description}` : '';
-                      return `${idx + 1}. **${p.title}** (\`${p.name}\`)${enumText}${descText}`;
-                    }).join('\n') +
-                    `\n\n**Format Example** (Enter line-by-line):\n` +
-                    missing.map(p => `${p.title}: <your_value>`).join('\n'),
+                  reply: renderTemplateSpecification(matchedTemplate),
                   provider: 'acme-autonomous-scaffolder',
                   actionRequired: 'collect_parameters',
                   templateId: matchedTemplate.id,
