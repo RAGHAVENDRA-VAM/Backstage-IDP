@@ -7,6 +7,7 @@ spec:
     # 1. The Core Infrastructure & Deployments
     - ./templates/golden-path-webapp/template.yaml
     - ./templates/deploy-app-to-azure-webapp/template.yaml
+    - ./templates/deploy-ado-repo-to-azure-webapp/template.yaml
 
     # 2. Azure DevOps Integration
     - ./templates/ado-work-item/template.yaml
