@@ -586,29 +586,75 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
               const sub = process.env.AZURE_SUBSCRIPTION_ID;
 
               // Validate GitHub repository existence if repoFullName or repoUrl provided
-              const targetRepo = extracted.repoFullName || (extracted.repoUrl && extracted.repoUrl.replace(/https?:\/\/github\.com\//, ''));
+              let targetRepo = extracted.repoFullName || (extracted.repoUrl && extracted.repoUrl.replace(/https?:\/\/github\.com\//, ''));
               if (targetRepo && ghToken && !targetRepo.includes('dev.azure.com') && targetRepo.includes('/')) {
                 try {
-                  const ghRes = await fetch(`https://api.github.com/repos/${targetRepo}`, {
+                  let ghRes = await fetch(`https://api.github.com/repos/${targetRepo}`, {
                     headers: {
                       Authorization: `Bearer ${ghToken}`,
                       'User-Agent': 'Backstage-Azure-Deployer',
                     },
                   });
+
+                  // If direct lookup returned 404, query user repos to check case-insensitive match or suggest closest match
                   if (ghRes.status === 404) {
-                    res.json({
-                      reply: `### Parameter Validation Error: Repository Not Found\n\n` +
-                        `The specified GitHub repository **\`${targetRepo}\`** could not be found or is inaccessible.\n\n` +
-                        `- **Provided Value**: \`${targetRepo}\`\n` +
-                        `- **Status**: \`404 Not Found\`\n\n` +
-                        `**Action Required**:\n` +
-                        `Please verify that the repository name is spelled correctly in the format \`owner/repo\` (for example, \`RAGHAVENDRA-VAM/Claims_UI\`) and that your account has read access.`,
-                      provider: 'acme-autonomous-scaffolder',
-                      status: 'VALIDATION_ERROR',
-                      templateId: matchedTemplate.id,
-                      timestamp: new Date().toISOString(),
+                    const listRes = await fetch('https://api.github.com/user/repos?per_page=100', {
+                      headers: { Authorization: `Bearer ${ghToken}`, 'User-Agent': 'Backstage-Azure-Deployer' },
                     });
-                    return;
+                    if (listRes.ok) {
+                      const allRepos = (await listRes.json()) as any[];
+                      // 1. Exact case-insensitive match
+                      const exactCaseMatch = allRepos.find(
+                        r => r.full_name.toLowerCase() === targetRepo.toLowerCase()
+                      );
+                      if (exactCaseMatch) {
+                        targetRepo = exactCaseMatch.full_name;
+                        extracted.repoFullName = exactCaseMatch.full_name;
+                        ghRes = { status: 200 } as any;
+                      } else {
+                        // 2. Find closest repository match to guide user
+                        const searchWord = targetRepo.split('/')[1]?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+                        const similarRepos = allRepos
+                          .filter(r => {
+                            const rName = r.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                            return rName.includes(searchWord) || searchWord.includes(rName);
+                          })
+                          .slice(0, 3)
+                          .map(r => `\`${r.full_name}\``);
+
+                        const suggestionText = similarRepos.length > 0
+                          ? `\n- **Did you mean**: ${similarRepos.join(', ')}?`
+                          : '';
+
+                        res.json({
+                          reply: `### Parameter Validation Error: Repository Not Found\n\n` +
+                            `The specified GitHub repository **\`${targetRepo}\`** could not be found or is inaccessible on GitHub.\n\n` +
+                            `- **Provided Value**: \`${targetRepo}\`\n` +
+                            `- **Status**: \`404 Not Found\`${suggestionText}\n\n` +
+                            `**Action Required**:\n` +
+                            `Please verify that the repository exists and matches the exact casing (e.g. \`RAGHAVENDRA-VAM/Ops_Bot\` or \`RAGHAVENDRA-VAM/Claims_UI\`).`,
+                          provider: 'acme-autonomous-scaffolder',
+                          status: 'VALIDATION_ERROR',
+                          templateId: matchedTemplate.id,
+                          timestamp: new Date().toISOString(),
+                        });
+                        return;
+                      }
+                    } else {
+                      res.json({
+                        reply: `### Parameter Validation Error: Repository Not Found\n\n` +
+                          `The specified GitHub repository **\`${targetRepo}\`** could not be found on GitHub.\n\n` +
+                          `- **Provided Value**: \`${targetRepo}\`\n` +
+                          `- **Status**: \`404 Not Found\`\n\n` +
+                          `**Action Required**:\n` +
+                          `Please check the repository name and provide an accessible repository (e.g. \`RAGHAVENDRA-VAM/Claims_UI\` or \`RAGHAVENDRA-VAM/Ops_Bot\`).`,
+                        provider: 'acme-autonomous-scaffolder',
+                        status: 'VALIDATION_ERROR',
+                        templateId: matchedTemplate.id,
+                        timestamp: new Date().toISOString(),
+                      });
+                      return;
+                    }
                   }
                 } catch {
                   // network fallback
