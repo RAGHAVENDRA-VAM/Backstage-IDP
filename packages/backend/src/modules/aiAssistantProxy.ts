@@ -6,26 +6,99 @@ interface ChatMessage {
   content: string;
 }
 
+let cachedCognitiveKey: { key: string; expiresAt: number; endpoint: string; deployment: string } | null = null;
+
+async function getCognitiveCredentials(): Promise<{ endpoint: string; key: string; deployment: string } | null> {
+  // 1. Direct environment variables take highest precedence
+  const envEndpoint = process.env.AZURE_OPENAI_ENDPOINT || process.env.AZURE_AI_FOUNDRY_ENDPOINT;
+  const envKey = process.env.AZURE_OPENAI_KEY || process.env.AZURE_AI_FOUNDRY_KEY || process.env.AZURE_OPENAI_API_KEY;
+  const envDeployment = process.env.AZURE_OPENAI_DEPLOYMENT || process.env.AZURE_AI_FOUNDRY_MODEL || 'gpt-4o';
+
+  if (envEndpoint && envKey) {
+    return { endpoint: envEndpoint, key: envKey, deployment: envDeployment };
+  }
+
+  // 2. Return cached dynamic ARM credentials if still fresh
+  if (cachedCognitiveKey && Date.now() < cachedCognitiveKey.expiresAt) {
+    return {
+      endpoint: cachedCognitiveKey.endpoint,
+      key: cachedCognitiveKey.key,
+      deployment: cachedCognitiveKey.deployment,
+    };
+  }
+
+  // 3. Dynamically discover and fetch Azure Cognitive Services key from ARM
+  try {
+    const tenant = process.env.AZURE_TENANT_ID;
+    const client = process.env.AZURE_CLIENT_ID;
+    const secret = process.env.AZURE_CLIENT_SECRET;
+    const sub = process.env.AZURE_SUBSCRIPTION_ID;
+
+    if (tenant && client && secret && sub) {
+      const tokenRes = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: client,
+          client_secret: secret,
+          scope: 'https://management.azure.com/.default',
+        }),
+      });
+
+      if (tokenRes.ok) {
+        const tokenData = (await tokenRes.json()) as any;
+        const armToken = tokenData.access_token;
+
+        // Fetch keys for devops-maf3 (Cognitive Services AIServices account in devops-maf)
+        const keysRes = await fetch(
+          `https://management.azure.com/subscriptions/${sub}/resourceGroups/devops-maf/providers/Microsoft.CognitiveServices/accounts/devops-maf3/listKeys?api-version=2023-05-01`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${armToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+
+        if (keysRes.ok) {
+          const keysData = (await keysRes.json()) as any;
+          const apiKey = keysData.key1 || keysData.key2;
+          if (apiKey) {
+            cachedCognitiveKey = {
+              key: apiKey,
+              endpoint: 'https://devops-maf3.cognitiveservices.azure.com',
+              deployment: 'Kimi-K2.6',
+              expiresAt: Date.now() + 3600 * 1000, // cache for 1 hour
+            };
+            return {
+              endpoint: cachedCognitiveKey.endpoint,
+              key: cachedCognitiveKey.key,
+              deployment: cachedCognitiveKey.deployment,
+            };
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn('Failed to dynamically fetch Azure Cognitive credentials via ARM:', err.message);
+  }
+
+  return null;
+}
+
 // Universal Azure AI Foundry & Azure OpenAI Invocation Helper
 async function callAzureAi(
   messages: Array<{ role: string; content: string }>,
   options?: { temperature?: number; max_tokens?: number },
 ) {
-  const endpoint =
-    process.env.AZURE_OPENAI_ENDPOINT ||
-    process.env.AZURE_AI_FOUNDRY_ENDPOINT;
-  const key =
-    process.env.AZURE_OPENAI_KEY ||
-    process.env.AZURE_AI_FOUNDRY_KEY ||
-    process.env.AZURE_OPENAI_API_KEY;
-  const deployment =
-    process.env.AZURE_OPENAI_DEPLOYMENT ||
-    process.env.AZURE_AI_FOUNDRY_MODEL ||
-    'gpt-4o';
-
-  if (!endpoint || !key) {
+  const creds = await getCognitiveCredentials();
+  if (!creds) {
     return null;
   }
+
+  const { endpoint, key, deployment } = creds;
 
   try {
     let url = endpoint.trim().replace(/\/$/, '');
@@ -211,31 +284,31 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
 
         // 0. AI HEALTH & CONFIGURATION STATUS
         router.get('/status', async (req, res) => {
-          const endpoint = process.env.AZURE_OPENAI_ENDPOINT || process.env.AZURE_AI_FOUNDRY_ENDPOINT;
-          const key = process.env.AZURE_OPENAI_KEY || process.env.AZURE_AI_FOUNDRY_KEY || process.env.AZURE_OPENAI_API_KEY;
-          const deployment = process.env.AZURE_OPENAI_DEPLOYMENT || process.env.AZURE_AI_FOUNDRY_MODEL || 'gpt-4o';
+          const creds = await getCognitiveCredentials();
+          const configured = Boolean(creds?.endpoint && creds?.key);
+          const deployment = creds?.deployment || 'gpt-4o';
+          const endpoint = creds?.endpoint;
 
-            const configured = Boolean(endpoint && key);
-            let testResult: any = 'not-tested';
-            if (req.query.test === 'true') {
-              try {
-                const testCall = await callAzureAi([{ role: 'user', content: 'hello' }]);
-                if (testCall?.reply) {
-                  testResult = `success (${testCall.model}): ${testCall.reply.slice(0, 50)}`;
-                } else {
-                  testResult = testCall?.error || 'failed (call returned null)';
-                }
-              } catch (e: any) {
-                testResult = `error: ${e.message}`;
+          let testResult: any = 'not-tested';
+          if (req.query.test === 'true') {
+            try {
+              const testCall = await callAzureAi([{ role: 'user', content: 'hello' }]);
+              if (testCall?.reply) {
+                testResult = `success (${testCall.model}): ${testCall.reply.slice(0, 50)}`;
+              } else {
+                testResult = testCall?.error || 'failed (call returned null)';
               }
+            } catch (e: any) {
+              testResult = `error: ${e.message}`;
             }
-            res.json({
-              configured,
-              model: configured ? deployment : 'Acme Embedded Engine',
-              endpoint: configured ? endpoint.replace(/^https?:\/\//, '').split('/')[0] : undefined,
-              provider: configured ? 'Azure AI Foundry' : 'Embedded Engine',
-              testResult,
-            });
+          }
+          res.json({
+            configured,
+            model: configured ? deployment : 'Acme Embedded Engine',
+            endpoint: configured ? endpoint?.replace(/^https?:\/\//, '').split('/')[0] : undefined,
+            provider: configured ? 'Azure AI Foundry' : 'Embedded Engine',
+            testResult,
+          });
         });
 
         // Helper: Discover all registered Scaffolder Templates across IDP dynamically with complete schema
@@ -329,7 +402,15 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
           let m = allTemplates.find(t => t.id.toLowerCase() === lower || t.title.toLowerCase() === lower);
           if (m) return m;
 
-          // 2. Direct match for Azure Web App deployment requests
+          // 2. ADO Work Item priority (Explicit work item intent must take precedence over generic deploy/create)
+          if (
+            /work\s*item|workitem|ado\s*task|ado\s*bug|create\s*(?:a\s*)?work\s*item/i.test(lower)
+          ) {
+            const wi = allTemplates.find(t => t.id === 'ado-work-item-creator');
+            if (wi) return wi;
+          }
+
+          // 3. Direct match for Azure Web App deployment requests
           if (
             lower.includes('claims_ui') ||
             lower.includes('valora') ||
@@ -340,12 +421,6 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
           ) {
             const appDeploy = allTemplates.find(t => t.id === 'deploy-app-to-azure-webapp');
             if (appDeploy) return appDeploy;
-          }
-
-          // 3. Work Item priority
-          if (/work\s*item|workitem|ado\s*task|ado\s*bug/i.test(lower)) {
-            const wi = allTemplates.find(t => t.id === 'ado-work-item-creator');
-            if (wi) return wi;
           }
 
           // 4. Substring in ID
@@ -524,11 +599,14 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
 
             // Extract conversation context (all past user & assistant messages)
             const conversationHistoryText = messages.map(m => `${m.role}: ${m.content}`).join('\n');
-            const fullHistoryLower = (conversationHistoryText + '\n' + lastUserMessage).toLowerCase();
 
             // 1. Check if user is asking to trigger any template or deploy an application OR providing parameters
             const allTemplates = getAvailableTemplates();
-            const matchedTemplate = matchTemplateFromText(allTemplates, fullHistoryLower);
+            // Prioritize matching the current user message FIRST to prevent stale past conversation topics from trapping the chat
+            let matchedTemplate = matchTemplateFromText(allTemplates, lowerUserMsg);
+            if (!matchedTemplate) {
+              matchedTemplate = matchTemplateFromText(allTemplates, conversationHistoryText + '\n' + lastUserMessage);
+            }
 
             const isScaffoldIntent =
               Boolean(matchedTemplate) && (
@@ -536,6 +614,9 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                 lowerUserMsg.includes('publish') ||
                 lowerUserMsg.includes('scaffold') ||
                 lowerUserMsg.includes('create') ||
+                lowerUserMsg.includes('work item') ||
+                lowerUserMsg.includes('workitem') ||
+                lowerUserMsg.includes('task') ||
                 lowerUserMsg.includes('provision') ||
                 lowerUserMsg.includes('template') ||
                 lowerUserMsg.includes('trigger') ||
