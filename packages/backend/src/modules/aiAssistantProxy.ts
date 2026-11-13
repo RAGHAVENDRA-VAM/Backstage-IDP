@@ -91,7 +91,7 @@ async function getCognitiveCredentials(): Promise<{ endpoint: string; key: strin
 // Universal Azure AI Foundry & Azure OpenAI Invocation Helper
 async function callAzureAi(
   messages: Array<{ role: string; content: string }>,
-  options?: { temperature?: number; max_tokens?: number },
+  options?: { temperature?: number; max_tokens?: number; tools?: any[]; tool_choice?: any },
 ) {
   const creds = await getCognitiveCredentials();
   if (!creds) {
@@ -111,7 +111,7 @@ async function callAzureAi(
         url = `${url}/models/chat/completions?api-version=2024-05-01-preview`;
       } else {
         // Standard Azure OpenAI Resource API
-        url = `${url}/openai/deployments/${deployment}/chat/completions?api-version=2024-02-15-preview`;
+        url = `${url}/openai/deployments/${deployment}/chat/completions?api-version=2024-08-01-preview`;
       }
     }
 
@@ -127,13 +127,19 @@ async function callAzureAi(
     const requestBody: Record<string, any> = {
       messages,
     };
+
+    if (options?.tools && options.tools.length > 0) {
+      requestBody.tools = options.tools;
+      requestBody.tool_choice = options.tool_choice || 'auto';
+    }
+
     // If model starts with o1, o3, or newer gpt-5/reasoning series, max_completion_tokens is required instead of max_tokens
     const isNewerReasoningModel = deployment.startsWith('o1') || deployment.startsWith('o3') || deployment.startsWith('gpt-5');
     if (isNewerReasoningModel) {
-      requestBody.max_completion_tokens = options?.max_tokens ?? 1200;
+      requestBody.max_completion_tokens = options?.max_tokens ?? 1500;
     } else {
-      requestBody.max_tokens = options?.max_tokens ?? 1200;
-      requestBody.temperature = options?.temperature ?? 0.2;
+      requestBody.max_tokens = options?.max_tokens ?? 1500;
+      requestBody.temperature = options?.temperature ?? 0.3;
     }
 
     const openAiRes = await fetch(url, {
@@ -153,8 +159,10 @@ async function callAzureAi(
     }
 
     const data = await openAiRes.json();
+    const choice = data.choices?.[0]?.message;
     return {
-      reply: data.choices?.[0]?.message?.content || '',
+      reply: choice?.content || '',
+      tool_calls: choice?.tool_calls || null,
       model: data.model || deployment,
       usage: data.usage,
     };
@@ -580,6 +588,209 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
           return { extracted, missing, errors };
         }
 
+        // Helper to execute template action when parameters are resolved
+        async function executeMatchedTemplate(matchedTemplate: TemplateMeta, extracted: Record<string, any>) {
+          if (matchedTemplate.id === 'deploy-app-to-azure-webapp') {
+            const repoFullName = extracted.repoFullName || 'RAGHAVENDRA-VAM/Claims_UI';
+            const webAppName = extracted.webAppName || 'valora-insurance-ui';
+            const resourceGroup = extracted.resourceGroup || 'devops-maf';
+
+            const tenant = process.env.AZURE_TENANT_ID;
+            const client = process.env.AZURE_CLIENT_ID;
+            const secret = process.env.AZURE_CLIENT_SECRET;
+            const sub = process.env.AZURE_SUBSCRIPTION_ID;
+            const ghToken = process.env.GITHUB_TOKEN;
+
+            let liveUrl = `https://${webAppName}.azurewebsites.net`;
+
+            if (tenant && client && secret && sub) {
+              const tokenRes = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                  grant_type: 'client_credentials',
+                  client_id: client,
+                  client_secret: secret,
+                  scope: 'https://management.azure.com/.default',
+                }),
+              });
+
+              if (tokenRes.ok) {
+                const tokenData = await tokenRes.json();
+                const armToken = tokenData.access_token;
+
+                // 1. Check or Provision App Service in resourceGroup if missing
+                let siteRes = await fetch(
+                  `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}?api-version=2022-03-01`,
+                  { headers: { Authorization: `Bearer ${armToken}` } }
+                );
+
+                if (siteRes.status === 404) {
+                  siteRes = await fetch(
+                    `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}?api-version=2022-03-01`,
+                    {
+                      method: 'PUT',
+                      headers: { Authorization: `Bearer ${armToken}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        location: 'westus3',
+                        properties: {
+                          serverFarmId: `/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/serverfarms/ASP-devopsmaf-95c3`,
+                          siteConfig: {
+                            linuxFxVersion: 'NODE|20-lts',
+                            appCommandLine: 'npm start',
+                          },
+                        },
+                      }),
+                    }
+                  );
+                }
+
+                if (siteRes.ok) {
+                  const siteData = await siteRes.json();
+                  if (siteData.properties?.defaultHostName) {
+                    liveUrl = `https://${siteData.properties.defaultHostName}`;
+                  }
+                }
+
+                // 2. Perform live ZipDeploy of application code from GitHub
+                if (ghToken) {
+                  try {
+                    const zipRes = await fetch(`https://api.github.com/repos/${repoFullName}/zipball/main`, {
+                      headers: {
+                        Authorization: `Bearer ${ghToken}`,
+                        'User-Agent': 'Backstage-Azure-Deployer',
+                      },
+                    });
+
+                    if (zipRes.ok) {
+                      const rawZipBuffer = Buffer.from(await zipRes.arrayBuffer());
+                      const AdmZip = require('adm-zip');
+                      const rawZip = new AdmZip(rawZipBuffer);
+                      const entries = rawZip.getEntries();
+                      const cleanZip = new AdmZip();
+                      const prefix = entries[0]?.entryName.split('/')[0] + '/';
+                      for (const entry of entries) {
+                        if (!entry.isDirectory && entry.entryName.startsWith(prefix)) {
+                          const relativePath = entry.entryName.slice(prefix.length);
+                          if (relativePath) {
+                            cleanZip.addFile(relativePath, entry.getData());
+                          }
+                        }
+                      }
+                      const deploymentZip = cleanZip.toBuffer();
+
+                      // Get Kudu publishing credentials
+                      const xmlRes = await fetch(
+                        `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}/publishxml?api-version=2022-03-01`,
+                        { method: 'POST', headers: { Authorization: `Bearer ${armToken}` } }
+                      );
+                      if (xmlRes.ok) {
+                        const xml = await xmlRes.text();
+                        const user = xml.split('userName="')[1]?.split('"')[0];
+                        const pwd = xml.split('userPWD="')[1]?.split('"')[0];
+                        const rawPublishUrlMatch = xml.match(/publishUrl="([^":]+)/);
+                        const scmHost = rawPublishUrlMatch ? rawPublishUrlMatch[1] : `${webAppName}.scm.azurewebsites.net`;
+
+                        if (user && pwd) {
+                          const basicAuth = `Basic ${Buffer.from(`${user}:${pwd}`).toString('base64')}`;
+                          await fetch(`https://${scmHost}/api/zipdeploy`, {
+                            method: 'POST',
+                            headers: {
+                              Authorization: basicAuth,
+                              'Content-Type': 'application/octet-stream',
+                            },
+                            body: deploymentZip,
+                          });
+                        }
+                      }
+                    }
+                  } catch {
+                    // Continue with ARM restart fallback
+                  }
+                }
+
+                // Container recycle
+                await fetch(
+                  `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}/restart?api-version=2022-03-01`,
+                  { method: 'POST', headers: { Authorization: `Bearer ${armToken}` } }
+                ).catch(() => {});
+              }
+            }
+
+            return {
+              reply: `**${matchedTemplate.title}** triggered successfully.\n\n` +
+                `- **Repository**: [\`${repoFullName}\`](https://github.com/${repoFullName})\n` +
+                `- **Target Web App**: \`${webAppName}\`\n` +
+                `- **Resource Group**: \`${resourceGroup}\`\n\n` +
+                `**Live URL**: [**${liveUrl}**](${liveUrl})\n\n` +
+                `Deployment packaging and container recycling are underway.`,
+              provider: 'acme-autonomous-scaffolder',
+              model: 'autonomous-executor-v2',
+              deploymentStatus: 'SUCCESS',
+              liveUrl,
+              timestamp: new Date().toISOString(),
+            };
+          } else if (matchedTemplate.id === 'ado-work-item-creator') {
+            const org = extracted.organization;
+            const project = extracted.project;
+            const type = extracted.type || 'Task';
+            const title = extracted.title;
+            const description = extracted.description || '';
+            const token = process.env.AZURE_DEVOPS_TOKEN || process.env.AZURE_TOKEN;
+
+            let workItemUrl = `https://dev.azure.com/${org}/${project}/_workitems`;
+            let workItemId = 'PENDING';
+
+            if (token && org && project && title) {
+              const patchData = [
+                { op: 'add', path: '/fields/System.Title', value: title },
+                { op: 'add', path: '/fields/System.Description', value: description },
+              ];
+              const url = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/workitems/$${encodeURIComponent(type)}?api-version=7.1`;
+              const adoRes = await fetch(url, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json-patch+json',
+                  Authorization: `Basic ${Buffer.from(`:${token}`).toString('base64')}`,
+                },
+                body: JSON.stringify(patchData),
+              });
+              if (adoRes.ok) {
+                const data = await adoRes.json() as any;
+                workItemId = String(data.id);
+                if (data._links?.html?.href) {
+                  workItemUrl = data._links.html.href;
+                }
+              }
+            }
+
+            return {
+              reply: `Created ${type} **#${workItemId}** in Azure DevOps.\n\n` +
+                `- **Title**: ${title}\n` +
+                `- **Project**: \`${org}/${project}\`\n\n` +
+                `**View Work Item**: [**#${workItemId}**](${workItemUrl})`,
+              provider: 'acme-autonomous-scaffolder',
+              deploymentStatus: 'SUCCESS',
+              workItemUrl,
+              timestamp: new Date().toISOString(),
+            };
+          } else {
+            const paramsList = Object.entries(extracted)
+              .map(([k, v]) => `- **${k}**: \`${v}\``)
+              .join('\n');
+
+            return {
+              reply: `**${matchedTemplate.title}** (\`${matchedTemplate.id}\`) has been initiated.\n\n` +
+                `**Configured Parameters**:\n${paramsList}\n\n` +
+                `Track execution in **[Create / Scaffolder Tasks](/create/tasks)**.`,
+              provider: 'acme-autonomous-scaffolder',
+              deploymentStatus: 'SUCCESS',
+              templateId: matchedTemplate.id,
+              timestamp: new Date().toISOString(),
+            };
+          }
+        }
+
         // Endpoint: List all templates dynamically for AI Chatbot
         router.get('/templates', async (_req, res) => {
           try {
@@ -598,509 +809,134 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
             const lowerUserMsg = lastUserMessage.toLowerCase();
 
             // Extract conversation context (all past user & assistant messages)
-            const conversationHistoryText = messages.map(m => `${m.role}: ${m.content}`).join('\n');
-
-            // 1. Check if user is asking to trigger any template or deploy an application OR providing parameters
+            const conversationHistoryText = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
             const allTemplates = getAvailableTemplates();
-            // Prioritize matching the current user message FIRST to prevent stale past conversation topics from trapping the chat
-            let matchedTemplate = matchTemplateFromText(allTemplates, lowerUserMsg);
-            if (!matchedTemplate) {
-              matchedTemplate = matchTemplateFromText(allTemplates, conversationHistoryText + '\n' + lastUserMessage);
-            }
 
-            const isScaffoldIntent =
-              Boolean(matchedTemplate) && (
-                lowerUserMsg.includes('deploy') ||
-                lowerUserMsg.includes('publish') ||
-                lowerUserMsg.includes('scaffold') ||
-                lowerUserMsg.includes('create') ||
-                lowerUserMsg.includes('work item') ||
-                lowerUserMsg.includes('workitem') ||
-                lowerUserMsg.includes('task') ||
-                lowerUserMsg.includes('provision') ||
-                lowerUserMsg.includes('template') ||
-                lowerUserMsg.includes('trigger') ||
-                lowerUserMsg.includes(':') ||
-                lowerUserMsg.includes('=') ||
-                lowerUserMsg.includes('valora') ||
-                lowerUserMsg.includes('claims_ui') ||
-                lowerUserMsg === 'sure' ||
-                lowerUserMsg.startsWith('sure') ||
-                lowerUserMsg === 'yes' ||
-                lowerUserMsg.startsWith('yes') ||
-                lowerUserMsg === 'proceed' ||
-                lowerUserMsg.includes('proceed') ||
-                lowerUserMsg === 'confirm' ||
-                lowerUserMsg.includes('confirm') ||
-                lowerUserMsg === 'main' ||
-                lowerUserMsg === 'production' ||
-                lowerUserMsg === 'non-production' ||
-                lowerUserMsg.includes('dry')
-              );
+            // Check if user is supplying structured parameters (e.g. key: value) or confirming an execution
+            const isSupplyingParams =
+              (lowerUserMsg.includes(':') && (lowerUserMsg.includes('repo') || lowerUserMsg.includes('name') || lowerUserMsg.includes('title') || lowerUserMsg.includes('app') || lowerUserMsg.includes('org') || lowerUserMsg.includes('project'))) ||
+              (lowerUserMsg.includes('deploy') && (lowerUserMsg.includes('claims_ui') || lowerUserMsg.includes('valora') || lowerUserMsg.includes('.azurewebsites.net')));
 
-            if (isScaffoldIntent && matchedTemplate) {
-              const fullContextText = conversationHistoryText + '\n' + lastUserMessage;
-              const { extracted, missing, errors } = extractParametersFromText(fullContextText, matchedTemplate);
-
-              // 1. If any parameters are misspelled or invalid, return clean, natural enterprise feedback
-              if (errors.length > 0) {
-                const issues = errors.map(err => `- **${err.title}**: ${err.message}`).join('\n');
-                res.json({
-                  reply: `I could not validate some parameters for **${matchedTemplate.title}**:\n\n${issues}\n\nPlease check the values and send the corrected details.`,
-                  provider: 'acme-autonomous-scaffolder',
-                  status: 'VALIDATION_ERROR',
-                  errors,
-                  templateId: matchedTemplate.id,
-                  timestamp: new Date().toISOString(),
-                });
-                return;
+            if (isSupplyingParams) {
+              let matchedTemplate = matchTemplateFromText(allTemplates, lowerUserMsg);
+              if (!matchedTemplate) {
+                matchedTemplate = matchTemplateFromText(allTemplates, conversationHistoryText + '\n' + lastUserMessage);
               }
 
-              // 2. Real-time Cloud Verification of External Targets (GitHub Repo & Azure Web App)
-              const ghToken = process.env.GITHUB_TOKEN;
-              const tenant = process.env.AZURE_TENANT_ID;
-              const client = process.env.AZURE_CLIENT_ID;
-              const secret = process.env.AZURE_CLIENT_SECRET;
-              const sub = process.env.AZURE_SUBSCRIPTION_ID;
+              if (matchedTemplate) {
+                const fullContextText = conversationHistoryText + '\n' + lastUserMessage;
+                const { extracted, missing, errors } = extractParametersFromText(fullContextText, matchedTemplate);
 
-              // Validate GitHub repository existence if repoFullName or repoUrl provided
-              let targetRepo = extracted.repoFullName || (extracted.repoUrl && extracted.repoUrl.replace(/https?:\/\/github\.com\//, ''));
-              if (targetRepo && ghToken && !targetRepo.includes('dev.azure.com') && targetRepo.includes('/')) {
-                try {
-                  let ghRes = await fetch(`https://api.github.com/repos/${targetRepo}`, {
-                    headers: {
-                      Authorization: `Bearer ${ghToken}`,
-                      'User-Agent': 'Backstage-Azure-Deployer',
-                    },
-                  });
-
-                  // If direct lookup returned 404, query user repos to check case-insensitive match or suggest closest match
-                  if (ghRes.status === 404) {
-                    const listRes = await fetch('https://api.github.com/user/repos?per_page=100', {
-                      headers: { Authorization: `Bearer ${ghToken}`, 'User-Agent': 'Backstage-Azure-Deployer' },
-                    });
-                    if (listRes.ok) {
-                      const allRepos = (await listRes.json()) as any[];
-                      // 1. Exact case-insensitive match
-                      const exactCaseMatch = allRepos.find(
-                        r => r.full_name.toLowerCase() === targetRepo.toLowerCase()
-                      );
-                      if (exactCaseMatch) {
-                        targetRepo = exactCaseMatch.full_name;
-                        extracted.repoFullName = exactCaseMatch.full_name;
-                        ghRes = { status: 200 } as any;
-                      } else {
-                        // 2. Find closest repository match to guide user
-                        const searchWord = targetRepo.split('/')[1]?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
-                        const similarRepos = allRepos
-                          .filter(r => {
-                            const rName = r.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                            return rName.includes(searchWord) || searchWord.includes(rName);
-                          })
-                          .slice(0, 3)
-                          .map(r => `\`${r.full_name}\``);
-
-                        const suggestionText = similarRepos.length > 0
-                          ? ` Did you mean **${similarRepos[0]}**?`
-                          : '';
-
-                        res.json({
-                          reply: `I couldn't find the repository **\`${targetRepo}\`** on GitHub.${suggestionText}\n\nPlease check the spelling or provide a valid repository (e.g. \`RAGHAVENDRA-VAM/Claims_UI\`).`,
-                          provider: 'acme-autonomous-scaffolder',
-                          status: 'VALIDATION_ERROR',
-                          templateId: matchedTemplate.id,
-                          timestamp: new Date().toISOString(),
-                        });
-                        return;
-                      }
-                    } else {
-                      res.json({
-                        reply: `I couldn't find the repository **\`${targetRepo}\`** on GitHub.\n\nPlease check the spelling or provide a valid repository (e.g. \`RAGHAVENDRA-VAM/Claims_UI\`).`,
-                        provider: 'acme-autonomous-scaffolder',
-                        status: 'VALIDATION_ERROR',
-                        templateId: matchedTemplate.id,
-                        timestamp: new Date().toISOString(),
-                      });
-                      return;
-                    }
-                  }
-                } catch {
-                  // network fallback
-                }
-              }
-
-              // Validate Azure App Service existence if webAppName provided
-              if (extracted.webAppName && tenant && client && secret && sub) {
-                try {
-                  const tokenRes = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                      grant_type: 'client_credentials',
-                      client_id: client,
-                      client_secret: secret,
-                      scope: 'https://management.azure.com/.default',
-                    }),
-                  });
-
-                  if (tokenRes.ok) {
-                    const tokenData = await tokenRes.json();
-                    const armToken = tokenData.access_token;
-                    const sitesRes = await fetch(
-                      `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.Web/sites?api-version=2022-03-01`,
-                      { headers: { Authorization: `Bearer ${armToken}` } }
-                    );
-
-                    if (sitesRes.ok) {
-                      const sitesData = await sitesRes.json();
-                      const matchingSite = (sitesData.value || []).find((s: any) =>
-                        s.name.toLowerCase() === String(extracted.webAppName).toLowerCase()
-                      );
-
-                      if (!matchingSite) {
-                        const availableNames = (sitesData.value || []).map((s: any) => `\`${s.name}\``).join(', ');
-                        res.json({
-                          reply: `The Web App **\`${extracted.webAppName}\`** does not exist in your Azure subscription.\n\nAvailable Web Apps: ${availableNames || 'None'}\n\nPlease check the name or provide one of the active Web Apps above.`,
-                          provider: 'acme-autonomous-scaffolder',
-                          status: 'VALIDATION_ERROR',
-                          templateId: matchedTemplate.id,
-                          timestamp: new Date().toISOString(),
-                        });
-                        return;
-                      } else {
-                        // Automatically bind the true resourceGroup from ARM site metadata
-                        extracted.resourceGroup = matchingSite.id.split('/')[4] || extracted.resourceGroup || 'devops-maf';
-                      }
-                    }
-                  }
-                } catch {
-                  // network fallback
-                }
-              }
-
-              // 3. If required parameters are missing, prompt user clearly in structured format
-              if (missing.length > 0) {
-                res.json({
-                  reply: renderTemplateSpecification(matchedTemplate),
-                  provider: 'acme-autonomous-scaffolder',
-                  actionRequired: 'collect_parameters',
-                  templateId: matchedTemplate.id,
-                  missingParameters: missing,
-                  timestamp: new Date().toISOString(),
-                });
-                return;
-              }
-
-              // 3. All required parameters are present and verified! Trigger execution
-              try {
-                // If template is Azure Web App deployer, execute ARM container rollout
-                if (matchedTemplate.id === 'deploy-app-to-azure-webapp') {
-                  const repoFullName = extracted.repoFullName || 'RAGHAVENDRA-VAM/Claims_UI';
-                  const webAppName = extracted.webAppName || 'valora-insurance-ui';
-                  const resourceGroup = extracted.resourceGroup || 'devops-maf';
-
-                  const tenant = process.env.AZURE_TENANT_ID;
-                  const client = process.env.AZURE_CLIENT_ID;
-                  const secret = process.env.AZURE_CLIENT_SECRET;
-                  const sub = process.env.AZURE_SUBSCRIPTION_ID;
-                  const ghToken = process.env.GITHUB_TOKEN;
-
-                  let liveUrl = `https://${webAppName}.azurewebsites.net`;
-
-                  if (tenant && client && secret && sub) {
-                    const tokenRes = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                      body: new URLSearchParams({
-                        grant_type: 'client_credentials',
-                        client_id: client,
-                        client_secret: secret,
-                        scope: 'https://management.azure.com/.default',
-                      }),
-                    });
-
-                    if (tokenRes.ok) {
-                      const tokenData = await tokenRes.json();
-                      const armToken = tokenData.access_token;
-
-                      // 1. Check or Provision App Service in resourceGroup if missing
-                      let siteRes = await fetch(
-                        `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}?api-version=2022-03-01`,
-                        { headers: { Authorization: `Bearer ${armToken}` } }
-                      );
-
-                      if (siteRes.status === 404) {
-                        siteRes = await fetch(
-                          `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}?api-version=2022-03-01`,
-                          {
-                            method: 'PUT',
-                            headers: { Authorization: `Bearer ${armToken}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              location: 'westus3',
-                              properties: {
-                                serverFarmId: `/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/serverfarms/ASP-devopsmaf-95c3`,
-                                siteConfig: {
-                                  linuxFxVersion: 'NODE|20-lts',
-                                  appCommandLine: 'npm start',
-                                },
-                              },
-                            }),
-                          }
-                        );
-                      }
-
-                      if (siteRes.ok) {
-                        const siteData = await siteRes.json();
-                        if (siteData.properties?.defaultHostName) {
-                          liveUrl = `https://${siteData.properties.defaultHostName}`;
-                        }
-                      }
-
-                      // 2. Perform live ZipDeploy of application code from GitHub
-                      if (ghToken) {
-                        try {
-                          const zipRes = await fetch(`https://api.github.com/repos/${repoFullName}/zipball/main`, {
-                            headers: {
-                              Authorization: `Bearer ${ghToken}`,
-                              'User-Agent': 'Backstage-Azure-Deployer',
-                            },
-                          });
-
-                          if (zipRes.ok) {
-                            const rawZipBuffer = Buffer.from(await zipRes.arrayBuffer());
-                            const AdmZip = require('adm-zip');
-                            const rawZip = new AdmZip(rawZipBuffer);
-                            const entries = rawZip.getEntries();
-                            const cleanZip = new AdmZip();
-                            const prefix = entries[0]?.entryName.split('/')[0] + '/';
-                            for (const entry of entries) {
-                              if (!entry.isDirectory && entry.entryName.startsWith(prefix)) {
-                                const relativePath = entry.entryName.slice(prefix.length);
-                                if (relativePath) {
-                                  cleanZip.addFile(relativePath, entry.getData());
-                                }
-                              }
-                            }
-                            const deploymentZip = cleanZip.toBuffer();
-
-                            // Get Kudu publishing credentials
-                            const xmlRes = await fetch(
-                              `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}/publishxml?api-version=2022-03-01`,
-                              { method: 'POST', headers: { Authorization: `Bearer ${armToken}` } }
-                            );
-                            if (xmlRes.ok) {
-                              const xml = await xmlRes.text();
-                              const user = xml.split('userName="')[1]?.split('"')[0];
-                              const pwd = xml.split('userPWD="')[1]?.split('"')[0];
-                              const rawPublishUrlMatch = xml.match(/publishUrl="([^":]+)/);
-                              const scmHost = rawPublishUrlMatch ? rawPublishUrlMatch[1] : `${webAppName}.scm.azurewebsites.net`;
-
-                              if (user && pwd) {
-                                const basicAuth = `Basic ${Buffer.from(`${user}:${pwd}`).toString('base64')}`;
-                                await fetch(`https://${scmHost}/api/zipdeploy`, {
-                                  method: 'POST',
-                                  headers: {
-                                    Authorization: basicAuth,
-                                    'Content-Type': 'application/octet-stream',
-                                  },
-                                  body: deploymentZip,
-                                });
-                              }
-                            }
-                          }
-                        } catch (kuduErr) {
-                          // Continue with ARM restart fallback
-                        }
-                      }
-
-                      // Container recycle
-                      await fetch(
-                        `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}/restart?api-version=2022-03-01`,
-                        { method: 'POST', headers: { Authorization: `Bearer ${armToken}` } }
-                      ).catch(() => {});
-                    }
-                  }
-
+                if (errors.length > 0) {
+                  const issues = errors.map(err => `- **${err.title}**: ${err.message}`).join('\n');
                   res.json({
-                    reply: `**${matchedTemplate.title}** triggered successfully.\n\n` +
-                      `- **Repository**: [\`${repoFullName}\`](https://github.com/${repoFullName})\n` +
-                      `- **Target Web App**: \`${webAppName}\`\n` +
-                      `- **Resource Group**: \`${resourceGroup}\`\n\n` +
-                      `**Live URL**: [**${liveUrl}**](${liveUrl})\n\n` +
-                      `Deployment packaging and container recycling are underway.`,
+                    reply: `I could not validate some parameters for **${matchedTemplate.title}**:\n\n${issues}\n\nPlease check the values and send the corrected details.`,
                     provider: 'acme-autonomous-scaffolder',
-                    model: 'autonomous-executor-v2',
-                    deploymentStatus: 'SUCCESS',
-                    liveUrl,
-                    timestamp: new Date().toISOString(),
-                  });
-                  return;
-                } else if (matchedTemplate.id === 'ado-work-item-creator') {
-                  // Direct ADO Work Item trigger
-                  const org = extracted.organization;
-                  const project = extracted.project;
-                  const type = extracted.type || 'Task';
-                  const title = extracted.title;
-                  const description = extracted.description || '';
-                  const token = process.env.AZURE_DEVOPS_TOKEN || process.env.AZURE_TOKEN;
-
-                  let workItemUrl = `https://dev.azure.com/${org}/${project}/_workitems`;
-                  let workItemId = 'PENDING';
-
-                  if (token && org && project && title) {
-                    const patchData = [
-                      { op: 'add', path: '/fields/System.Title', value: title },
-                      { op: 'add', path: '/fields/System.Description', value: description },
-                    ];
-                    const url = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/workitems/$${encodeURIComponent(type)}?api-version=7.1`;
-                    const adoRes = await fetch(url, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json-patch+json',
-                        Authorization: `Basic ${Buffer.from(`:${token}`).toString('base64')}`,
-                      },
-                      body: JSON.stringify(patchData),
-                    });
-                    if (adoRes.ok) {
-                      const data = await adoRes.json() as any;
-                      workItemId = String(data.id);
-                      if (data._links?.html?.href) {
-                        workItemUrl = data._links.html.href;
-                      }
-                    }
-                  }
-
-                  res.json({
-                    reply: `Created ${type} **#${workItemId}** in Azure DevOps.\n\n` +
-                      `- **Title**: ${title}\n` +
-                      `- **Project**: \`${org}/${project}\`\n\n` +
-                      `**View Work Item**: [**#${workItemId}**](${workItemUrl})`,
-                    provider: 'acme-autonomous-scaffolder',
-                    deploymentStatus: 'SUCCESS',
-                    workItemUrl,
-                    timestamp: new Date().toISOString(),
-                  });
-                  return;
-                } else {
-                  // Generic Golden Path Template Execution
-                  const paramsList = Object.entries(extracted)
-                    .map(([k, v]) => `- **${k}**: \`${v}\``)
-                    .join('\n');
-
-                  res.json({
-                    reply: `### Template Execution Succeeded\n\n` +
-                      `Golden path template **${matchedTemplate.title}** (\`${matchedTemplate.id}\`) has been initiated.\n\n` +
-                      `**Configured Parameters**:\n` +
-                      `${paramsList}\n\n` +
-                      `**Steps Executing**:\n` +
-                      matchedTemplate.steps.map((s, idx) => `${idx + 1}. **${s.name || s.id}** (\`${s.action}\`)`).join('\n') +
-                      `\n\nTrack pipeline execution and generated artifacts in the **[Create / Scaffolder Tasks](/create/tasks)** console.`,
-                    provider: 'acme-autonomous-scaffolder',
-                    deploymentStatus: 'SUCCESS',
+                    status: 'VALIDATION_ERROR',
+                    errors,
                     templateId: matchedTemplate.id,
                     timestamp: new Date().toISOString(),
                   });
                   return;
                 }
-              } catch (execErr: any) {
-                res.json({
-                  reply: `### Template Execution Failed\n\n` +
-                    `An error occurred while executing **${matchedTemplate.title}**: ${execErr.message}.\n\n` +
-                    `You can verify credentials or retry via the **[Create / Scaffolder](/create)** tab.`,
-                  provider: 'acme-autonomous-scaffolder',
-                  status: 'EXECUTION_ERROR',
-                  timestamp: new Date().toISOString(),
-                });
-                return;
+
+                // If user has provided all required parameters, execute directly
+                if (missing.length === 0) {
+                  const result = await executeMatchedTemplate(matchedTemplate, extracted);
+                  res.json(result);
+                  return;
+                }
               }
             }
 
-            // Universal AI Response (Azure AI Foundry or Local High-Performance Model)
-            const systemPrompt = `You are Acme AI Copilot, the official enterprise AI assistant for the ValueMomentum Acme Developer Portal (IDP).
-You possess deep, comprehensive real-time knowledge of every page, tab, metric, and service across the entire IDP:
+            // Universal Conversational AI Copilot with Function Calling
+            // Define available tools so the AI can dynamically trigger any template when ready
+            const tools = [
+              {
+                type: 'function',
+                function: {
+                  name: 'trigger_scaffolder_template',
+                  description: 'Trigger an IDP golden path template when all required parameters have been identified or confirmed by the user.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      template_id: {
+                        type: 'string',
+                        description: 'ID of the template to trigger: deploy-app-to-azure-webapp, ado-work-item-creator, ado-azure-webapp-enterprise, ado-enterprise-ai-application, etc.'
+                      },
+                      parameters: {
+                        type: 'object',
+                        description: 'Key-value map of parameters to pass to the template'
+                      }
+                    },
+                    required: ['template_id', 'parameters']
+                  }
+                }
+              }
+            ];
 
-1. DASHBOARD & COMMAND CENTER TABS:
-- Tab 1: Overview & Connected Extensions (Jira, GitHub Actions, Datadog APM, Azure West US 3). 100% operational status.
-- Tab 2: Automation & Golden Paths: Self-service software templates (Node.js microservice, React Jutro insurance portal, Azure App Service deployer, Guidewire cloud deployment, Key Vault secrets push). Over 187 pipeline runs tracked.
-- Tab 3: Observability & Telemetry: Live Datadog US1 APM traces, P95/P99 latency graphs, active alerts, error rates, and host maps across Azure containers.
-- Tab 4: Site Reliability & Health (SRE): Live SLO tracking (99.95% target), automated error budget burn down, health pings on port 8080, and self-healing restart triggers.
-- Tab 5: Cloud Native Infrastructure: Azure West US 3 multi-region topology, resource groups (devops-maf, chatpdf, shield-claims-isnurance-rg), 13 active Web Apps, Key Vaults, and ARM resource inventory.
-- Tab 6: DevSecOps & Compliance: Trivy container vulnerability scanning, SonarQube SAST gates, branch protection rules, and dependency CVE compliance.
-- Tab 7: FinOps & AI Governance: Real-time Azure OpenAI & AI Foundry token metrics (197.9M tokens processed, $157.33/mo MTD spend, daily burn rate $5.24/day, models gpt-5-mini, gpt-4.1-mini, Kimi-K2.6, text-embedding-3-small), and Advisor rightsizing recommendations saving $2,150/mo.
-- Tab 8: Design & Architecture Standards: Architecture Decision Records (ADRs), REST RFC 7807 error schema, zero-trust VNet policies, and Guidewire integration framework (CIF).
-- Tab 9: Jira Agile Backlog: Live Scrum tickets from project SCRUM (user stories, sprint velocity, bug reports, and story points).
-- Tab 10: GitHub CI/CD: Organization repositories under RAGHAVENDRA-VAM/*, pull requests, automated workflow runs, build durations, and commit authors.
+            const availableTemplatesSummary = allTemplates.map(t =>
+              `- \`${t.id}\`: ${t.title} (${t.description}). Required: ${t.requiredParams.join(', ') || 'none'}`
+            ).join('\n');
 
-2. SOFTWARE CATALOG (/catalog):
-- Core Services:
-  * Claims UI Portal (Claims_UI): Owned by Platform Engineering & Claims Squad (Lead: Pankaj Kumar). Live Azure App Service: valora-insurance-ui in devops-maf.
-  * Risk Analysis Service (risk-analysis): Owned by Underwriting Analytics Team. Live App Service: devops-risk-analyzer-api in devops-maf.
-  * ClaimsCare Incident Engine: Owned by Incident Ops Squad.
-  * Quality Gates, Policy Center, and DevOps Agent.
+            const systemPrompt = `You are Acme AI Copilot, the intelligent enterprise developer assistant for ValueMomentum IDP (Internal Developer Portal).
+You talk to developers and platform engineers like a real, helpful human tech lead / senior software engineer.
 
-3. PERSONA ROLES & ACCESS:
-- Platform Engineer (Admin): Full access to all 10 Command Center tabs, SRE incident controls, and cloud provisioning. Lead: Pankaj Kumar.
-- Software Developer: Streamlined workspace focused on Catalog, Scaffolder (/create), Jira backlog, GitHub PRs, and service health.
-- FinOps: Focused on Cloud Infrastructure spend, AI Foundry unit economics, and tagging governance.
+Available Golden Path Templates in IDP:
+${availableTemplatesSummary}
 
-4. AUTONOMOUS ACTIONS:
-- If a user asks to deploy an application, you can either guide them to the Create tab or collect the Repository (e.g. RAGHAVENDRA-VAM/Claims_UI), Target Web App (e.g. valora-insurance-ui), and Resource Group (devops-maf) to initiate the deployment directly.
-
-Answer all questions authoritatively, concisely, and professionally based on this IDP knowledge base.`;
+Guidelines:
+1. Speak naturally, conversationally, and concisely like ChatGPT.
+2. DO NOT dump raw templates, YAML lists, or copy-paste form boxes when the user makes a broad request like "i want create web app" or "i want deploy".
+3. Instead, have a real conversation! Ask 1 or 2 relevant, clarifying questions (e.g. what framework/stack they want, if they already have a repo, or the app name).
+4. When the user provides the details (e.g. "Deploy RAGHAVENDRA-VAM/Claims_UI to valora-insurance-ui" or fills in required values), call the tool trigger_scaffolder_template with the template_id and parameters.
+5. If details are missing or misspelled, explain it simply and politely in 1-2 sentences.`;
 
             const fullMessages = [
               { role: 'system', content: systemPrompt },
               ...messages.map((m: any) => ({ role: m.role, content: m.content })),
             ];
 
-            const liveAi = await callAzureAi(fullMessages);
-            if (liveAi && liveAi.reply) {
-              res.json({
-                reply: liveAi.reply,
-                provider: 'azure-ai-foundry',
-                model: liveAi.model,
-                timestamp: new Date().toISOString(),
-              });
-              return;
+            const liveAi = await callAzureAi(fullMessages, { tools, tool_choice: 'auto' });
+
+            if (liveAi) {
+              // If AI chose to trigger a template via function calling
+              if (liveAi.tool_calls && liveAi.tool_calls.length > 0) {
+                const toolCall = liveAi.tool_calls[0];
+                if (toolCall.function?.name === 'trigger_scaffolder_template') {
+                  try {
+                    const args = JSON.parse(toolCall.function.arguments || '{}');
+                    const tmpl = allTemplates.find(t => t.id === args.template_id) || allTemplates.find(t => t.id === 'deploy-app-to-azure-webapp');
+                    if (tmpl) {
+                      const execResult = await executeMatchedTemplate(tmpl, args.parameters || {});
+                      res.json(execResult);
+                      return;
+                    }
+                  } catch {
+                    // fallback
+                  }
+                }
+              }
+
+              if (liveAi.reply) {
+                res.json({
+                  reply: liveAi.reply,
+                  provider: 'azure-ai-foundry',
+                  model: liveAi.model,
+                  timestamp: new Date().toISOString(),
+                });
+                return;
+              }
             }
 
-            // High-context fallback knowledge base
-            let reply = '';
-            if (lowerUserMsg.includes('owner') || lowerUserMsg.includes('who owns') || lowerUserMsg.includes('claims') || lowerUserMsg.includes('risk')) {
-              reply = `### Service Ownership & Attribution (Catalog):\n\n` +
-                `- **Claims UI Portal (\`Claims_UI\`)**: Owned by **Platform Engineering & Claims Squad** (Lead: Pankaj Kumar). Deployed to Azure Web App \`valora-insurance-ui\` in \`devops-maf\`.\n` +
-                `- **Risk Analysis Service (\`risk-analysis\`)**: Owned by **Underwriting Analytics Team**. Deployed to \`devops-risk-analyzer-api\` in \`devops-maf\`.\n` +
-                `- **ClaimsCare Incident Engine**: Owned by **Incident Ops Squad**.\n\n` +
-                `*All services report live APM metrics to Datadog and track sprint tickets in Jira (Project: SCRUM).*`;
-            } else if (lowerUserMsg.includes('deploy') || lowerUserMsg.includes('publish') || lowerUserMsg.includes('release')) {
-              reply = `### How to Deploy Your Application:\n\n` +
-                `You have **two easy ways** to deploy in the Acme IDP:\n\n` +
-                `1. **Self-Service Golden Path (Recommended)**:\n` +
-                `   - Click on the **Create** tab in the sidebar.\n` +
-                `   - Select the **"Deploy App to Azure Web App"** template.\n` +
-                `   - Choose your repository and target Azure Web App, then click **Execute**.\n\n` +
-                `2. **Autonomous Chatbot Deployment**:\n` +
-                `   - You can ask me directly in this chat! Just specify:\n` +
-                `     - **Repository**: e.g., \`RAGHAVENDRA-VAM/Claims_UI\`\n` +
-                `     - **Target Azure Web App**: e.g., \`valora-insurance-ui\`\n` +
-                `     - **Resource Group**: e.g., \`devops-maf\`\n` +
-                `   - *Example prompt: "Deploy RAGHAVENDRA-VAM/Claims_UI to valora-insurance-ui in devops-maf"*`;
-            } else if (lowerUserMsg.includes('finops') || lowerUserMsg.includes('cost') || lowerUserMsg.includes('spend') || lowerUserMsg.includes('token')) {
-              reply = `### Cloud FinOps & AI Cost Governance:\n\n` +
-                `- **Live MTD Spend**: Azure Cost Management actively monitors daily consumption.\n` +
-                `- **Azure Advisor**: 49 recommendations active, including VM rightsizing on \`chatpdf123\` saving ₹1,200/mo.\n` +
-                `- **Azure AI Foundry**: Real Cognitive Services deployed models (\`gpt-5-mini\`, \`gpt-4.1-mini\`, \`Kimi-K2.6\`) tracked with prompt/completion token quotas.`;
-            } else {
-              reply = `### Acme AI Copilot Operational\n\n` +
-                `I am monitoring your Backstage Catalog, Azure Web Apps, and Datadog APM.\n\n` +
-                `Ask me anything about:\n` +
-                `- **Service Ownership**: "Who owns the Claims UI?"\n` +
-                `- **Incident Diagnostics**: Paste broken logs in the Log Diagnostics tab for instant RCA.\n` +
-                `- **Golden Paths**: "Deploy Claims UI to Azure Web App"`;
+            // High-context fallback if AI endpoint is unreachable
+            let fallbackReply = "I'd be happy to help you with that! Could you tell me a little more about what you'd like to do or which service you're working on?";
+            if (lowerUserMsg.includes('web app') || lowerUserMsg.includes('webapp')) {
+              fallbackReply = "Great! I can help you create or deploy a web app. To point you to the right template:\n\n1. Are you looking to scaffold a new **React Enterprise App**, **.NET Web API**, or **Python FastAPI** service?\n2. Or deploy an existing GitHub repo to an **Azure App Service**?";
             }
 
             res.json({
-              reply,
+              reply: fallbackReply,
               provider: 'shield-ai-embedded',
               model: 'enterprise-platform-v2',
               timestamp: new Date().toISOString(),
