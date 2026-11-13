@@ -774,13 +774,35 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                 // Download ADO repo zip and deploy to Azure SCM if token and repo are specified
                 if (adoToken && org && project && repo) {
                   try {
-                    const adoZipUrl = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repo)}/items?path=/&recursionLevel=full&versionDescriptor[version]=${encodeURIComponent(branch)}&$format=zip&api-version=7.1`;
-                    const zipRes = await fetch(adoZipUrl, {
+                    const adoAuthHeader = `Basic ${Buffer.from(`:${adoToken}`).toString('base64')}`;
+                    const baseAdoUrl = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repo)}`;
+                    let adoZipUrl = `${baseAdoUrl}/items?path=/&recursionLevel=full&$format=zip&download=true&versionDescriptor.version=${encodeURIComponent(branch)}&versionDescriptor.versionType=branch&api-version=7.1`;
+                    let zipRes = await fetch(adoZipUrl, {
                       headers: {
-                        Authorization: `Basic ${Buffer.from(`:${adoToken}`).toString('base64')}`,
+                        Authorization: adoAuthHeader,
                         'User-Agent': 'Backstage-Azure-Deployer',
                       },
                     });
+
+                    if (!zipRes.ok) {
+                      adoZipUrl = `${baseAdoUrl}/items?path=/&$format=zip&download=true&versionDescriptor.version=${encodeURIComponent(branch)}&versionDescriptor.versionType=branch&api-version=7.1`;
+                      zipRes = await fetch(adoZipUrl, {
+                        headers: {
+                          Authorization: adoAuthHeader,
+                          'User-Agent': 'Backstage-Azure-Deployer',
+                        },
+                      });
+                    }
+
+                    if (!zipRes.ok) {
+                      adoZipUrl = `${baseAdoUrl}/items?path=/&$format=zip&download=true&api-version=7.1`;
+                      zipRes = await fetch(adoZipUrl, {
+                        headers: {
+                          Authorization: adoAuthHeader,
+                          'User-Agent': 'Backstage-Azure-Deployer',
+                        },
+                      });
+                    }
 
                     if (zipRes.ok) {
                       const AdmZip = (await import('adm-zip')).default;

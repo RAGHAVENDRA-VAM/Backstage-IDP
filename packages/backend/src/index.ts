@@ -37,7 +37,7 @@ const scaffolderModuleCustomActions = createBackendModule({
         scaffolder.addActions(createAzureWorkItemAction({ config }));
         scaffolder.addActions(createAzureSecretsAction());
         scaffolder.addActions(createAzureSecretsPushAction());
-        scaffolder.addActions(createAzureAppDeployAction());
+        scaffolder.addActions(createAzureAppDeployAction({ config }));
       },
     });
   },

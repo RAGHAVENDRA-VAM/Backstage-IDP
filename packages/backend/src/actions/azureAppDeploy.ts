@@ -1,10 +1,11 @@
 import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
+import { Config } from '@backstage/config';
 import AdmZip from 'adm-zip';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
 
-export const createAzureAppDeployAction = () => {
+export const createAzureAppDeployAction = (options?: { config?: Config }) => {
   return createTemplateAction<
     {
       repoFullName: string;
@@ -84,7 +85,17 @@ export const createAzureAppDeployAction = () => {
       const secret = process.env.AZURE_CLIENT_SECRET;
       const sub = process.env.AZURE_SUBSCRIPTION_ID;
       const githubToken = process.env.GITHUB_TOKEN;
-      const adoToken = process.env.AZURE_DEVOPS_TOKEN || process.env.AZURE_TOKEN;
+      let adoToken = process.env.AZURE_DEVOPS_TOKEN || process.env.AZURE_TOKEN;
+
+      if (!adoToken && options?.config) {
+        const azureIntegrations = options.config.getOptionalConfigArray('integrations.azure') || [];
+        const devAzureIntegration = azureIntegrations.find(c => c.getString('host') === 'dev.azure.com');
+        adoToken = devAzureIntegration?.getOptionalString('token');
+        if (!adoToken) {
+          const credentials = devAzureIntegration?.getOptionalConfigArray('credentials') || [];
+          adoToken = credentials[0]?.getOptionalString('personalAccessToken');
+        }
+      }
 
       if (!tenant || !client || !secret || !sub) {
         throw new Error('Azure Service Principal environment variables (AZURE_TENANT_ID, AZURE_CLIENT_ID, etc.) are missing.');
@@ -199,16 +210,45 @@ export const createAzureAppDeployAction = () => {
 
       if (isAdo) {
         ctx.logger.info(`Downloading application archive from Azure DevOps [${organization}/${project}/_git/${repoFullName}] (branch: ${targetBranch})...`);
-        const adoZipUrl = `https://dev.azure.com/${encodeURIComponent(organization!)}/${encodeURIComponent(project!)}/_apis/git/repositories/${encodeURIComponent(repoFullName)}/items?path=/&recursionLevel=full&versionDescriptor[version]=${encodeURIComponent(targetBranch)}&$format=zip&api-version=7.1`;
-        const zipRes = await fetch(adoZipUrl, {
+        const adoAuthHeader = `Basic ${Buffer.from(`:${adoToken}`).toString('base64')}`;
+        const baseAdoUrl = `https://dev.azure.com/${encodeURIComponent(organization!)}/${encodeURIComponent(project!)}/_apis/git/repositories/${encodeURIComponent(repoFullName)}`;
+
+        // Strategy 1: Items API with versionDescriptor.version and versionDescriptor.versionType=branch
+        let adoZipUrl = `${baseAdoUrl}/items?path=/&recursionLevel=full&$format=zip&download=true&versionDescriptor.version=${encodeURIComponent(targetBranch)}&versionDescriptor.versionType=branch&api-version=7.1`;
+        let zipRes = await fetch(adoZipUrl, {
           headers: {
-            Authorization: `Basic ${Buffer.from(`:${adoToken}`).toString('base64')}`,
+            Authorization: adoAuthHeader,
             'User-Agent': 'Backstage-Azure-Deployer',
           },
         });
 
+        // Strategy 2: If 400 or not ok, try without recursionLevel
         if (!zipRes.ok) {
-          throw new Error(`Failed to download repository zip from Azure DevOps: ${zipRes.status} ${zipRes.statusText}`);
+          ctx.logger.warn(`Strategy 1 returned ${zipRes.status} (${zipRes.statusText}). Retrying items zip query...`);
+          adoZipUrl = `${baseAdoUrl}/items?path=/&$format=zip&download=true&versionDescriptor.version=${encodeURIComponent(targetBranch)}&versionDescriptor.versionType=branch&api-version=7.1`;
+          zipRes = await fetch(adoZipUrl, {
+            headers: {
+              Authorization: adoAuthHeader,
+              'User-Agent': 'Backstage-Azure-Deployer',
+            },
+          });
+        }
+
+        // Strategy 3: Query default branch or without versionDescriptor if still failing
+        if (!zipRes.ok) {
+          ctx.logger.warn(`Strategy 2 returned ${zipRes.status}. Retrying items zip with versionDescriptor[version]...`);
+          adoZipUrl = `${baseAdoUrl}/items?path=/&$format=zip&download=true&api-version=7.1`;
+          zipRes = await fetch(adoZipUrl, {
+            headers: {
+              Authorization: adoAuthHeader,
+              'User-Agent': 'Backstage-Azure-Deployer',
+            },
+          });
+        }
+
+        if (!zipRes.ok) {
+          const errDetail = await zipRes.text().catch(() => '');
+          throw new Error(`Failed to download repository zip from Azure DevOps: ${zipRes.status} ${zipRes.statusText}. Detail: ${errDetail.substring(0, 300)}`);
         }
         rawZipBuffer = Buffer.from(await zipRes.arrayBuffer());
       } else {
