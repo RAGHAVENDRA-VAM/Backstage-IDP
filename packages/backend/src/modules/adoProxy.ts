@@ -293,6 +293,50 @@ export const adoProxyPlugin = createBackendPlugin({
           }
         });
 
+        // Debug endpoint: Inspect pipeline definition and file content
+        router.get('/debug-pipeline', async (req, res) => {
+          const { organization, project, pipelineId, repository, branch, path: filePath } = req.query;
+          try {
+            const token = getAdoToken();
+            if (!token) return res.status(500).json({ error: 'No token' });
+            const authHeader = `Basic ${Buffer.from(`:${token}`).toString('base64')}`;
+
+            let definition = null;
+            if (pipelineId) {
+              const dRes = await fetch(`https://dev.azure.com/${organization}/${project}/_apis/build/definitions/${pipelineId}?api-version=7.1`, {
+                headers: { Authorization: authHeader }
+              });
+              if (dRes.ok) definition = await dRes.json();
+            }
+
+            let fileContent = null;
+            if (repository && filePath) {
+              const targetBranch = branch ? String(branch).replace(/^refs\/heads\//, '') : 'main';
+              const fRes = await fetch(`https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${encodeURIComponent(String(repository))}/items?path=${encodeURIComponent(String(filePath))}&includeContent=true&versionDescriptor.version=${encodeURIComponent(targetBranch)}&versionDescriptor.versionType=branch&api-version=7.1`, {
+                headers: { Authorization: authHeader }
+              });
+              if (fRes.ok) {
+                const fData = await fRes.json();
+                fileContent = fData.content;
+              }
+            }
+
+            // Variable groups in project
+            const vgRes = await fetch(`https://dev.azure.com/${organization}/${project}/_apis/distributedtask/variablegroups?api-version=7.1-preview.2`, {
+              headers: { Authorization: authHeader }
+            });
+            let variableGroups = null;
+            if (vgRes.ok) {
+              const vgData = await vgRes.json();
+              variableGroups = (vgData.value || []).map((v: any) => ({ id: v.id, name: v.name }));
+            }
+
+            res.json({ definition, fileContent, variableGroups });
+          } catch (e: any) {
+            res.status(500).json({ error: e.message });
+          }
+        });
+
         // Get status of a specific pipeline run
         router.get('/pipeline-run-status', async (req, res) => {
           const { organization, project, pipelineId, runId } = req.query;
