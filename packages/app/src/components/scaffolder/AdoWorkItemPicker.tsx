@@ -365,6 +365,7 @@ export const AdoPipelinePicker = ({
   const organization = formContext?.formData?.organization;
   const project = formContext?.formData?.project;
   const repository = formContext?.formData?.repository;
+  const branch = formContext?.formData?.branch;
 
   useEffect(() => {
     let active = true;
@@ -383,6 +384,9 @@ export const AdoPipelinePicker = ({
         let queryUrl = `${baseUrl}/pipelines?organization=${encodeURIComponent(organization)}&project=${encodeURIComponent(project)}`;
         if (repository) {
           queryUrl += `&repositoryName=${encodeURIComponent(repository)}`;
+        }
+        if (branch) {
+          queryUrl += `&branch=${encodeURIComponent(branch)}`;
         }
 
         const res = await fetchApi.fetch(queryUrl);
@@ -412,7 +416,7 @@ export const AdoPipelinePicker = ({
     return () => {
       active = false;
     };
-  }, [fetchApi, discoveryApi, organization, project, repository]);
+  }, [fetchApi, discoveryApi, organization, project, repository, branch]);
 
   if (!organization || !project) {
     return (
@@ -435,16 +439,27 @@ export const AdoPipelinePicker = ({
       freeSolo
       onOpen={() => setOpen(true)}
       onClose={() => setOpen(false)}
-      getOptionSelected={(option, value) => option.name === value.name}
+      getOptionSelected={(option, value) => {
+        const optVal = typeof option === 'string' ? option : option.name;
+        const targetVal = typeof value === 'string' ? value : value?.name;
+        return optVal === targetVal;
+      }}
       getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
       options={options}
       loading={loading}
       value={selectedOption}
+      onInputChange={(_, newInputValue) => {
+        if (newInputValue) {
+          onChange(newInputValue);
+        }
+      }}
       onChange={(_, newValue) => {
         if (typeof newValue === 'string') {
           onChange(newValue);
+        } else if (newValue && newValue.name) {
+          onChange(newValue.name);
         } else {
-          onChange(newValue ? newValue.name : undefined);
+          onChange(undefined);
         }
       }}
       renderInput={(params) => (
