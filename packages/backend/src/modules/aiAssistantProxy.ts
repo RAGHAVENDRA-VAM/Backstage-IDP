@@ -603,6 +603,7 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                   const client = process.env.AZURE_CLIENT_ID;
                   const secret = process.env.AZURE_CLIENT_SECRET;
                   const sub = process.env.AZURE_SUBSCRIPTION_ID;
+                  const ghToken = process.env.GITHUB_TOKEN;
 
                   let liveUrl = `https://${webAppName}.azurewebsites.net`;
 
@@ -622,14 +623,93 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                       const tokenData = await tokenRes.json();
                       const armToken = tokenData.access_token;
 
-                      const siteRes = await fetch(
+                      // 1. Check or Provision App Service in resourceGroup if missing
+                      let siteRes = await fetch(
                         `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}?api-version=2022-03-01`,
                         { headers: { Authorization: `Bearer ${armToken}` } }
                       );
+
+                      if (siteRes.status === 404) {
+                        siteRes = await fetch(
+                          `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}?api-version=2022-03-01`,
+                          {
+                            method: 'PUT',
+                            headers: { Authorization: `Bearer ${armToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              location: 'westus3',
+                              properties: {
+                                serverFarmId: `/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/serverfarms/ASP-devopsmaf-95c3`,
+                                siteConfig: {
+                                  linuxFxVersion: 'NODE|20-lts',
+                                  appCommandLine: 'npm start',
+                                },
+                              },
+                            }),
+                          }
+                        );
+                      }
+
                       if (siteRes.ok) {
                         const siteData = await siteRes.json();
                         if (siteData.properties?.defaultHostName) {
                           liveUrl = `https://${siteData.properties.defaultHostName}`;
+                        }
+                      }
+
+                      // 2. Perform live ZipDeploy of application code from GitHub
+                      if (ghToken) {
+                        try {
+                          const zipRes = await fetch(`https://api.github.com/repos/${repoFullName}/zipball/main`, {
+                            headers: {
+                              Authorization: `Bearer ${ghToken}`,
+                              'User-Agent': 'Backstage-Azure-Deployer',
+                            },
+                          });
+
+                          if (zipRes.ok) {
+                            const rawZipBuffer = Buffer.from(await zipRes.arrayBuffer());
+                            const AdmZip = require('adm-zip');
+                            const rawZip = new AdmZip(rawZipBuffer);
+                            const entries = rawZip.getEntries();
+                            const cleanZip = new AdmZip();
+                            const prefix = entries[0]?.entryName.split('/')[0] + '/';
+                            for (const entry of entries) {
+                              if (!entry.isDirectory && entry.entryName.startsWith(prefix)) {
+                                const relativePath = entry.entryName.slice(prefix.length);
+                                if (relativePath) {
+                                  cleanZip.addFile(relativePath, entry.getData());
+                                }
+                              }
+                            }
+                            const deploymentZip = cleanZip.toBuffer();
+
+                            // Get Kudu publishing credentials
+                            const xmlRes = await fetch(
+                              `https://management.azure.com/subscriptions/${sub}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${webAppName}/publishxml?api-version=2022-03-01`,
+                              { method: 'POST', headers: { Authorization: `Bearer ${armToken}` } }
+                            );
+                            if (xmlRes.ok) {
+                              const xml = await xmlRes.text();
+                              const user = xml.split('userName="')[1]?.split('"')[0];
+                              const pwd = xml.split('userPWD="')[1]?.split('"')[0];
+                              const rawPublishUrlMatch = xml.match(/publishUrl="([^":]+)/);
+                              const scmHost = rawPublishUrlMatch ? rawPublishUrlMatch[1] : `${webAppName}.scm.azurewebsites.net`;
+
+                              if (user && pwd) {
+                                const basicAuth = `Basic ${Buffer.from(`${user}:${pwd}`).toString('base64')}`;
+                                await fetch(`https://${scmHost}/api/zipdeploy`, {
+                                  method: 'POST',
+                                  headers: {
+                                    Authorization: basicAuth,
+                                    'Content-Type': 'application/octet-stream',
+                                  },
+                                  body: deploymentZip,
+                                });
+                              }
+                            }
+                          }
+                        } catch (kuduErr) {
+                          // Continue with ARM restart fallback
                         }
                       }
 
