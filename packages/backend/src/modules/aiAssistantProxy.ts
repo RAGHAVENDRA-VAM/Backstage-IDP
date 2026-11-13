@@ -578,7 +578,98 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
                 return;
               }
 
-              // 2. If required parameters are missing, prompt user clearly in structured format
+              // 2. Real-time Cloud Verification of External Targets (GitHub Repo & Azure Web App)
+              const ghToken = process.env.GITHUB_TOKEN;
+              const tenant = process.env.AZURE_TENANT_ID;
+              const client = process.env.AZURE_CLIENT_ID;
+              const secret = process.env.AZURE_CLIENT_SECRET;
+              const sub = process.env.AZURE_SUBSCRIPTION_ID;
+
+              // Validate GitHub repository existence if repoFullName or repoUrl provided
+              const targetRepo = extracted.repoFullName || (extracted.repoUrl && extracted.repoUrl.replace(/https?:\/\/github\.com\//, ''));
+              if (targetRepo && ghToken && !targetRepo.includes('dev.azure.com') && targetRepo.includes('/')) {
+                try {
+                  const ghRes = await fetch(`https://api.github.com/repos/${targetRepo}`, {
+                    headers: {
+                      Authorization: `Bearer ${ghToken}`,
+                      'User-Agent': 'Backstage-Azure-Deployer',
+                    },
+                  });
+                  if (ghRes.status === 404) {
+                    res.json({
+                      reply: `### Parameter Validation Error: Repository Not Found\n\n` +
+                        `The specified GitHub repository **\`${targetRepo}\`** could not be found or is inaccessible.\n\n` +
+                        `- **Provided Value**: \`${targetRepo}\`\n` +
+                        `- **Status**: \`404 Not Found\`\n\n` +
+                        `**Action Required**:\n` +
+                        `Please verify that the repository name is spelled correctly in the format \`owner/repo\` (for example, \`RAGHAVENDRA-VAM/Claims_UI\`) and that your account has read access.`,
+                      provider: 'acme-autonomous-scaffolder',
+                      status: 'VALIDATION_ERROR',
+                      templateId: matchedTemplate.id,
+                      timestamp: new Date().toISOString(),
+                    });
+                    return;
+                  }
+                } catch {
+                  // network fallback
+                }
+              }
+
+              // Validate Azure App Service existence if webAppName provided
+              if (extracted.webAppName && tenant && client && secret && sub) {
+                try {
+                  const tokenRes = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                      grant_type: 'client_credentials',
+                      client_id: client,
+                      client_secret: secret,
+                      scope: 'https://management.azure.com/.default',
+                    }),
+                  });
+
+                  if (tokenRes.ok) {
+                    const tokenData = await tokenRes.json();
+                    const armToken = tokenData.access_token;
+                    const sitesRes = await fetch(
+                      `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.Web/sites?api-version=2022-03-01`,
+                      { headers: { Authorization: `Bearer ${armToken}` } }
+                    );
+
+                    if (sitesRes.ok) {
+                      const sitesData = await sitesRes.json();
+                      const matchingSite = (sitesData.value || []).find((s: any) =>
+                        s.name.toLowerCase() === String(extracted.webAppName).toLowerCase()
+                      );
+
+                      if (!matchingSite) {
+                        const availableNames = (sitesData.value || []).map((s: any) => `\`${s.name}\``).join(', ');
+                        res.json({
+                          reply: `### Parameter Validation Error: Azure Web App Not Found\n\n` +
+                            `The target Azure Web App **\`${extracted.webAppName}\`** was not found under Azure subscription \`${sub}\`.\n\n` +
+                            `- **Provided Value**: \`${extracted.webAppName}\`\n` +
+                            `- **Active Web Apps in Subscription**: ${availableNames || 'None'}\n\n` +
+                            `**Action Required**:\n` +
+                            `Please correct the Web App name to match an active Azure App Service, or provision a new one via [**Create &rarr; Azure Web App Infrastructure**](/create).`,
+                          provider: 'acme-autonomous-scaffolder',
+                          status: 'VALIDATION_ERROR',
+                          templateId: matchedTemplate.id,
+                          timestamp: new Date().toISOString(),
+                        });
+                        return;
+                      } else {
+                        // Automatically bind the true resourceGroup from ARM site metadata
+                        extracted.resourceGroup = matchingSite.id.split('/')[4] || extracted.resourceGroup || 'devops-maf';
+                      }
+                    }
+                  }
+                } catch {
+                  // network fallback
+                }
+              }
+
+              // 3. If required parameters are missing, prompt user clearly in structured format
               if (missing.length > 0) {
                 res.json({
                   reply: renderTemplateSpecification(matchedTemplate),
