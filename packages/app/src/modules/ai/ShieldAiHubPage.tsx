@@ -37,6 +37,12 @@ import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
 import CloudDoneIcon from '@material-ui/icons/CloudDone';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import { Header, Page, Content } from '@backstage/core-components';
+import { marked } from 'marked';
+
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -128,12 +134,37 @@ const useStyles = makeStyles(theme => ({
       fontWeight: 700,
       color: theme.palette.type === 'dark' ? '#60a5fa' : '#0284c7',
     },
-    '& ul': {
-      paddingLeft: 20,
+    '& h4': {
+      fontSize: '0.95rem',
+      margin: '6px 0 4px 0',
+      fontWeight: 600,
+    },
+    '& ul, & ol': {
+      paddingLeft: 22,
       margin: '6px 0',
     },
     '& li': {
       marginBottom: 4,
+      lineHeight: 1.5,
+    },
+    '& p': {
+      margin: '6px 0',
+      lineHeight: 1.5,
+    },
+    '& a': {
+      color: '#0078D4',
+      fontWeight: 600,
+      textDecoration: 'underline',
+    },
+    '& pre': {
+      backgroundColor: theme.palette.type === 'dark' ? '#09090b' : '#1e293b',
+      color: '#f8fafc',
+      padding: '10px 14px',
+      borderRadius: 8,
+      fontFamily: 'Consolas, Monaco, monospace',
+      fontSize: '0.85rem',
+      overflowX: 'auto',
+      margin: '8px 0',
     },
     '& code': {
       backgroundColor: theme.palette.type === 'dark' ? '#3f3f46' : '#e2e8f0',
@@ -408,18 +439,15 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                     key={idx}
                     className={m.role === 'user' ? classes.userBubble : classes.assistantBubble}
                   >
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: m.content
-                          .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #0078D4; font-weight: 700; text-decoration: underline;">$1</a>')
-                          .replace(/### (.*?)\n/g, '<h3 style="margin: 6px 0;">$1</h3>')
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                          .replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 4px;">$1</code>')
-                          .replace(/\n- (.*?)(?=\n|$)/g, '<li>$1</li>')
-                          .replace(/\n\n/g, '<br/>'),
-                      }}
-                    />
+                    {m.role === 'user' ? (
+                      m.content
+                    ) : (
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: marked.parse(m.content) as string,
+                        }}
+                      />
+                    )}
                   </div>
                 ))}
                 {chatLoading && (

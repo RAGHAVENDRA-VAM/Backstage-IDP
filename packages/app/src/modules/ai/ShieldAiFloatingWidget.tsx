@@ -16,6 +16,12 @@ import SendIcon from '@material-ui/icons/Send';
 import LaunchIcon from '@material-ui/icons/Launch';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { marked } from 'marked';
+
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
 
 const useStyles = makeStyles(theme => ({
   fabContainer: {
@@ -117,21 +123,43 @@ const useStyles = makeStyles(theme => ({
     boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
     '& h3': {
       fontSize: '0.95rem',
-      margin: '0 0 6px 0',
+      margin: '8px 0 4px 0',
       fontWeight: 600,
     },
-    '& ul': {
-      paddingLeft: 18,
-      margin: '4px 0',
+    '& h4': {
+      fontSize: '0.9rem',
+      margin: '6px 0 2px 0',
+      fontWeight: 600,
+    },
+    '& ul, & ol': {
+      paddingLeft: 20,
+      margin: '6px 0',
+    },
+    '& li': {
+      margin: '3px 0',
     },
     '& p': {
-      margin: '4px 0',
+      margin: '6px 0',
+      lineHeight: 1.5,
+    },
+    '& a': {
+      color: '#0078D4',
+      fontWeight: 600,
+      textDecoration: 'underline',
+    },
+    '& pre': {
+      backgroundColor: theme.palette.type === 'dark' ? '#18181b' : '#f4f4f5',
+      padding: '8px 12px',
+      borderRadius: 6,
+      overflowX: 'auto',
+      margin: '6px 0',
+      border: `1px solid ${theme.palette.divider}`,
     },
     '& code': {
       backgroundColor: theme.palette.type === 'dark' ? '#3f3f46' : '#e5e7eb',
-      padding: '2px 4px',
+      padding: '2px 5px',
       borderRadius: 4,
-      fontSize: '0.8rem',
+      fontSize: '0.82rem',
       fontFamily: 'monospace',
     },
   },
@@ -341,18 +369,15 @@ export const AcmeAiFloatingWidget: React.FC = () => {
                 key={idx}
                 className={m.role === 'user' ? classes.userBubble : classes.assistantBubble}
               >
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: m.content
-                      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #0078D4; font-weight: 700; text-decoration: underline;">$1</a>')
-                      .replace(/### (.*?)\n/g, '<h3 style="margin: 6px 0;">$1</h3>')
-                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                      .replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 4px;">$1</code>')
-                      .replace(/\n- (.*?)(?=\n|$)/g, '<li>$1</li>')
-                      .replace(/\n\n/g, '<br/>'),
-                  }}
-                />
+                {m.role === 'user' ? (
+                  m.content
+                ) : (
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: marked.parse(m.content) as string,
+                    }}
+                  />
+                )}
               </div>
             ))}
             {loading && (

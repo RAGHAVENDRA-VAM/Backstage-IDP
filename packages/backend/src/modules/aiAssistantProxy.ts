@@ -456,22 +456,22 @@ export const aiAssistantProxyPlugin = createBackendPlugin({
 
         // Helper: Render enterprise-grade template specification prompt for chat
         function renderTemplateSpecification(template: TemplateMeta): string {
-          let out = `### Template: ${template.title}\n\n`;
-          out += `**Template ID**: \`${template.id}\`  \n`;
-          out += `**Description**: ${template.description}\n\n`;
-          out += `Enter the parameters below into the chat:\n\n`;
-          template.params.forEach((p, idx) => {
-            const reqTag = p.required ? '*(Required)*' : '*(Optional)*';
-            const enumText = p.enum ? ` - Allowed: \`${p.enum.join('`, `')}\`` : '';
-            const desc = p.description ? ` - ${p.description}` : '';
-            out += `${idx + 1}. **${p.title}** ${reqTag}${enumText}${desc}\n`;
+          let out = `I can help you trigger **${template.title}**.\n\n`;
+          out += `Please provide the following required details:\n`;
+          const reqs = template.params.filter(p => p.required);
+          reqs.forEach((p, idx) => {
+            const allowed = p.enum ? ` (Options: ${p.enum.join(', ')})` : '';
+            out += `${idx + 1}. **${p.title}**${allowed}\n`;
           });
-          out += `\n**Quick Copy Template** (copy below, fill values, and send):\n\`\`\`text\n`;
+          const opts = template.params.filter(p => !p.required);
+          if (opts.length > 0) {
+            out += `\n*Optional*: ${opts.map(p => p.title).join(', ')}\n`;
+          }
+          out += `\nYou can reply in natural language or send them in this format:\n`;
           template.params.forEach(p => {
-            out += `${p.title}: \n`;
+            out += `- ${p.title}: <your_value>\n`;
           });
-          out += `\`\`\`\n\n*You can also run this template interactively with dropdown pickers under [**Create / Scaffolder**](/create).*`;
-          return out;
+          return out.trim();
         }
 
         // Extract parameters from multiline text and conversation history
