@@ -105,6 +105,8 @@ const useStyles = makeStyles(theme => ({
     borderRadius: '16px 16px 2px 16px',
     maxWidth: '75%',
     fontSize: '0.9rem',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
     boxShadow: '0 2px 6px rgba(0,120,212,0.25)',
   },
   assistantBubble: {
@@ -115,6 +117,8 @@ const useStyles = makeStyles(theme => ({
     borderRadius: '16px 16px 16px 2px',
     maxWidth: '82%',
     fontSize: '0.9rem',
+    whiteSpace: 'normal',
+    wordBreak: 'break-word',
     border: `1px solid ${theme.palette.divider}`,
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
     '& h3': {
@@ -470,7 +474,10 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                   fullWidth
                   variant="outlined"
                   size="small"
-                  placeholder="Ask about microservices, owners, deployment runbooks, or architecture..."
+                  multiline
+                  minRows={1}
+                  maxRows={4}
+                  placeholder="Ask about services or enter template parameters (Shift+Enter for newline)..."
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => {
@@ -486,7 +493,7 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                   onClick={() => handleSendChat()}
                   disabled={!chatInput.trim() || chatLoading}
                   endIcon={<SendIcon />}
-                  style={{ textTransform: 'none', fontWeight: 700, minWidth: 100 }}
+                  style={{ textTransform: 'none', fontWeight: 700, minWidth: 100, height: 40 }}
                 >
                   Send
                 </Button>

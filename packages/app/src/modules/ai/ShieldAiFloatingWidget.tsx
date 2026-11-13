@@ -100,6 +100,7 @@ const useStyles = makeStyles(theme => ({
     maxWidth: '82%',
     fontSize: '0.875rem',
     wordBreak: 'break-word',
+    whiteSpace: 'pre-wrap',
     boxShadow: '0 2px 6px rgba(0,120,212,0.25)',
   },
   assistantBubble: {
@@ -111,6 +112,7 @@ const useStyles = makeStyles(theme => ({
     maxWidth: '88%',
     fontSize: '0.875rem',
     wordBreak: 'break-word',
+    whiteSpace: 'normal',
     border: `1px solid ${theme.palette.divider}`,
     boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
     '& h3': {
@@ -151,9 +153,9 @@ const useStyles = makeStyles(theme => ({
     cursor: 'pointer',
   },
   inputArea: {
-    padding: '10px 12px',
+    padding: '8px 12px',
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 8,
     backgroundColor: theme.palette.background.paper,
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -161,9 +163,13 @@ const useStyles = makeStyles(theme => ({
   inputField: {
     flex: 1,
     '& .MuiOutlinedInput-root': {
-      borderRadius: 20,
-      padding: '4px 12px',
+      borderRadius: 16,
+      padding: '8px 12px',
       fontSize: '0.875rem',
+      lineHeight: 1.4,
+    },
+    '& .MuiOutlinedInput-multiline': {
+      padding: '6px 12px',
     },
   },
 }));
@@ -379,7 +385,10 @@ export const AcmeAiFloatingWidget: React.FC = () => {
             <TextField
               variant="outlined"
               size="small"
-              placeholder="Ask Acme AI..."
+              multiline
+              minRows={1}
+              maxRows={4}
+              placeholder="Ask Acme AI or enter template parameters (Shift+Enter for new line)..."
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
@@ -390,6 +399,7 @@ export const AcmeAiFloatingWidget: React.FC = () => {
               size="small"
               onClick={() => handleSend()}
               disabled={!input.trim() || loading}
+              style={{ marginBottom: 4 }}
             >
               <SendIcon fontSize="small" />
             </IconButton>
