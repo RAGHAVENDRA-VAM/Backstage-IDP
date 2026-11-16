@@ -286,35 +286,28 @@ export const EntityAdoTabContent = () => {
 
   return (
     <div className={classes.root}>
-      {/* Enterprise IDP Banner */}
-      <div className={classes.banner}>
-        <div>
-          <Typography className={classes.bannerTitle}>
-            <CloudQueueIcon style={{ fontSize: 32 }} />
-            {repo} — Azure DevOps Pipelines & Delivery
-          </Typography>
-          <Typography className={classes.bannerSubtitle}>
-            Continuous Integration, multi-stage release pipelines, pull request code reviews, and work tracking in Azure DevOps.
-          </Typography>
-          <div className={classes.badgeRow}>
-            <Chip label={`Organization: ${org}`} size="small" className={classes.badgePill} />
-            <Chip label={`Project: ${project}`} size="small" className={classes.badgePill} />
-            <Chip label={`Repository: ${repo}`} size="small" className={classes.badgePill} />
-            <Chip label="Service Connection: Active" size="small" className={classes.badgePill} />
-          </div>
-        </div>
+      {/* Enterprise IDP Header Toolbar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" style={{ gap: 16 }}>
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
+          <Chip label="Azure DevOps" color="primary" size="small" style={{ fontWeight: 700 }} />
+          <Chip label={`Org: ${org}`} size="small" variant="outlined" />
+          <Chip label={`Project: ${project}`} size="small" variant="outlined" />
+          <Chip label="Service Connection: Active" size="small" style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', fontWeight: 600 }} />
+        </Box>
         <Box display="flex" alignItems="center" style={{ gap: 12 }}>
           <Tooltip title="Refresh live telemetry">
             <IconButton
-              style={{ color: '#ffffff', border: '1px solid rgba(255,255,255,0.25)' }}
+              size="small"
               onClick={() => setRefreshIndex(c => c + 1)}
+              style={{ border: '1px solid rgba(0, 0, 0, 0.12)' }}
             >
-              <RefreshIcon />
+              <RefreshIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Button
             variant="contained"
             color="primary"
+            size="small"
             startIcon={<PlayCircleOutlineIcon />}
             href="/create/templates/default/trigger-ado-pipeline"
             style={{ fontWeight: 700, textTransform: 'none', boxShadow: 'none' }}
@@ -323,16 +316,17 @@ export const EntityAdoTabContent = () => {
           </Button>
           <Button
             variant="outlined"
+            size="small"
             startIcon={<OpenInNewIcon />}
             href={`https://dev.azure.com/${org}/${project}/_git/${repo}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#ffffff', borderColor: 'rgba(255,255,255,0.3)', textTransform: 'none', fontWeight: 600 }}
+            style={{ textTransform: 'none', fontWeight: 600 }}
           >
             Open in ADO
           </Button>
         </Box>
-      </div>
+      </Box>
 
       {/* Enterprise KPI Metrics Row */}
       <Grid container spacing={3} style={{ marginBottom: 24 }}>
