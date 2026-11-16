@@ -70,10 +70,10 @@ const useStyles = makeStyles(theme => ({
     paddingBottom: theme.spacing(6),
   },
   heroBanner: {
-    background: 'linear-gradient(90deg, #005B4B 0%, #006D8F 100%)',
+    background: 'linear-gradient(90deg, #1e293b 0%, #0f172a 100%)',
     color: '#ffffff',
     borderRadius: theme.shape.borderRadius,
-    padding: theme.spacing(4, 5),
+    padding: theme.spacing(3.5, 4.5),
     marginBottom: theme.spacing(3),
     boxShadow: theme.shadows[2],
     position: 'relative',
@@ -118,7 +118,7 @@ const useStyles = makeStyles(theme => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.type === 'dark' ? '#1e293b' : '#f8fafc',
   },
   tabLabel: {
     fontWeight: 600,

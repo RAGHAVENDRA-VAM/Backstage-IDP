@@ -25,12 +25,13 @@ import { useNavigate } from 'react-router-dom';
 
 const useStyles = makeStyles(theme => ({
   heroBanner: {
-    background: 'linear-gradient(135deg, #1e293b 0%, #0f766e 100%)',
+    background: 'linear-gradient(90deg, #1e293b 0%, #0f172a 100%)',
     color: '#ffffff',
     borderRadius: theme.shape.borderRadius,
     padding: theme.spacing(3.5, 4),
     marginBottom: theme.spacing(3),
-    border: '1px solid rgba(255, 255, 255, 0.12)',
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: theme.shadows[2],
   },
   card: {
     borderRadius: theme.shape.borderRadius,
