@@ -337,6 +337,120 @@ export const adoProxyPlugin = createBackendPlugin({
           }
         });
 
+        // Get Pipeline Runs / Builds for a given ADO project / repository
+        router.get('/pipeline-runs', async (req, res) => {
+          const { organization, project, repository, pipelineId, top = 20 } = req.query;
+
+          if (!organization || !project) {
+            res.status(400).json({ error: 'organization and project are required' });
+            return;
+          }
+
+          try {
+            const token = getAdoToken();
+            if (!token) return res.status(500).json({ error: 'No token' });
+            const authHeader = `Basic ${Buffer.from(`:${token}`).toString('base64')}`;
+
+            let url = `https://dev.azure.com/${encodeURIComponent(String(organization))}/${encodeURIComponent(String(project))}/_apis/build/builds?api-version=7.1&$top=${top}`;
+            if (pipelineId) {
+              url += `&definitions=${encodeURIComponent(String(pipelineId))}`;
+            }
+
+            const response = await fetch(url, { headers: { Authorization: authHeader } });
+            if (!response.ok) {
+              const err = await response.text();
+              console.error('ADO Pipeline Runs API error:', err);
+              res.status(response.status).json({ error: 'Failed to fetch pipeline runs' });
+              return;
+            }
+
+            const data = await response.json();
+            let builds = data.value || [];
+
+            // If repository was provided and no specific pipelineId filter, filter builds for that repository
+            if (repository && !pipelineId) {
+              const rName = String(repository).toLowerCase();
+              builds = builds.filter((b: any) => {
+                const bRepo = (b.repository?.name || '').toLowerCase();
+                const bId = (b.repository?.id || '').toLowerCase();
+                return bRepo === rName || bId === rName;
+              });
+            }
+
+            const runs = builds.map((b: any) => ({
+              id: b.id,
+              buildNumber: b.buildNumber,
+              status: b.status, // inProgress, completed, notStarted
+              result: b.result, // succeeded, failed, canceled
+              queueTime: b.queueTime,
+              startTime: b.startTime,
+              finishTime: b.finishTime,
+              sourceBranch: (b.sourceBranch || '').replace(/^refs\/heads\//, ''),
+              sourceVersion: (b.sourceVersion || '').substring(0, 7),
+              requestedFor: {
+                displayName: b.requestedFor?.displayName,
+                imageUrl: b.requestedFor?.imageUrl,
+              },
+              definition: {
+                id: b.definition?.id,
+                name: b.definition?.name,
+              },
+              webUrl: b._links?.web?.href || `https://dev.azure.com/${organization}/${project}/_build/results?buildId=${b.id}`,
+            }));
+
+            res.json({ runs });
+          } catch (e: any) {
+            res.status(500).json({ error: e.message });
+          }
+        });
+
+        // Get Pull Requests for a given ADO project / repository
+        router.get('/pull-requests', async (req, res) => {
+          const { organization, project, repository, status = 'all', top = 25 } = req.query;
+
+          if (!organization || !project || !repository) {
+            res.status(400).json({ error: 'organization, project, and repository are required' });
+            return;
+          }
+
+          try {
+            const token = getAdoToken();
+            if (!token) return res.status(500).json({ error: 'No token' });
+            const authHeader = `Basic ${Buffer.from(`:${token}`).toString('base64')}`;
+
+            const url = `https://dev.azure.com/${encodeURIComponent(String(organization))}/${encodeURIComponent(String(project))}/_apis/git/repositories/${encodeURIComponent(String(repository))}/pullrequests?searchCriteria.status=${encodeURIComponent(String(status))}&$top=${top}&api-version=7.1`;
+            const response = await fetch(url, { headers: { Authorization: authHeader } });
+
+            if (!response.ok) {
+              const err = await response.text();
+              console.error('ADO PRs API error:', err);
+              res.status(response.status).json({ error: 'Failed to fetch pull requests' });
+              return;
+            }
+
+            const data = await response.json();
+            const pullRequests = (data.value || []).map((pr: any) => ({
+              pullRequestId: pr.pullRequestId,
+              title: pr.title,
+              description: pr.description,
+              status: pr.status, // active, completed, abandoned
+              creationDate: pr.creationDate,
+              closedDate: pr.closedDate,
+              sourceBranch: (pr.sourceRefName || '').replace(/^refs\/heads\//, ''),
+              targetBranch: (pr.targetRefName || '').replace(/^refs\/heads\//, ''),
+              createdBy: {
+                displayName: pr.createdBy?.displayName,
+                imageUrl: pr.createdBy?.imageUrl,
+              },
+              webUrl: `https://dev.azure.com/${organization}/${project}/_git/${repository}/pullrequest/${pr.pullRequestId}`,
+            }));
+
+            res.json({ pullRequests });
+          } catch (e: any) {
+            res.status(500).json({ error: e.message });
+          }
+        });
+
         // Get status of a specific pipeline run
         router.get('/pipeline-run-status', async (req, res) => {
           const { organization, project, pipelineId, runId } = req.query;

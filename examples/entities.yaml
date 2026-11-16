@@ -10,6 +10,7 @@ metadata:
   description: "Enterprise Claims FNOL Intake & Policyholder Portal. Full-stack React app deployed to Azure Web App with live Jira sprint backlog, GitHub Actions CI/CD, and Datadog APM."
   annotations:
     github.com/project-slug: 'RAGHAVENDRA-VAM/Claims_UI'
+    dev.azure.com/project-repo: 'ValueMomentum-DCS/DOJO - POC/Vam-insurance-portal'
     jira/project-key: 'SCRUM'
     azure.com/app-service-name: 'valora-insurance-ui'
     azure.com/resource-group: 'devops-maf'

@@ -16,6 +16,8 @@ app:
                 title: GitHub Actions
             - '/pull-requests':
                 title: Pull Requests
+            - '/azure-devops':
+                title: Azure DevOps
             - '/azure':
                 title: Azure
             - '/datadog':

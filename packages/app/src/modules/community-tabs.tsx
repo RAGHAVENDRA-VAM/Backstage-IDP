@@ -40,6 +40,7 @@ const jiraEntityContentExtension = EntityContentBlueprint.make({
 
 import { EntityGithubActionsTabContent } from './github/EntityGithubActionsTabContent';
 import { EntityGithubPullRequestsTabContent } from './github/EntityGithubPullRequestsTabContent';
+import { EntityAdoTabContent } from './ado/EntityAdoTabContent';
 
 const githubActionsEntityContentExtension = EntityContentBlueprint.make({
   name: 'github-actions',
@@ -65,12 +66,27 @@ const githubPullRequestsEntityContentExtension = EntityContentBlueprint.make({
   },
 });
 
+const adoEntityContentExtension = EntityContentBlueprint.make({
+  name: 'azure-devops',
+  params: {
+    path: '/azure-devops',
+    title: 'Azure DevOps',
+    filter: (entity) => Boolean(
+      entity.metadata.annotations?.['dev.azure.com/project-repo'] ||
+      entity.metadata.annotations?.['dev.azure.com/project'] ||
+      entity.metadata.annotations?.['azure.com/project-repo']
+    ),
+    loader: async () => <EntityAdoTabContent />,
+  },
+});
+
 export const customCatalogTabsModule = createFrontendModule({
   pluginId: 'catalog',
   extensions: [
     jiraEntityContentExtension,
     githubActionsEntityContentExtension,
     githubPullRequestsEntityContentExtension,
+    adoEntityContentExtension,
   ],
 });
 
