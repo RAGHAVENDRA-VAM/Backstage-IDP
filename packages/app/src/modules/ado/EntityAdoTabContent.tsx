@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Card,
-  CardContent,
   Chip,
   Grid,
   Typography,
@@ -22,6 +21,7 @@ import {
   Tabs,
   Tab,
   Avatar,
+  Tooltip,
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
@@ -33,6 +33,7 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import CancelIcon from '@material-ui/icons/Cancel';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import AssignmentIcon from '@material-ui/icons/Assignment';
+import BlockIcon from '@material-ui/icons/Block';
 import useAsync from 'react-use/lib/useAsync';
 import { useEntity } from '@backstage/plugin-catalog-react';
 import { useApi, discoveryApiRef } from '@backstage/core-plugin-api';
@@ -42,7 +43,7 @@ const useStyles = makeStyles(theme => ({
     padding: theme.spacing(3),
   },
   banner: {
-    background: 'linear-gradient(90deg, #0078d4 0%, #005a9e 100%)',
+    background: 'linear-gradient(90deg, #1e293b 0%, #0f172a 100%)',
     color: '#ffffff',
     borderRadius: theme.shape.borderRadius,
     padding: theme.spacing(3.5, 4.5),
@@ -56,20 +57,52 @@ const useStyles = makeStyles(theme => ({
   },
   bannerTitle: {
     fontWeight: 700,
-    letterSpacing: '-0.5px',
+    fontSize: '1.75rem',
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(1.5),
   },
+  bannerSubtitle: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    maxWidth: 820,
+    fontSize: '0.95rem',
+    marginTop: theme.spacing(0.5),
+  },
+  badgeRow: {
+    display: 'flex',
+    gap: theme.spacing(1),
+    marginTop: theme.spacing(1.5),
+    flexWrap: 'wrap',
+  },
+  badgePill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    color: '#ffffff',
+    fontWeight: 600,
+    fontSize: '0.76rem',
+    border: '1px solid rgba(255, 255, 255, 0.25)',
+  },
   statCard: {
+    padding: theme.spacing(2.5),
     borderRadius: theme.shape.borderRadius,
-    border: '1px solid rgba(0, 0, 0, 0.08)',
-    boxShadow: 'none',
+    border: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
+    boxShadow: theme.shadows[1],
     transition: 'transform 0.2s, box-shadow 0.2s',
     '&:hover': {
       transform: 'translateY(-2px)',
       boxShadow: theme.shadows[3],
     },
+  },
+  statNumber: {
+    fontWeight: 700,
+    fontSize: '1.8rem',
+    color: theme.palette.primary.main,
+  },
+  tabsPaper: {
+    marginBottom: theme.spacing(2.5),
+    borderRadius: theme.shape.borderRadius,
+    border: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
   },
   filterSection: {
     display: 'flex',
@@ -79,20 +112,67 @@ const useStyles = makeStyles(theme => ({
     flexWrap: 'wrap',
     gap: theme.spacing(2),
   },
+  tablePaper: {
+    borderRadius: theme.shape.borderRadius,
+    border: `1px solid ${theme.palette.divider}`,
+    overflow: 'hidden',
+    boxShadow: theme.shadows[1],
+  },
   table: {
-    minWidth: 650,
+    minWidth: 700,
   },
   tableHead: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.palette.type === 'dark' ? '#1e293b' : '#f8fafc',
     '& th': {
-      fontWeight: 600,
-      color: '#475569',
+      fontWeight: 700,
+      fontSize: '0.8rem',
+      textTransform: 'uppercase',
+      letterSpacing: '0.05em',
+      color: theme.palette.type === 'dark' ? '#94a3b8' : '#475569',
+      borderBottom: `1px solid ${theme.palette.divider}`,
     },
   },
   tableRow: {
     '&:hover': {
-      backgroundColor: '#f1f5f9',
+      backgroundColor: theme.palette.type === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
     },
+    '& td': {
+      borderBottom: `1px solid ${theme.palette.divider}`,
+      fontSize: '0.875rem',
+    },
+  },
+  codeChip: {
+    fontFamily: 'Consolas, Monaco, monospace',
+    fontSize: '0.8rem',
+    borderRadius: 4,
+  },
+  statusSuccess: {
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    color: '#16a34a',
+    border: '1px solid rgba(34, 197, 94, 0.35)',
+    fontWeight: 700,
+    fontSize: '0.75rem',
+  },
+  statusFailed: {
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    color: '#dc2626',
+    border: '1px solid rgba(239, 68, 68, 0.35)',
+    fontWeight: 700,
+    fontSize: '0.75rem',
+  },
+  statusProgress: {
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
+    color: '#0284c7',
+    border: '1px solid rgba(14, 165, 233, 0.35)',
+    fontWeight: 700,
+    fontSize: '0.75rem',
+  },
+  statusCanceled: {
+    backgroundColor: 'rgba(100, 116, 139, 0.12)',
+    color: '#64748b',
+    border: '1px solid rgba(100, 116, 139, 0.35)',
+    fontWeight: 700,
+    fontSize: '0.75rem',
   },
 }));
 
@@ -104,7 +184,7 @@ export const EntityAdoTabContent = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshIndex, setRefreshIndex] = useState(0);
 
-  // Parse annotations: dev.azure.com/project-repo format is "Org/Project/Repo" or separate annotations
+  // Parse annotations: dev.azure.com/project-repo format is "Org/Project/Repo"
   const projectRepo = entity.metadata.annotations?.['dev.azure.com/project-repo'] || '';
   const parts = projectRepo.split('/');
   const org = parts[0] || entity.metadata.annotations?.['dev.azure.com/organization'] || 'ValueMomentum-DCS';
@@ -135,135 +215,187 @@ export const EntityAdoTabContent = () => {
   const prs = value?.prs || [];
   const workItems = value?.workItems || [];
 
-  const successfulRuns = runs.filter(r => r.result === 'succeeded').length;
-  const activePRs = prs.filter(p => p.status === 'active').length;
+  const successfulRuns = runs.filter((r: any) => r.result === 'succeeded').length;
+  const failedRuns = runs.filter((r: any) => r.result === 'failed').length;
+  const activePRs = prs.filter((p: any) => p.status === 'active').length;
 
-  const filteredRuns = runs.filter(r =>
+  const filteredRuns = runs.filter((r: any) =>
     (r.buildNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (r.definition?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (r.sourceBranch || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (r.sourceBranch || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (r.requestedFor?.displayName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredPRs = prs.filter(p =>
+  const filteredPRs = prs.filter((p: any) =>
     (p.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.sourceBranch || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.targetBranch || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.createdBy?.displayName || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredWorkItems = workItems.filter((wi: any) =>
+    String(wi.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (wi.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (wi.type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (wi.state || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const renderStatusChip = (status: string, result?: string) => {
     if (result === 'succeeded') {
-      return <Chip icon={<CheckCircleIcon style={{ color: '#16a34a' }} />} label="Succeeded" size="small" style={{ backgroundColor: '#dcfce7', color: '#166534', fontWeight: 600 }} />;
+      return (
+        <Chip
+          icon={<CheckCircleIcon style={{ color: '#16a34a', fontSize: 16 }} />}
+          label="Succeeded"
+          size="small"
+          className={classes.statusSuccess}
+        />
+      );
     }
     if (result === 'failed') {
-      return <Chip icon={<CancelIcon style={{ color: '#dc2626' }} />} label="Failed" size="small" style={{ backgroundColor: '#fee2e2', color: '#991b1b', fontWeight: 600 }} />;
+      return (
+        <Chip
+          icon={<CancelIcon style={{ color: '#dc2626', fontSize: 16 }} />}
+          label="Failed"
+          size="small"
+          className={classes.statusFailed}
+        />
+      );
+    }
+    if (result === 'canceled') {
+      return (
+        <Chip
+          icon={<BlockIcon style={{ color: '#64748b', fontSize: 16 }} />}
+          label="Canceled"
+          size="small"
+          className={classes.statusCanceled}
+        />
+      );
     }
     if (status === 'inProgress') {
-      return <Chip icon={<HourglassEmptyIcon style={{ color: '#2563eb' }} />} label="Running" size="small" style={{ backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 600 }} />;
+      return (
+        <Chip
+          icon={<HourglassEmptyIcon style={{ color: '#0284c7', fontSize: 16 }} />}
+          label="Running"
+          size="small"
+          className={classes.statusProgress}
+        />
+      );
     }
-    return <Chip label={result || status || 'Queued'} size="small" />;
+    return <Chip label={result || status || 'Queued'} size="small" variant="outlined" />;
   };
 
   return (
     <div className={classes.root}>
-      {/* Banner */}
+      {/* Enterprise IDP Banner */}
       <div className={classes.banner}>
         <div>
-          <Typography variant="h4" className={classes.bannerTitle}>
-            <CloudQueueIcon fontSize="large" /> Azure DevOps Portal
+          <Typography className={classes.bannerTitle}>
+            <CloudQueueIcon style={{ fontSize: 32 }} />
+            {repo} — Azure DevOps Pipelines & Delivery
           </Typography>
-          <Typography variant="body1" style={{ opacity: 0.9, marginTop: 4 }}>
-            Connected to <strong>{org}</strong> / <strong>{project}</strong> / <strong>{repo}</strong>
+          <Typography className={classes.bannerSubtitle}>
+            Continuous Integration, multi-stage release pipelines, pull request code reviews, and work tracking in Azure DevOps.
           </Typography>
+          <div className={classes.badgeRow}>
+            <Chip label={`Organization: ${org}`} size="small" className={classes.badgePill} />
+            <Chip label={`Project: ${project}`} size="small" className={classes.badgePill} />
+            <Chip label={`Repository: ${repo}`} size="small" className={classes.badgePill} />
+            <Chip label="Service Connection: Active" size="small" className={classes.badgePill} />
+          </div>
         </div>
-        <Box display="flex" gap={1}>
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
+          <Tooltip title="Refresh live telemetry">
+            <IconButton
+              style={{ color: '#ffffff', border: '1px solid rgba(255,255,255,0.25)' }}
+              onClick={() => setRefreshIndex(c => c + 1)}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
           <Button
             variant="contained"
-            color="secondary"
+            color="primary"
             startIcon={<PlayCircleOutlineIcon />}
-            href={`/create/templates/default/trigger-ado-pipeline`}
-            style={{ fontWeight: 600, backgroundColor: '#ffffff', color: '#0078d4' }}
+            href="/create/templates/default/trigger-ado-pipeline"
+            style={{ fontWeight: 700, textTransform: 'none', boxShadow: 'none' }}
           >
             Trigger Pipeline
           </Button>
-          <IconButton
-            style={{ color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.1)' }}
-            onClick={() => setRefreshIndex(c => c + 1)}
+          <Button
+            variant="outlined"
+            startIcon={<OpenInNewIcon />}
+            href={`https://dev.azure.com/${org}/${project}/_git/${repo}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#ffffff', borderColor: 'rgba(255,255,255,0.3)', textTransform: 'none', fontWeight: 600 }}
           >
-            <RefreshIcon />
-          </IconButton>
+            Open in ADO
+          </Button>
         </Box>
       </div>
 
-      {/* KPI Stats */}
-      <Grid container spacing={2} style={{ marginBottom: 24 }}>
+      {/* Enterprise KPI Metrics Row */}
+      <Grid container spacing={3} style={{ marginBottom: 24 }}>
         <Grid item xs={12} sm={3}>
           <Card className={classes.statCard}>
-            <CardContent>
-              <Typography color="textSecondary" variant="subtitle2" gutterBottom>
-                Total Pipeline Runs
-              </Typography>
-              <Typography variant="h4" style={{ fontWeight: 700, color: '#0078d4' }}>
-                {runs.length}
-              </Typography>
-            </CardContent>
+            <Typography variant="body2" color="textSecondary" style={{ fontWeight: 600 }}>
+              Total Executions
+            </Typography>
+            <Typography className={classes.statNumber}>
+              {runs.length}
+            </Typography>
           </Card>
         </Grid>
         <Grid item xs={12} sm={3}>
           <Card className={classes.statCard}>
-            <CardContent>
-              <Typography color="textSecondary" variant="subtitle2" gutterBottom>
-                Successful Builds
-              </Typography>
-              <Typography variant="h4" style={{ fontWeight: 700, color: '#16a34a' }}>
-                {successfulRuns}
-              </Typography>
-            </CardContent>
+            <Typography variant="body2" color="textSecondary" style={{ fontWeight: 600 }}>
+              Successful Builds
+            </Typography>
+            <Typography className={classes.statNumber} style={{ color: '#16a34a' }}>
+              {successfulRuns}
+            </Typography>
           </Card>
         </Grid>
         <Grid item xs={12} sm={3}>
           <Card className={classes.statCard}>
-            <CardContent>
-              <Typography color="textSecondary" variant="subtitle2" gutterBottom>
-                Active Pull Requests
-              </Typography>
-              <Typography variant="h4" style={{ fontWeight: 700, color: '#d97706' }}>
-                {activePRs}
-              </Typography>
-            </CardContent>
+            <Typography variant="body2" color="textSecondary" style={{ fontWeight: 600 }}>
+              Failed Executions
+            </Typography>
+            <Typography className={classes.statNumber} style={{ color: failedRuns > 0 ? '#dc2626' : '#64748b' }}>
+              {failedRuns}
+            </Typography>
           </Card>
         </Grid>
         <Grid item xs={12} sm={3}>
           <Card className={classes.statCard}>
-            <CardContent>
-              <Typography color="textSecondary" variant="subtitle2" gutterBottom>
-                Linked Work Items
-              </Typography>
-              <Typography variant="h4" style={{ fontWeight: 700, color: '#475569' }}>
-                {workItems.length}
-              </Typography>
-            </CardContent>
+            <Typography variant="body2" color="textSecondary" style={{ fontWeight: 600 }}>
+              Active Pull Requests
+            </Typography>
+            <Typography className={classes.statNumber} style={{ color: activePRs > 0 ? '#0284c7' : '#64748b' }}>
+              {activePRs}
+            </Typography>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Navigation Tabs */}
-      <Paper square style={{ marginBottom: 20 }}>
+      {/* Sub-Navigation Tabs */}
+      <Paper square className={classes.tabsPaper}>
         <Tabs
           value={activeTab}
           indicatorColor="primary"
           textColor="primary"
           onChange={(_, newVal) => setActiveTab(newVal)}
         >
-          <Tab icon={<PlayCircleOutlineIcon />} label={`Pipelines (${runs.length})`} value="pipelines" />
-          <Tab icon={<CallSplitIcon />} label={`Pull Requests (${prs.length})`} value="pullrequests" />
-          <Tab icon={<AssignmentIcon />} label={`Boards / Work Items (${workItems.length})`} value="workitems" />
+          <Tab icon={<PlayCircleOutlineIcon />} label={`Pipelines (${runs.length})`} value="pipelines" style={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab icon={<CallSplitIcon />} label={`Pull Requests (${prs.length})`} value="pullrequests" style={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab icon={<AssignmentIcon />} label={`Work Items (${workItems.length})`} value="workitems" style={{ textTransform: 'none', fontWeight: 600 }} />
         </Tabs>
       </Paper>
 
-      {/* Filter and Search */}
+      {/* Filter and Search Section */}
       <div className={classes.filterSection}>
         <TextField
-          placeholder={`Search ${activeTab}...`}
+          placeholder={`Filter ${activeTab} by name, branch, or author...`}
           variant="outlined"
           size="small"
           value={searchTerm}
@@ -275,29 +407,23 @@ export const EntityAdoTabContent = () => {
               </InputAdornment>
             ),
           }}
-          style={{ width: 320 }}
+          style={{ width: 360 }}
         />
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<OpenInNewIcon />}
-          href={`https://dev.azure.com/${org}/${project}/_git/${repo}`}
-          target="_blank"
-        >
-          Open Repository in Azure DevOps
-        </Button>
+        <Typography variant="body2" color="textSecondary">
+          Showing {activeTab === 'pipelines' ? filteredRuns.length : activeTab === 'pullrequests' ? filteredPRs.length : filteredWorkItems.length} records
+        </Typography>
       </div>
 
       {loading ? (
-        <Box display="flex" justifyContent="center" p={4}>
-          <CircularProgress />
+        <Box display="flex" justifyContent="center" alignItems="center" p={6}>
+          <CircularProgress size={36} />
         </Box>
       ) : error ? (
         <Box p={3} bgcolor="#fee2e2" color="#991b1b" borderRadius={4}>
           <Typography variant="body1">Error fetching Azure DevOps data: {error.message}</Typography>
         </Box>
       ) : activeTab === 'pipelines' ? (
-        <TableContainer component={Paper} elevation={1}>
+        <TableContainer component={Paper} className={classes.tablePaper}>
           <Table className={classes.table}>
             <TableHead className={classes.tableHead}>
               <TableRow>
@@ -313,25 +439,36 @@ export const EntityAdoTabContent = () => {
             <TableBody>
               {filteredRuns.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" style={{ padding: 32 }}>
-                    No pipeline runs found matching criteria.
+                  <TableCell colSpan={7} align="center" style={{ padding: 40 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      No pipeline runs found matching criteria.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredRuns.map((r: any) => (
                   <TableRow key={r.id} className={classes.tableRow}>
                     <TableCell>
-                      <Typography variant="body2" style={{ fontWeight: 600 }}>
+                      <Typography variant="body2" style={{ fontWeight: 600, fontFamily: 'Consolas, monospace' }}>
                         #{r.buildNumber || r.id}
                       </Typography>
                     </TableCell>
-                    <TableCell>{r.definition?.name || 'Default Pipeline'}</TableCell>
                     <TableCell>
-                      <Chip label={r.sourceBranch || 'main'} size="small" variant="outlined" />
+                      <Typography variant="body2" style={{ fontWeight: 600 }}>
+                        {r.definition?.name || 'Default Pipeline'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={r.sourceBranch || 'main'}
+                        size="small"
+                        variant="outlined"
+                        className={classes.codeChip}
+                      />
                     </TableCell>
                     <TableCell>{renderStatusChip(r.status, r.result)}</TableCell>
                     <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
+                      <Box display="flex" alignItems="center" style={{ gap: 8 }}>
                         {r.requestedFor?.imageUrl && (
                           <Avatar src={r.requestedFor.imageUrl} style={{ width: 24, height: 24 }} />
                         )}
@@ -340,7 +477,15 @@ export const EntityAdoTabContent = () => {
                     </TableCell>
                     <TableCell>{r.startTime ? new Date(r.startTime).toLocaleString() : '-'}</TableCell>
                     <TableCell align="right">
-                      <Button size="small" color="primary" href={r.webUrl} target="_blank" endIcon={<OpenInNewIcon />}>
+                      <Button
+                        size="small"
+                        color="primary"
+                        href={r.webUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        endIcon={<OpenInNewIcon fontSize="small" />}
+                        style={{ textTransform: 'none', fontWeight: 600 }}
+                      >
                         View Run
                       </Button>
                     </TableCell>
@@ -351,7 +496,7 @@ export const EntityAdoTabContent = () => {
           </Table>
         </TableContainer>
       ) : activeTab === 'pullrequests' ? (
-        <TableContainer component={Paper} elevation={1}>
+        <TableContainer component={Paper} className={classes.tablePaper}>
           <Table className={classes.table}>
             <TableHead className={classes.tableHead}>
               <TableRow>
@@ -367,15 +512,17 @@ export const EntityAdoTabContent = () => {
             <TableBody>
               {filteredPRs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" style={{ padding: 32 }}>
-                    No pull requests found.
+                  <TableCell colSpan={7} align="center" style={{ padding: 40 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      No pull requests found.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredPRs.map((pr: any) => (
                   <TableRow key={pr.pullRequestId} className={classes.tableRow}>
                     <TableCell>
-                      <Typography variant="body2" style={{ fontWeight: 600 }}>
+                      <Typography variant="body2" style={{ fontWeight: 600, fontFamily: 'Consolas, monospace' }}>
                         #{pr.pullRequestId}
                       </Typography>
                     </TableCell>
@@ -385,7 +532,9 @@ export const EntityAdoTabContent = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <code>{pr.sourceBranch}</code> → <code>{pr.targetBranch}</code>
+                      <Typography variant="body2" style={{ fontFamily: 'Consolas, monospace', fontSize: '0.8rem' }}>
+                        {pr.sourceBranch} → {pr.targetBranch}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -397,7 +546,15 @@ export const EntityAdoTabContent = () => {
                     <TableCell>{pr.createdBy?.displayName || 'Developer'}</TableCell>
                     <TableCell>{new Date(pr.creationDate).toLocaleDateString()}</TableCell>
                     <TableCell align="right">
-                      <Button size="small" color="primary" href={pr.webUrl} target="_blank" endIcon={<OpenInNewIcon />}>
+                      <Button
+                        size="small"
+                        color="primary"
+                        href={pr.webUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        endIcon={<OpenInNewIcon fontSize="small" />}
+                        style={{ textTransform: 'none', fontWeight: 600 }}
+                      >
                         Review PR
                       </Button>
                     </TableCell>
@@ -408,7 +565,7 @@ export const EntityAdoTabContent = () => {
           </Table>
         </TableContainer>
       ) : (
-        <TableContainer component={Paper} elevation={1}>
+        <TableContainer component={Paper} className={classes.tablePaper}>
           <Table className={classes.table}>
             <TableHead className={classes.tableHead}>
               <TableRow>
@@ -420,16 +577,22 @@ export const EntityAdoTabContent = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {workItems.length === 0 ? (
+              {filteredWorkItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" style={{ padding: 32 }}>
-                    No work items found.
+                  <TableCell colSpan={5} align="center" style={{ padding: 40 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      No work items found.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                workItems.map((wi: any) => (
+                filteredWorkItems.map((wi: any) => (
                   <TableRow key={wi.id} className={classes.tableRow}>
-                    <TableCell>#{wi.id}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" style={{ fontWeight: 600, fontFamily: 'Consolas, monospace' }}>
+                        #{wi.id}
+                      </Typography>
+                    </TableCell>
                     <TableCell style={{ fontWeight: 600 }}>{wi.title}</TableCell>
                     <TableCell>
                       <Chip label={wi.type || 'Task'} size="small" variant="outlined" />
@@ -438,7 +601,15 @@ export const EntityAdoTabContent = () => {
                       <Chip label={wi.state || 'Active'} size="small" color="primary" />
                     </TableCell>
                     <TableCell align="right">
-                      <Button size="small" color="primary" href={wi.url} target="_blank" endIcon={<OpenInNewIcon />}>
+                      <Button
+                        size="small"
+                        color="primary"
+                        href={wi.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        endIcon={<OpenInNewIcon fontSize="small" />}
+                        style={{ textTransform: 'none', fontWeight: 600 }}
+                      >
                         Open Work Item
                       </Button>
                     </TableCell>

@@ -85,8 +85,8 @@ export const customCatalogTabsModule = createFrontendModule({
   extensions: [
     jiraEntityContentExtension,
     githubActionsEntityContentExtension,
-    githubPullRequestsEntityContentExtension,
     adoEntityContentExtension,
+    githubPullRequestsEntityContentExtension,
   ],
 });
 
