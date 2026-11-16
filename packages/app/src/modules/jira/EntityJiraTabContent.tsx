@@ -140,35 +140,24 @@ export const EntityJiraTabContent = () => {
 
   return (
     <Box className={classes.root}>
-      {/* Header Banner */}
-      <Box className={classes.banner}>
-        <Box>
-          <Typography className={classes.bannerTitle}>
-            <CheckCircleIcon style={{ fontSize: 32 }} />
-            {entityTitle} — Jira Agile Backlog & Delivery Tickets
-          </Typography>
-          <Typography className={classes.bannerSubtitle}>
-            {isRisk
-              ? 'Active user stories, risk evaluation workflows, liability assessments, and automated severity escalation tickets tracked in Jira Cloud.'
-              : 'End-to-end claims intake, FNOL registration, duplicate detection, policy verification, and claims workspace tickets tracked in Jira Cloud.'}
-          </Typography>
-          <Box className={classes.badgeRow}>
-            <Chip label="Jira Cloud: valuemomentum-tsc" size="small" className={classes.badgePill} />
-            <Chip label={`Project: ${projectKey}`} size="small" className={classes.badgePill} />
-            <Chip label={`Component Domain: ${isRisk ? 'Risk Analysis & Scoring' : 'Claims Intake & FNOL'}`} size="small" className={classes.badgePill} />
-            <Chip label="Realtime Sync: Active" size="small" className={classes.badgePill} />
-          </Box>
+      {/* Enterprise IDP Header Toolbar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" style={{ gap: 16 }}>
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
+          <Chip label="Jira Cloud" color="primary" size="small" style={{ fontWeight: 700 }} />
+          <Chip label="Instance: valuemomentum-tsc" size="small" variant="outlined" />
+          <Chip label={`Project: ${projectKey}`} size="small" variant="outlined" />
+          <Chip label="Realtime Sync: Active" size="small" style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', fontWeight: 600 }} />
         </Box>
-
-        <Box display="flex" gap={1.5} alignItems="center">
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
           <Button
             variant="contained"
-            color="default"
-            startIcon={<OpenInNewIcon />}
+            color="primary"
+            size="small"
+            startIcon={<OpenInNewIcon fontSize="small" />}
             href="https://valuemomentum-tsc.atlassian.net"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontWeight: 700, textTransform: 'none' }}
+            style={{ fontWeight: 700, textTransform: 'none', boxShadow: 'none' }}
           >
             Open in Jira
           </Button>

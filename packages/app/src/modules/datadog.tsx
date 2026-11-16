@@ -274,21 +274,26 @@ const DatadogTabContent = () => {
 
   return (
     <Box className={classes.root}>
-      {/* Enterprise Header Banner */}
-      <Box className={classes.headerBanner}>
-        <Box>
-          <Typography className={classes.headerTitle}>
-            <TimelineIcon style={{ fontSize: 32 }} />
-            {title} — Datadog Telemetry & Observability
-          </Typography>
-          <Typography className={classes.headerSubtitle}>
-            Live APM metrics, latency tracking, error monitoring, and operational logs for {title}.
-          </Typography>
-          <Box className={classes.badgeRow}>
-            <Chip label="US1 Datadog Cloud" size="small" className={classes.badgePill} />
-            <Chip label="Live Telemetry Stream" size="small" className={classes.badgePill} />
-            <Chip label="Enterprise Observability" size="small" className={classes.badgePill} />
-          </Box>
+      {/* Enterprise IDP Header Toolbar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" style={{ gap: 16 }}>
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
+          <Chip label="Datadog APM" color="primary" size="small" style={{ fontWeight: 700 }} />
+          <Chip label="Region: US1 Cloud" size="small" variant="outlined" />
+          <Chip label="Live Telemetry Stream: Active" size="small" style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', fontWeight: 600 }} />
+        </Box>
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            startIcon={<OpenInNewIcon fontSize="small" />}
+            href="https://app.datadoghq.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontWeight: 700, textTransform: 'none', boxShadow: 'none' }}
+          >
+            Open Datadog
+          </Button>
         </Box>
       </Box>
 

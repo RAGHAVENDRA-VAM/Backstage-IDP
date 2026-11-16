@@ -138,34 +138,33 @@ export const EntityGithubPullRequestsTabContent = () => {
 
   return (
     <Box className={classes.root}>
-      {/* Banner */}
-      <Box className={classes.banner}>
-        <Box>
-          <Typography className={classes.bannerTitle}>
-            <CallSplitIcon style={{ fontSize: 32 }} />
-            {cleanRepoName} — Pull Requests & Code Reviews
-          </Typography>
-          <Typography className={classes.bannerSubtitle}>
-            Active peer reviews, branch merge requests, and contributor activity tracked directly from GitHub.
-          </Typography>
-          <Box className={classes.badgeRow}>
-            <Chip label={`Repository: ${cleanRepoName}`} size="small" className={classes.badgePill} />
-            <Chip label="Backend Token Proxy: Connected" size="small" className={classes.badgePill} />
-          </Box>
+      {/* Enterprise IDP Header Toolbar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" style={{ gap: 16 }}>
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
+          <Chip label="Pull Requests" color="primary" size="small" style={{ fontWeight: 700 }} />
+          <Chip label={`Repo: ${cleanRepoName}`} size="small" variant="outlined" />
+          <Chip label="Token Proxy: Connected" size="small" style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', fontWeight: 600 }} />
         </Box>
-        <Box display="flex" gap={1}>
-          <IconButton onClick={() => retry()} style={{ color: '#fff', border: '1px solid rgba(255,255,255,0.25)' }}>
-            <RefreshIcon />
-          </IconButton>
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
+          <Tooltip title="Refresh live PR data">
+            <IconButton
+              size="small"
+              onClick={() => retry()}
+              style={{ border: '1px solid rgba(0, 0, 0, 0.12)' }}
+            >
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Button
             variant="contained"
             color="primary"
-            startIcon={<GitHubIcon />}
+            size="small"
+            startIcon={<GitHubIcon fontSize="small" />}
             endIcon={<OpenInNewIcon fontSize="small" />}
             href={`https://github.com/${slug}/pulls`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ textTransform: 'none', fontWeight: 700 }}
+            style={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
           >
             Create / View PR
           </Button>

@@ -328,49 +328,39 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
 
   return (
     <Box className={classes.root}>
-      {/* Backstage Official Palette Header Banner */}
-      <Box className={classes.azureBanner}>
-        <Box>
-          <Typography className={classes.bannerTitle}>
-            <CloudQueueIcon style={{ fontSize: 32 }} />
-            {entityAppName ? `${entityTitle} — Azure Cloud Deployment` : 'Microsoft Azure Cloud Architecture & Live Diagnostics'}
-          </Typography>
-          <Typography className={classes.bannerSubtitle}>
-            {entityAppName
-              ? `Dedicated cloud infrastructure, App Service hosting (${entityAppName}), resource dependencies, and live diagnostics stream for ${entityTitle}.`
-              : 'Full subscription visibility into Acme Insurance cloud infrastructure: App Services, managed environments, serverless endpoints, database instances, and live diagnostics log streaming.'}
-          </Typography>
-
-          <Box className={classes.badgeRow}>
-            {entityAppName && (
-              <Chip label={`Target App: ${entityAppName}`} size="small" className={classes.badgePill} />
-            )}
-            <Chip
-              label={`Subscription: ${(allResourcesData?.subscriptionId || 'Connected').slice(0, 13)}...`}
-              size="small"
-              className={classes.badgePill}
-            />
-            <Chip
-              label={`Resource Groups: ${new Set(rawWebApps.map((w: any) => w.resourceGroup)).size || 'Active'}`}
-              size="small"
-              className={classes.badgePill}
-            />
-            <Chip label="ARM API v2022-03-01: Live" size="small" className={classes.badgePill} />
-          </Box>
+      {/* Enterprise IDP Header Toolbar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" style={{ gap: 16 }}>
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
+          <Chip label="Microsoft Azure" color="primary" size="small" style={{ fontWeight: 700 }} />
+          {entityAppName && (
+            <Chip label={`Target App: ${entityAppName}`} size="small" variant="outlined" />
+          )}
+          <Chip
+            label={`Subscription: ${(allResourcesData?.subscriptionId || 'Connected').slice(0, 13)}...`}
+            size="small"
+            variant="outlined"
+          />
+          <Chip label="ARM API v2022-03-01: Live" size="small" style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', fontWeight: 600 }} />
         </Box>
-
-        <Box display="flex" gap={1.5} alignItems="center">
+        <Box display="flex" alignItems="center" style={{ gap: 12 }}>
+          <Tooltip title="Refresh live Azure telemetry">
+            <IconButton
+              size="small"
+              onClick={() => { retryWebApps(); retryResources(); }}
+              style={{ border: '1px solid rgba(0, 0, 0, 0.12)' }}
+            >
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Button
             variant="contained"
-            color="default"
-            startIcon={<OpenInNewIcon />}
+            color="primary"
+            size="small"
+            startIcon={<OpenInNewIcon fontSize="small" />}
             href="https://portal.azure.com"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              fontWeight: 700,
-              textTransform: 'none',
-            }}
+            style={{ fontWeight: 700, textTransform: 'none', boxShadow: 'none' }}
           >
             Open Azure Portal
           </Button>
