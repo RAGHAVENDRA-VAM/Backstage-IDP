@@ -542,7 +542,7 @@ export const adoProxyPlugin = createBackendPlugin({
 
             // Fetch details for the found IDs (up to 200)
             const ids = workItemRefs.slice(0, 200).map((w: any) => w.id).join(',');
-            const detailsUrl = `https://dev.azure.com/${encodeURIComponent(String(organization))}/${encodeURIComponent(String(project))}/_apis/wit/workitems?ids=${ids}&fields=System.Id,System.Title,System.State,System.WorkItemType,System.AssignedTo&api-version=7.1`;
+            const detailsUrl = `https://dev.azure.com/${encodeURIComponent(String(organization))}/${encodeURIComponent(String(project))}/_apis/wit/workitems?ids=${ids}&fields=System.Id,System.Title,System.State,System.WorkItemType,System.AssignedTo,System.IterationPath,Microsoft.VSTS.Common.Priority&api-version=7.1`;
             
             const detailsResponse = await fetch(detailsUrl, {
               headers: {
@@ -560,9 +560,12 @@ export const adoProxyPlugin = createBackendPlugin({
             const items = (detailsData.value || []).map((item: any) => ({
               id: item.id,
               title: item.fields['System.Title'],
-              state: item.fields['System.State'] || 'New',
-              type: item.fields['System.WorkItemType'] || 'Task',
+              state: item.fields['System.State'] || 'To Do',
+              type: item.fields['System.WorkItemType'] || 'Issue',
               assignedTo: item.fields['System.AssignedTo']?.displayName || 'Unassigned',
+              assignedToAvatar: item.fields['System.AssignedTo']?._links?.avatar?.href || null,
+              priority: item.fields['Microsoft.VSTS.Common.Priority'] || 2,
+              iteration: item.fields['System.IterationPath'] || '',
               url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${item.id}`,
             }));
 

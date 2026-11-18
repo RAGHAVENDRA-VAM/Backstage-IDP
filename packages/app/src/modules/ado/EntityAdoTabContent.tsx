@@ -326,11 +326,21 @@ export const EntityAdoTabContent = () => {
     (p.createdBy?.displayName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Group work items for Kanban columns
-  const todoItems = workItems.filter((w: any) => /to do|new|proposed/i.test(w.state));
-  const inProgressItems = workItems.filter((w: any) => /in progress|active|doing/i.test(w.state));
-  const reviewItems = workItems.filter((w: any) => /review|qa|testing|ready/i.test(w.state));
-  const doneItems = workItems.filter((w: any) => /done|closed|resolved|completed/i.test(w.state));
+  // Group work items dynamically based on exact state names from Azure DevOps
+  // ADO standard process templates use: To Do / New, Doing / In Progress / Active, Done / Resolved / Closed
+  const activeStates = Array.from(new Set(workItems.map((w: any) => w.state))).filter(Boolean);
+  
+  // Default ADO columns if no items exist yet, or dynamic columns matching ADO exactly:
+  const kanbanColumns = activeStates.length > 0 
+    ? activeStates 
+    : ['To Do', 'Doing', 'Done'];
+
+  const getColumnColor = (stateName: string) => {
+    const s = stateName.toLowerCase();
+    if (s.includes('done') || s.includes('resolved') || s.includes('closed')) return '#16a34a';
+    if (s.includes('doing') || s.includes('progress') || s.includes('active')) return '#0284c7';
+    return '#64748b';
+  };
 
   const renderStatusChip = (status: string, result?: string) => {
     if (result === 'succeeded') {
@@ -711,133 +721,97 @@ export const EntityAdoTabContent = () => {
           </Table>
         </TableContainer>
       ) : activeTab === 'kanban' ? (
-        /* Live Sprint Kanban Board */
+        /* Live Azure DevOps Native Kanban Board */
         <Box>
-          <Grid container spacing={2}>
-            {/* Column 1: New / To Do */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper className={classes.kanbanCol}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#64748b' }}>
-                    TO DO / NEW
-                  </Typography>
-                  <Chip label={todoItems.length} size="small" style={{ fontWeight: 700 }} />
-                </Box>
-                {todoItems.length === 0 ? (
-                  <Typography variant="caption" color="textSecondary">No items</Typography>
-                ) : (
-                  todoItems.map((item: any) => (
-                    <Card key={item.id} className={classes.kanbanCard}>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Chip label={`#${item.id}`} size="small" variant="outlined" style={{ height: 20, fontSize: '0.72rem' }} />
-                        <Chip label={item.type} size="small" color={item.type === 'Bug' ? 'secondary' : 'default'} style={{ height: 20, fontSize: '0.72rem' }} />
+          {workItems.length === 0 ? (
+            <Paper variant="outlined" style={{ padding: 40, textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: 8 }}>
+              <AssignmentIcon style={{ fontSize: 44, color: '#94a3b8', marginBottom: 12 }} />
+              <Typography variant="h6" style={{ fontWeight: 700, color: '#1e293b' }}>
+                No Active Work Items in {project}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" style={{ maxWidth: 500, margin: '8px auto 20px' }}>
+                There are currently no tasks, issues, or user stories in Azure Boards for <strong>{project}</strong>. You can create one directly using the button below.
+              </Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={() => setNewWorkItemModalOpen(true)}
+                style={{ fontWeight: 700, textTransform: 'none' }}
+              >
+                Create First Work Item in ADO
+              </Button>
+            </Paper>
+          ) : (
+            <Grid container spacing={2}>
+              {kanbanColumns.map((colState: any) => {
+                const colItems = workItems.filter((w: any) => w.state === colState);
+                const colColor = getColumnColor(colState);
+                return (
+                  <Grid item xs={12} sm={6} md={12 / Math.min(kanbanColumns.length, 4)} key={colState}>
+                    <Paper className={classes.kanbanCol}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Box display="flex" alignItems="center" style={{ gap: 8 }}>
+                          <Box style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: colColor }} />
+                          <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f172a' }}>
+                            {colState.toUpperCase()}
+                          </Typography>
+                        </Box>
+                        <Chip label={colItems.length} size="small" style={{ fontWeight: 700 }} />
                       </Box>
-                      <Typography variant="body2" style={{ fontWeight: 600, marginBottom: 8 }}>
-                        {item.title}
-                      </Typography>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="caption" color="textSecondary">{item.assignedTo}</Typography>
-                        <IconButton size="small" href={item.url} target="_blank"><OpenInNewIcon fontSize="small" /></IconButton>
-                      </Box>
-                    </Card>
-                  ))
-                )}
-              </Paper>
+                      {colItems.length === 0 ? (
+                        <Box p={3} textAlign="center">
+                          <Typography variant="caption" color="textSecondary">No items in {colState}</Typography>
+                        </Box>
+                      ) : (
+                        colItems.map((item: any) => (
+                          <Card key={item.id} className={classes.kanbanCard}>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                              <Chip
+                                label={`#${item.id}`}
+                                size="small"
+                                variant="outlined"
+                                style={{ height: 20, fontSize: '0.72rem', fontWeight: 600, fontFamily: 'Consolas, monospace' }}
+                              />
+                              <Chip
+                                label={item.type}
+                                size="small"
+                                style={{
+                                  height: 20,
+                                  fontSize: '0.72rem',
+                                  backgroundColor: item.type === 'Bug' ? '#fee2e2' : item.type === 'Issue' ? '#fef3c7' : '#e0e7ff',
+                                  color: item.type === 'Bug' ? '#991b1b' : item.type === 'Issue' ? '#92400e' : '#3730a3',
+                                  fontWeight: 600,
+                                }}
+                              />
+                            </Box>
+                            <Typography variant="body2" style={{ fontWeight: 600, marginBottom: 8, color: '#0f172a' }}>
+                              {item.title}
+                            </Typography>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
+                              <Box display="flex" alignItems="center" style={{ gap: 6 }}>
+                                {item.assignedToAvatar && (
+                                  <Avatar src={item.assignedToAvatar} style={{ width: 20, height: 20 }} />
+                                )}
+                                <Typography variant="caption" color="textSecondary">
+                                  {item.assignedTo}
+                                </Typography>
+                              </Box>
+                              <Tooltip title="Open work item in Azure DevOps">
+                                <IconButton size="small" href={item.url} target="_blank" rel="noopener noreferrer">
+                                  <OpenInNewIcon style={{ fontSize: 16 }} />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </Card>
+                        ))
+                      )}
+                    </Paper>
+                  </Grid>
+                );
+              })}
             </Grid>
-
-            {/* Column 2: In Progress */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper className={classes.kanbanCol}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0284c7' }}>
-                    IN PROGRESS
-                  </Typography>
-                  <Chip label={inProgressItems.length} size="small" color="primary" style={{ fontWeight: 700 }} />
-                </Box>
-                {inProgressItems.length === 0 ? (
-                  <Typography variant="caption" color="textSecondary">No active tasks</Typography>
-                ) : (
-                  inProgressItems.map((item: any) => (
-                    <Card key={item.id} className={classes.kanbanCard}>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Chip label={`#${item.id}`} size="small" variant="outlined" style={{ height: 20, fontSize: '0.72rem' }} />
-                        <Chip label={item.type} size="small" color={item.type === 'Bug' ? 'secondary' : 'default'} style={{ height: 20, fontSize: '0.72rem' }} />
-                      </Box>
-                      <Typography variant="body2" style={{ fontWeight: 600, marginBottom: 8 }}>
-                        {item.title}
-                      </Typography>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="caption" color="textSecondary">{item.assignedTo}</Typography>
-                        <IconButton size="small" href={item.url} target="_blank"><OpenInNewIcon fontSize="small" /></IconButton>
-                      </Box>
-                    </Card>
-                  ))
-                )}
-              </Paper>
-            </Grid>
-
-            {/* Column 3: Ready for QA / Review */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper className={classes.kanbanCol}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#d97706' }}>
-                    READY FOR QA
-                  </Typography>
-                  <Chip label={reviewItems.length} size="small" style={{ fontWeight: 700, backgroundColor: '#fef3c7', color: '#b45309' }} />
-                </Box>
-                {reviewItems.length === 0 ? (
-                  <Typography variant="caption" color="textSecondary">No pending reviews</Typography>
-                ) : (
-                  reviewItems.map((item: any) => (
-                    <Card key={item.id} className={classes.kanbanCard}>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Chip label={`#${item.id}`} size="small" variant="outlined" style={{ height: 20, fontSize: '0.72rem' }} />
-                        <Chip label={item.type} size="small" color={item.type === 'Bug' ? 'secondary' : 'default'} style={{ height: 20, fontSize: '0.72rem' }} />
-                      </Box>
-                      <Typography variant="body2" style={{ fontWeight: 600, marginBottom: 8 }}>
-                        {item.title}
-                      </Typography>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="caption" color="textSecondary">{item.assignedTo}</Typography>
-                        <IconButton size="small" href={item.url} target="_blank"><OpenInNewIcon fontSize="small" /></IconButton>
-                      </Box>
-                    </Card>
-                  ))
-                )}
-              </Paper>
-            </Grid>
-
-            {/* Column 4: Resolved / Done */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper className={classes.kanbanCol}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#16a34a' }}>
-                    RESOLVED / DONE
-                  </Typography>
-                  <Chip label={doneItems.length} size="small" style={{ fontWeight: 700, backgroundColor: '#dcfce7', color: '#166534' }} />
-                </Box>
-                {doneItems.length === 0 ? (
-                  <Typography variant="caption" color="textSecondary">No closed items</Typography>
-                ) : (
-                  doneItems.map((item: any) => (
-                    <Card key={item.id} className={classes.kanbanCard}>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Chip label={`#${item.id}`} size="small" variant="outlined" style={{ height: 20, fontSize: '0.72rem' }} />
-                        <Chip label={item.type} size="small" color={item.type === 'Bug' ? 'secondary' : 'default'} style={{ height: 20, fontSize: '0.72rem' }} />
-                      </Box>
-                      <Typography variant="body2" style={{ fontWeight: 600, marginBottom: 8 }}>
-                        {item.title}
-                      </Typography>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="caption" color="textSecondary">{item.assignedTo}</Typography>
-                        <IconButton size="small" href={item.url} target="_blank"><OpenInNewIcon fontSize="small" /></IconButton>
-                      </Box>
-                    </Card>
-                  ))
-                )}
-              </Paper>
-            </Grid>
-          </Grid>
+          )}
         </Box>
       ) : (
         /* Azure Artifacts & Package Feeds */
