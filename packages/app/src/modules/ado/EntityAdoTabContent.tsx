@@ -215,6 +215,9 @@ export const EntityAdoTabContent = ({
   const [createItemNotice, setCreateItemNotice] = useState<string | null>(null);
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 
+  // Available ADO organizations
+  const availableOrgs = ['ValueMomentum-DCS'];
+
   // Parse annotations: dev.azure.com/project-repo format is "Org/Project/Repo"
   const projectRepo = entity?.metadata?.annotations?.['dev.azure.com/project-repo'] || '';
   const parts = projectRepo.split('/');
@@ -222,13 +225,24 @@ export const EntityAdoTabContent = ({
   const initialProject = defaultProject || parts[1] || entity?.metadata?.annotations?.['dev.azure.com/project'] || 'DOJO - POC';
   const defaultRepo = parts[2] || entity?.metadata?.annotations?.['dev.azure.com/repository'] || entity?.metadata?.name || 'Vam-insurance-portal';
 
-  const [org] = useState(defaultOrg);
+  const [selectedOrg, setSelectedOrg] = useState(defaultOrg);
   const [selectedProject, setSelectedProject] = useState(initialProject);
+  const org = selectedOrg;
   const project = selectedProject;
   const repo = defaultRepo;
 
-  // Available ADO projects for project switcher
-  const availableProjects = ['DOJO - POC', 'DCS Assets', 'Agent Marketplace', 'VM-AI-DevSecops-Agents'];
+  // Dynamically fetch projects for the currently selected organization
+  const { value: projectsData } = useAsync(async () => {
+    if (!org) return { projects: [] };
+    const baseUrl = await discoveryApi.getBaseUrl('ado-proxy');
+    const res = await fetch(`${baseUrl}/projects?organization=${encodeURIComponent(org)}`);
+    if (!res.ok) return { projects: [] };
+    return await res.json();
+  }, [discoveryApi, org]);
+
+  const availableProjects = (projectsData?.projects && projectsData.projects.length > 0)
+    ? projectsData.projects.map((p: any) => p.name)
+    : ['DOJO - POC', 'DCS Assets', 'Agent Marketplace', 'VM-AI-DevSecops-Agents'];
 
   const { value, loading, error, retry } = useAsync(async () => {
     const baseUrl = await discoveryApi.getBaseUrl('ado-proxy');
@@ -412,24 +426,45 @@ export const EntityAdoTabContent = ({
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" style={{ gap: 16 }}>
         <Box display="flex" alignItems="center" style={{ gap: 12 }}>
           <Chip label="Azure DevOps" color="primary" size="small" style={{ fontWeight: 700 }} />
-          <Chip label={`Org: ${org}`} size="small" variant="outlined" />
           {isStandalone ? (
-            <TextField
-              select
-              size="small"
-              variant="outlined"
-              label="ADO Project"
-              value={project}
-              onChange={e => setSelectedProject(e.target.value)}
-              style={{ minWidth: 190 }}
-              SelectProps={{ native: true }}
-            >
-              {availableProjects.map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </TextField>
+            <>
+              <TextField
+                select
+                size="small"
+                variant="outlined"
+                label="Organization"
+                value={org}
+                onChange={e => {
+                  setSelectedOrg(e.target.value);
+                  setSelectedProject('DOJO - POC');
+                }}
+                style={{ minWidth: 200, backgroundColor: '#ffffff', borderRadius: 4 }}
+                SelectProps={{ native: true }}
+              >
+                {availableOrgs.map(o => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </TextField>
+              <TextField
+                select
+                size="small"
+                variant="outlined"
+                label="ADO Project"
+                value={project}
+                onChange={e => setSelectedProject(e.target.value)}
+                style={{ minWidth: 210, backgroundColor: '#ffffff', borderRadius: 4 }}
+                SelectProps={{ native: true }}
+              >
+                {availableProjects.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </TextField>
+            </>
           ) : (
-            <Chip label={`Project: ${project}`} size="small" variant="outlined" />
+            <>
+              <Chip label={`Org: ${org}`} size="small" variant="outlined" />
+              <Chip label={`Project: ${project}`} size="small" variant="outlined" />
+            </>
           )}
           <Chip
             icon={<SecurityIcon style={{ fontSize: 14, color: '#16a34a' }} />}
