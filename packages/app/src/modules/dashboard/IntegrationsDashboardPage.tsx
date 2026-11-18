@@ -47,6 +47,7 @@ import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
 import AddCircleOutlineIcon from '@material-ui/icons/AddCircleOutline';
 import ViewQuiltIcon from '@material-ui/icons/ViewQuilt';
 import NotificationsActiveIcon from '@material-ui/icons/NotificationsActive';
+import CallSplitIcon from '@material-ui/icons/CallSplit';
 import { useNavigate } from 'react-router-dom';
 import useAsync from 'react-use/lib/useAsync';
 import { DatadogLogsCard } from '../../components/DatadogLogsCard';
