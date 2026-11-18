@@ -639,12 +639,13 @@ export const EnterpriseFinopsDashboardView = () => {
               <Table size="medium">
                 <TableHead style={{ backgroundColor: '#f8fafc' }}>
                   <TableRow>
-                    <TableCell style={{ fontWeight: 700, width: 120 }}>Action ID</TableCell>
-                    <TableCell style={{ fontWeight: 700 }}>Recommendation</TableCell>
-                    <TableCell style={{ fontWeight: 700, width: 170 }}>Category</TableCell>
-                    <TableCell style={{ fontWeight: 700, width: 140 }}>Impact</TableCell>
+                    <TableCell style={{ fontWeight: 700, width: 110 }}>Action ID</TableCell>
+                    <TableCell style={{ fontWeight: 700, width: 200 }}>Target Azure Resource</TableCell>
+                    <TableCell style={{ fontWeight: 700 }}>Advisor Recommendation</TableCell>
+                    <TableCell style={{ fontWeight: 700, width: 160 }}>Category</TableCell>
+                    <TableCell style={{ fontWeight: 700, width: 130 }}>Impact</TableCell>
                     <TableCell style={{ fontWeight: 700, width: 150 }}>Est. Monthly Savings</TableCell>
-                    <TableCell style={{ fontWeight: 700, width: 120 }}>Action</TableCell>
+                    <TableCell style={{ fontWeight: 700, width: 110 }}>Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -654,7 +655,15 @@ export const EnterpriseFinopsDashboardView = () => {
                         {rec.id}
                       </TableCell>
                       <TableCell>
-                        <Typography variant="subtitle2" style={{ fontWeight: 700 }}>
+                        <Chip
+                          label={rec.targetResource || 'Azure Resource'}
+                          size="small"
+                          variant="outlined"
+                          style={{ fontFamily: 'monospace', fontWeight: 600, maxWidth: 190 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="subtitle2" style={{ fontWeight: 700, color: '#0f3156' }}>
                           {rec.title}
                         </Typography>
                         <Typography variant="caption" color="textSecondary">

@@ -358,11 +358,11 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                     return cat === 'Cost' || cat === 'HighAvailability';
                   });
 
-                  advisorRecommendations = rawRecs.slice(0, 10).map((r: any, idx: number) => {
+                  advisorRecommendations = rawRecs.slice(0, 15).map((r: any, idx: number) => {
                     const p = r.properties || {};
                     const ext = p.extendedProperties || {};
                     const rawSavings = parseFloat(ext.savingsAmount || '0');
-                    const savingsCurr = ext.savingsCurrency || 'USD';
+                    const targetResource = p.impactedValue || p.impactedField || 'Azure Subscription';
                     
                     let displaySavings = '';
                     if (rawSavings > 0) {
@@ -371,16 +371,25 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                         ? `₹${Math.round(rawSavings * 84).toLocaleString()}/mo`
                         : `$${rawSavings.toFixed(2)}/mo`;
                     } else {
-                      displaySavings = p.category === 'Cost' ? 'Actionable Savings' : 'Reliability SLA';
+                      displaySavings = p.category === 'Cost' ? 'Rightsizing Opportunity' : 'High Availability SLA';
                     }
+
+                    // Build descriptive actionable guidance with real resource names
+                    const solutionText = p.shortDescription?.solution || 'Azure Resource Optimization';
+                    const problemText = p.shortDescription?.problem;
+                    const fullDesc = problemText && problemText !== solutionText
+                      ? `${problemText} (Target resource: ${targetResource})`
+                      : `Applies directly to resource: ${targetResource}`;
 
                     return {
                       id: `AZ-ADV-0${idx + 1}`,
-                      title: p.shortDescription?.solution || p.impactedField || 'Azure Resource Optimization',
-                      impact: p.impact === 'High' ? 'High Savings' : (p.impact === 'Medium' ? 'Medium Savings' : 'Low Savings'),
+                      title: solutionText,
+                      targetResource,
+                      impact: p.impact === 'High' ? 'High Impact' : (p.impact === 'Medium' ? 'Medium Impact' : 'Low Impact'),
                       savings: displaySavings,
-                      description: p.shortDescription?.problem || p.shortDescription?.solution || 'Optimization opportunity identified by Microsoft Azure Advisor.',
+                      description: fullDesc,
                       category: p.category === 'Cost' ? 'FinOps Optimization' : 'Reliability & SLA',
+                      recommendationId: r.name,
                     };
                   });
                 }
