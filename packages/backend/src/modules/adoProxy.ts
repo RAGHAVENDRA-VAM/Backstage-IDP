@@ -71,7 +71,8 @@ export const adoProxyPlugin = createBackendPlugin({
             }
 
             // 2. Also check common enterprise org patterns or configured orgs
-            const configuredOrg = config.getOptionalString('integrations.azure[0].organization');
+            const azureConfig = config.getOptionalConfigArray('integrations.azure') || [];
+            const configuredOrg = azureConfig[0]?.getOptionalString('organization');
             if (configuredOrg) orgsSet.add(configuredOrg);
 
             const organizations = Array.from(orgsSet).map(name => ({
