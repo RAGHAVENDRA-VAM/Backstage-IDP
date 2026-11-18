@@ -202,9 +202,11 @@ const useStyles = makeStyles(theme => ({
 export const AzureTabContent = ({
   isStandalone = false,
   initialTab = 0,
+  hideFinops = false,
 }: {
   isStandalone?: boolean;
   initialTab?: number;
+  hideFinops?: boolean;
 }) => {
   const classes = useStyles();
   let entity: any = null;
@@ -444,11 +446,13 @@ export const AzureTabContent = ({
               label="App Services & Log Streams"
               className={classes.tabLabel}
             />
-            <Tab
-              icon={<MonetizationOnIcon style={{ color: '#059669' }} />}
-              label="FinOps & Cost Analysis"
-              className={classes.tabLabel}
-            />
+            {!hideFinops && (
+              <Tab
+                icon={<MonetizationOnIcon style={{ color: '#059669' }} />}
+                label="FinOps & Cost Analysis"
+                className={classes.tabLabel}
+              />
+            )}
             <Tab
               icon={<LayersIcon />}
               label={`All Azure Resources (${totalResources})`}
@@ -581,7 +585,7 @@ export const AzureTabContent = ({
         )}
 
         {/* TAB 1: AZURE FINOPS & COST ANALYSIS */}
-        {selectedTab === 1 && (
+        {!hideFinops && selectedTab === 1 && (
           <Box p={3}>
             {/* FinOps Header */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
@@ -971,7 +975,7 @@ export const AzureTabContent = ({
         )}
 
         {/* TAB 2: ALL AZURE RESOURCES INVENTORY */}
-        {selectedTab === 2 && (
+        {((!hideFinops && selectedTab === 2) || (hideFinops && selectedTab === 1)) && (
           <Box p={3}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5} flexWrap="wrap" gap={2}>
               <Box>

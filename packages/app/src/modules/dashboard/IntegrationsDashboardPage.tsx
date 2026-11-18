@@ -53,6 +53,7 @@ import useAsync from 'react-use/lib/useAsync';
 import { DatadogLogsCard } from '../../components/DatadogLogsCard';
 import { AzureTabContent } from '../azure/AzureTabContent';
 import { AzureAiFoundryDashboardView } from '../azure/AzureAiFoundryDashboardView';
+import { EnterpriseFinopsDashboardView } from '../finops/EnterpriseFinopsDashboardView';
 import { EntityAdoTabContent } from '../ado/EntityAdoTabContent';
 import { AutomationGoldenPathsView } from './AutomationGoldenPathsView';
 import { SreHealthView } from './SreHealthView';
@@ -2315,17 +2316,14 @@ export const IntegrationsDashboardPage = () => {
         {/* Tab 4: Cloud Dashboard */}
         {availableTabs[selectedMainTab]?.id === 'cloud' && (
           <Box p={1}>
-            <AzureTabContent isStandalone={true} initialTab={0} />
+            <AzureTabContent isStandalone={true} initialTab={0} hideFinops={true} />
           </Box>
         )}
 
         {/* Tab 5: FinOps Dashboard */}
         {availableTabs[selectedMainTab]?.id === 'finops' && (
           <Box p={1}>
-            <AzureTabContent isStandalone={true} initialTab={1} />
-            <Box mt={3}>
-              <AzureAiFoundryDashboardView />
-            </Box>
+            <EnterpriseFinopsDashboardView />
           </Box>
         )}
 
