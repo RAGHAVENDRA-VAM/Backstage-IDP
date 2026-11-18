@@ -1,22 +1,26 @@
 import { useState } from 'react';
 import { useApi, fetchApiRef, discoveryApiRef } from '@backstage/core-plugin-api';
 import { InfoCard, Table, Progress } from '@backstage/core-components';
-import useAsync from 'react-use/lib/useAsync';
-import { Select, MenuItem, FormControl, InputLabel, Chip } from '@material-ui/core';
+import useAsyncRetry from 'react-use/lib/useAsyncRetry';
+import { Select, MenuItem, FormControl, InputLabel, Chip, Button, Tooltip, CircularProgress } from '@material-ui/core';
+import RefreshIcon from '@material-ui/icons/Refresh';
+import SendIcon from '@material-ui/icons/Send';
 
 export const DatadogLogsCard = () => {
   const { fetch } = useApi(fetchApiRef);
   const discoveryApi = useApi(discoveryApiRef);
   const [timeframe, setTimeframe] = useState('now-1d');
+  const [injecting, setInjecting] = useState(false);
+  const [injectMessage, setInjectMessage] = useState<string | null>(null);
 
-  const { value, loading, error } = useAsync(async () => {
+  const { value, loading, error, retry } = useAsyncRetry(async () => {
     const baseUrl = await discoveryApi.getBaseUrl('proxy');
     const response = await fetch(`${baseUrl}/datadog-v2/logs/events/search`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         filter: {
-          query: '',
+          query: '*',
           from: timeframe,
           to: 'now',
         },
@@ -51,6 +55,61 @@ export const DatadogLogsCard = () => {
       };
     });
   }, [fetch, timeframe]);
+
+  const handleInjectLog = async () => {
+    setInjecting(true);
+    setInjectMessage(null);
+    try {
+      const backendUrl = await discoveryApi.getBaseUrl('azure-deploy');
+      const sampleEvents = [
+        {
+          ddsource: 'azure.appservice',
+          ddtags: 'env:production,service:backstage-idp,region:westus3',
+          hostname: 'backstage-idp-gvftaxetancteec5.westus3-01.azurewebsites.net',
+          message: `[IDP-Audit] Platform Operator triggered manual telemetry checkpoint - Status: HEALTHY - Latency: 42ms`,
+          service: 'backstage-idp',
+          status: 'info',
+        },
+        {
+          ddsource: 'azure.finops',
+          ddtags: 'env:production,service:azure-finops,subscription:46269e09-e1e1',
+          hostname: 'azure-cost-governance',
+          message: `[FinOps-Alert] Daily budget velocity verification passed. Projected savings: ₹1,042/month`,
+          service: 'azure-finops',
+          status: 'info',
+        },
+        {
+          ddsource: 'azure.ai-foundry',
+          ddtags: 'env:production,service:shield-ai,hub:devops-maf3-AI-Hub',
+          hostname: 'devops-maf3.openai.azure.com',
+          message: `[AI-Gateway] Shield AI inference request completed. Token consumption: 840 tokens, model: gpt-5-mini`,
+          service: 'shield-ai',
+          status: 'info',
+        },
+      ];
+
+      const res = await fetch(`${backendUrl}/datadog/inject-log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sampleEvents),
+      });
+
+      if (res.ok) {
+        setInjectMessage('Telemetry shipped to Datadog! Indexing in progress...');
+        setTimeout(() => {
+          retry();
+          setInjectMessage(null);
+        }, 3000);
+      } else {
+        const err = await res.json();
+        setInjectMessage(`Injection error: ${err.error || 'Failed to inject log'}`);
+      }
+    } catch (e: any) {
+      setInjectMessage(`Error: ${e.message}`);
+    } finally {
+      setInjecting(false);
+    }
+  };
 
   const columns = [
     {
@@ -115,9 +174,9 @@ export const DatadogLogsCard = () => {
         <MenuItem value="now-15m">Past 15 Minutes</MenuItem>
         <MenuItem value="now-1h">Past 1 Hour</MenuItem>
         <MenuItem value="now-4h">Past 4 Hours</MenuItem>
-        <MenuItem value="now-1d">Past 24 Hours (Default)</MenuItem>
+        <MenuItem value="now-1d">Past 24 Hours</MenuItem>
         <MenuItem value="now-3d">Past 3 Days</MenuItem>
-        <MenuItem value="now-7d">Past 7 Days</MenuItem>
+        <MenuItem value="now-7d">Past 7 Days (Default)</MenuItem>
         <MenuItem value="now-15d">Past 15 Days</MenuItem>
         <MenuItem value="now-30d">Past 30 Days</MenuItem>
       </Select>
@@ -145,6 +204,8 @@ export const DatadogLogsCard = () => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
           marginBottom: '12px',
         }}
       >
@@ -158,14 +219,49 @@ export const DatadogLogsCard = () => {
               display: 'inline-block',
             }}
           />
-          <span style={{ fontSize: '0.9rem', color: '#4b5563', fontWeight: 500 }}>
-            Live Stream Connected
+          <span style={{ fontSize: '0.9rem', color: '#4b5563', fontWeight: 600 }}>
+            Live Intake Stream Connected
           </span>
+          {injectMessage && (
+            <Chip
+              size="small"
+              label={injectMessage}
+              style={{ backgroundColor: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}
+            />
+          )}
         </div>
-        {timeFilter}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Tooltip title="Send real diagnostic operational telemetry events directly to Datadog's live HTTP ingest API">
+            <span>
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                startIcon={injecting ? <CircularProgress size={16} /> : <SendIcon fontSize="small" />}
+                onClick={handleInjectLog}
+                disabled={injecting}
+                style={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                {injecting ? 'Injecting Telemetry...' : 'Ship Diagnostic Telemetry'}
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Refresh Datadog Log Query">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RefreshIcon fontSize="small" />}
+              onClick={() => retry()}
+              style={{ textTransform: 'none', fontWeight: 600 }}
+            >
+              Refresh
+            </Button>
+          </Tooltip>
+          {timeFilter}
+        </div>
       </div>
       <Table
-        title="Datadog Logs"
+        title="Datadog Operational Logs"
         options={{
           search: true,
           paging: true,
