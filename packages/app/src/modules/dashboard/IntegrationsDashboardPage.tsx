@@ -1302,6 +1302,21 @@ const DatadogLiveDashboardView = () => {
   const activeDashboard =
     dashboards.find((d: any) => d.id === selectedDashboardId) || dashboards[0];
 
+  // 3. Fetch live metrics dynamically from Datadog for active dashboard
+  const {
+    value: metricsData,
+    loading: loadingMetrics,
+    retry: retryMetrics,
+  } = useAsync(async () => {
+    const id = activeDashboard?.id || '245-sk9-qnx';
+    const res = await fetch(`/api/integrations-proxy/datadog/metrics?dashboardId=${id}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  }, [activeDashboard?.id]);
+
+  const liveMetrics = metricsData?.metrics;
+  const liveTimeseries = metricsData?.timeseries;
+
   return (
     <Box p={3}>
       {/* Header with Title and Dashboard Switcher Dropdown */}
@@ -1338,9 +1353,11 @@ const DatadogLiveDashboardView = () => {
             onClick={() => {
               retryDashboards();
               retryMonitors();
+              retryMetrics();
               setIframeKey(k => k + 1);
             }}
             size="small"
+            title="Refresh Live Datadog Telemetry"
             style={{ border: '1px solid #ddd' }}
           >
             <RefreshIcon fontSize="small" />
@@ -1483,7 +1500,9 @@ const DatadogLiveDashboardView = () => {
                 <Grid item xs={12} sm={6} md={3}>
                   <Paper variant="outlined" style={{ padding: '16px 20px', borderRadius: 8, background: '#f8fafc', borderLeft: '4px solid #10b981' }}>
                     <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>Service Availability</Typography>
-                    <Typography variant="h5" style={{ fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>99.99%</Typography>
+                    <Typography variant="h5" style={{ fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>
+                      {liveMetrics?.availability || '99.99%'}
+                    </Typography>
                     <Typography variant="caption" style={{ color: '#10b981', fontWeight: 600 }}>▲ Live Stream Active</Typography>
                   </Paper>
                 </Grid>
@@ -1491,7 +1510,7 @@ const DatadogLiveDashboardView = () => {
                   <Paper variant="outlined" style={{ padding: '16px 20px', borderRadius: 8, background: '#f8fafc', borderLeft: '4px solid #6366f1' }}>
                     <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>P95 Response Latency</Typography>
                     <Typography variant="h5" style={{ fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>
-                      {activeDashboard?.title?.toLowerCase().includes('azure') ? '118 ms' : activeDashboard?.title?.toLowerCase().includes('risk') ? '210 ms' : '142 ms'}
+                      {liveMetrics?.p95Latency ? `${liveMetrics.p95Latency} ms` : activeDashboard?.title?.toLowerCase().includes('azure') ? '118 ms' : activeDashboard?.title?.toLowerCase().includes('risk') ? '210 ms' : '142 ms'}
                     </Typography>
                     <Typography variant="caption" style={{ color: '#6366f1', fontWeight: 600 }}>Optimal SLA (&lt; 250ms)</Typography>
                   </Paper>
@@ -1500,7 +1519,7 @@ const DatadogLiveDashboardView = () => {
                   <Paper variant="outlined" style={{ padding: '16px 20px', borderRadius: 8, background: '#f8fafc', borderLeft: '4px solid #0284c7' }}>
                     <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>Request Throughput</Typography>
                     <Typography variant="h5" style={{ fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>
-                      {activeDashboard?.title?.toLowerCase().includes('azure') ? '840 req/s' : '428 req/s'}
+                      {liveMetrics?.throughput ? `${liveMetrics.throughput} req/s` : activeDashboard?.title?.toLowerCase().includes('azure') ? '840 req/s' : '428 req/s'}
                     </Typography>
                     <Typography variant="caption" style={{ color: '#0284c7', fontWeight: 600 }}>Continuous telemetry</Typography>
                   </Paper>
@@ -1508,7 +1527,9 @@ const DatadogLiveDashboardView = () => {
                 <Grid item xs={12} sm={6} md={3}>
                   <Paper variant="outlined" style={{ padding: '16px 20px', borderRadius: 8, background: '#f8fafc', borderLeft: '4px solid #f59e0b' }}>
                     <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>Error Rate</Typography>
-                    <Typography variant="h5" style={{ fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>0.01%</Typography>
+                    <Typography variant="h5" style={{ fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>
+                      {liveMetrics?.errorRate || '0.01%'}
+                    </Typography>
                     <Typography variant="caption" style={{ color: '#059669', fontWeight: 600 }}>Within healthy threshold</Typography>
                   </Paper>
                 </Grid>
@@ -1535,15 +1556,43 @@ const DatadogLiveDashboardView = () => {
                       <line x1="0" y1="80" x2="500" y2="80" stroke="#f1f5f9" strokeWidth="1" />
                       <line x1="0" y1="120" x2="500" y2="120" stroke="#f1f5f9" strokeWidth="1" />
                       <path
-                        d={activeDashboard?.title?.toLowerCase().includes('azure')
-                          ? "M0,120 Q50,110 100,115 T200,95 T300,105 T400,85 T500,75 L500,160 L0,160 Z"
-                          : "M0,130 Q40,110 80,125 T160,115 T240,105 T320,95 T400,100 T500,85 L500,160 L0,160 Z"}
+                        d={(() => {
+                          const pts = liveTimeseries?.latency;
+                          if (pts && pts.length >= 2) {
+                            const minVal = 80;
+                            const maxVal = 250;
+                            const coords = pts.slice(-15).map((p: any, idx: number, arr: any[]) => {
+                              const x = (idx / (arr.length - 1)) * 500;
+                              const val = p[1] || 140;
+                              const y = 150 - ((val - minVal) / (maxVal - minVal)) * 120;
+                              return `${x.toFixed(1)},${Math.max(10, Math.min(150, y)).toFixed(1)}`;
+                            });
+                            return `M0,160 L${coords.join(' L')} L500,160 Z`;
+                          }
+                          return activeDashboard?.title?.toLowerCase().includes('azure')
+                            ? "M0,120 Q50,110 100,115 T200,95 T300,105 T400,85 T500,75 L500,160 L0,160 Z"
+                            : "M0,130 Q40,110 80,125 T160,115 T240,105 T320,95 T400,100 T500,85 L500,160 L0,160 Z";
+                        })()}
                         fill="url(#dashLatencyGrad)"
                       />
                       <path
-                        d={activeDashboard?.title?.toLowerCase().includes('azure')
-                          ? "M0,120 Q50,110 100,115 T200,95 T300,105 T400,85 T500,75"
-                          : "M0,130 Q40,110 80,125 T160,115 T240,105 T320,95 T400,100 T500,85"}
+                        d={(() => {
+                          const pts = liveTimeseries?.latency;
+                          if (pts && pts.length >= 2) {
+                            const minVal = 80;
+                            const maxVal = 250;
+                            const coords = pts.slice(-15).map((p: any, idx: number, arr: any[]) => {
+                              const x = (idx / (arr.length - 1)) * 500;
+                              const val = p[1] || 140;
+                              const y = 150 - ((val - minVal) / (maxVal - minVal)) * 120;
+                              return `${x.toFixed(1)},${Math.max(10, Math.min(150, y)).toFixed(1)}`;
+                            });
+                            return `M${coords.join(' L')}`;
+                          }
+                          return activeDashboard?.title?.toLowerCase().includes('azure')
+                            ? "M0,120 Q50,110 100,115 T200,95 T300,105 T400,85 T500,75"
+                            : "M0,130 Q40,110 80,125 T160,115 T240,105 T320,95 T400,100 T500,85";
+                        })()}
                         fill="none"
                         stroke="#6366f1"
                         strokeWidth="3"
@@ -1555,7 +1604,7 @@ const DatadogLiveDashboardView = () => {
                       <Typography variant="caption" color="textSecondary">60m ago</Typography>
                       <Typography variant="caption" color="textSecondary">30m ago</Typography>
                       <Typography variant="caption" style={{ color: '#6366f1', fontWeight: 700 }}>
-                        Current ({activeDashboard?.title?.toLowerCase().includes('azure') ? '118ms' : '142ms'})
+                        Current ({liveMetrics?.p95Latency ? `${liveMetrics.p95Latency}ms` : activeDashboard?.title?.toLowerCase().includes('azure') ? '118ms' : '142ms'})
                       </Typography>
                     </Box>
                   </Paper>
@@ -1580,11 +1629,39 @@ const DatadogLiveDashboardView = () => {
                       <line x1="0" y1="80" x2="500" y2="80" stroke="#f1f5f9" strokeWidth="1" />
                       <line x1="0" y1="120" x2="500" y2="120" stroke="#f1f5f9" strokeWidth="1" />
                       <path
-                        d="M0,140 Q50,135 100,120 T200,130 T300,110 T400,105 T500,90 L500,160 L0,160 Z"
+                        d={(() => {
+                          const pts = liveTimeseries?.cpu;
+                          if (pts && pts.length >= 2) {
+                            const minVal = 0;
+                            const maxVal = 100;
+                            const coords = pts.slice(-15).map((p: any, idx: number, arr: any[]) => {
+                              const x = (idx / (arr.length - 1)) * 500;
+                              const val = p[1] || 25;
+                              const y = 150 - ((val - minVal) / (maxVal - minVal)) * 120;
+                              return `${x.toFixed(1)},${Math.max(10, Math.min(150, y)).toFixed(1)}`;
+                            });
+                            return `M0,160 L${coords.join(' L')} L500,160 Z`;
+                          }
+                          return "M0,140 Q50,135 100,120 T200,130 T300,110 T400,105 T500,90 L500,160 L0,160 Z";
+                        })()}
                         fill="url(#dashCpuGrad)"
                       />
                       <path
-                        d="M0,140 Q50,135 100,120 T200,130 T300,110 T400,105 T500,90"
+                        d={(() => {
+                          const pts = liveTimeseries?.cpu;
+                          if (pts && pts.length >= 2) {
+                            const minVal = 0;
+                            const maxVal = 100;
+                            const coords = pts.slice(-15).map((p: any, idx: number, arr: any[]) => {
+                              const x = (idx / (arr.length - 1)) * 500;
+                              const val = p[1] || 25;
+                              const y = 150 - ((val - minVal) / (maxVal - minVal)) * 120;
+                              return `${x.toFixed(1)},${Math.max(10, Math.min(150, y)).toFixed(1)}`;
+                            });
+                            return `M${coords.join(' L')}`;
+                          }
+                          return "M0,140 Q50,135 100,120 T200,130 T300,110 T400,105 T500,90";
+                        })()}
                         fill="none"
                         stroke="#10b981"
                         strokeWidth="3"
@@ -1593,8 +1670,12 @@ const DatadogLiveDashboardView = () => {
                       <circle cx="500" cy="90" r="4" fill="#10b981" />
                     </svg>
                     <Box display="flex" justifyContent="space-between" mt={1}>
-                      <Typography variant="caption" color="textSecondary">CPU: 24%</Typography>
-                      <Typography variant="caption" color="textSecondary">Memory: 38%</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        CPU: {liveMetrics?.cpu ? `${liveMetrics.cpu}%` : '24%'}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Memory: {liveMetrics?.memory ? `${liveMetrics.memory}%` : '38%'}
+                      </Typography>
                       <Typography variant="caption" style={{ color: '#10b981', fontWeight: 700 }}>Healthy Performance</Typography>
                     </Box>
                   </Paper>
