@@ -199,7 +199,13 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boolean }) => {
+export const AzureTabContent = ({
+  isStandalone = false,
+  initialTab = 0,
+}: {
+  isStandalone?: boolean;
+  initialTab?: number;
+}) => {
   const classes = useStyles();
   let entity: any = null;
   try {
@@ -217,7 +223,7 @@ export const AzureTabContent = ({ isStandalone = false }: { isStandalone?: boole
 
   const entityTitle = entity?.metadata?.title || entity?.metadata?.name || 'Acme Insurance';
 
-  const [selectedTab, setSelectedTab] = useState(0); // 0: App Services & Logs, 1: All Azure Resources
+  const [selectedTab, setSelectedTab] = useState(initialTab); // 0: App Services & Logs, 1: FinOps, 2: All Azure Resources
   const [searchQuery, setSearchQuery] = useState('');
   const [resourceFilter, setResourceFilter] = useState('');
   const [selectedApp, setSelectedApp] = useState<any>(null);

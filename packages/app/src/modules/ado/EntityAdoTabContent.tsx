@@ -182,9 +182,21 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export const EntityAdoTabContent = () => {
+export const EntityAdoTabContent = ({
+  isStandalone = false,
+  defaultProject,
+}: {
+  isStandalone?: boolean;
+  defaultProject?: string;
+}) => {
   const classes = useStyles();
-  const { entity } = useEntity();
+  let entity: any = null;
+  try {
+    const entityContext = useEntity();
+    entity = entityContext?.entity;
+  } catch (_e) {
+    entity = null;
+  }
   const discoveryApi = useApi(discoveryApiRef);
   const [activeTab, setActiveTab] = useState<'pipelines' | 'pullrequests' | 'kanban' | 'packages'>('pipelines');
   const [searchTerm, setSearchTerm] = useState('');
@@ -204,11 +216,19 @@ export const EntityAdoTabContent = () => {
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 
   // Parse annotations: dev.azure.com/project-repo format is "Org/Project/Repo"
-  const projectRepo = entity.metadata.annotations?.['dev.azure.com/project-repo'] || '';
+  const projectRepo = entity?.metadata?.annotations?.['dev.azure.com/project-repo'] || '';
   const parts = projectRepo.split('/');
-  const org = parts[0] || entity.metadata.annotations?.['dev.azure.com/organization'] || 'ValueMomentum-DCS';
-  const project = parts[1] || entity.metadata.annotations?.['dev.azure.com/project'] || 'DOJO - POC';
-  const repo = parts[2] || entity.metadata.annotations?.['dev.azure.com/repository'] || entity.metadata.name;
+  const defaultOrg = parts[0] || entity?.metadata?.annotations?.['dev.azure.com/organization'] || 'ValueMomentum-DCS';
+  const initialProject = defaultProject || parts[1] || entity?.metadata?.annotations?.['dev.azure.com/project'] || 'DOJO - POC';
+  const defaultRepo = parts[2] || entity?.metadata?.annotations?.['dev.azure.com/repository'] || entity?.metadata?.name || 'Vam-insurance-portal';
+
+  const [org] = useState(defaultOrg);
+  const [selectedProject, setSelectedProject] = useState(initialProject);
+  const project = selectedProject;
+  const repo = defaultRepo;
+
+  // Available ADO projects for project switcher
+  const availableProjects = ['DOJO - POC', 'DCS Assets', 'Agent Marketplace', 'VM-AI-DevSecops-Agents'];
 
   const { value, loading, error, retry } = useAsync(async () => {
     const baseUrl = await discoveryApi.getBaseUrl('ado-proxy');
@@ -393,7 +413,24 @@ export const EntityAdoTabContent = () => {
         <Box display="flex" alignItems="center" style={{ gap: 12 }}>
           <Chip label="Azure DevOps" color="primary" size="small" style={{ fontWeight: 700 }} />
           <Chip label={`Org: ${org}`} size="small" variant="outlined" />
-          <Chip label={`Project: ${project}`} size="small" variant="outlined" />
+          {isStandalone ? (
+            <TextField
+              select
+              size="small"
+              variant="outlined"
+              label="ADO Project"
+              value={project}
+              onChange={e => setSelectedProject(e.target.value)}
+              style={{ minWidth: 190 }}
+              SelectProps={{ native: true }}
+            >
+              {availableProjects.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </TextField>
+          ) : (
+            <Chip label={`Project: ${project}`} size="small" variant="outlined" />
+          )}
           <Chip
             icon={<SecurityIcon style={{ fontSize: 14, color: '#16a34a' }} />}
             label={`Branch Policy: Compliant (${policyScore})`}
