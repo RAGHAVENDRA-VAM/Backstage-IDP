@@ -1598,38 +1598,13 @@ export const IntegrationsDashboardPage = () => {
     ? `$${azureCostData.currentSpend.toLocaleString()}/mo`
     : '$0.00/mo';
 
-// Dynamic Tab definitions tailored strictly by Group / Persona
+// Clean Enterprise 4-Pillar Tab definitions tailored by persona
   const availableTabs = React.useMemo(() => {
-    if (role === 'finops') {
-      return [
-        { id: 'overview', label: 'Overview', icon: <LayersIcon /> },
-        { id: 'finops', label: 'FinOps & AI Governance', icon: <BubbleChartIcon style={{ color: '#ec4899' }} /> },
-        { id: 'cloud-native', label: 'Cloud Native Infrastructure', icon: <CloudQueueIcon style={{ color: '#0078d4' }} /> },
-        { id: 'governance', label: 'Architecture & FinOps Standards', icon: <MenuBookIcon style={{ color: '#0f766e' }} /> },
-      ];
-    }
-    if (role === 'developer') {
-      return [
-        { id: 'overview', label: 'Developer Workspace', icon: <LayersIcon /> },
-        { id: 'automation', label: 'Automation & Golden Paths', icon: <PlayCircleFilledWhiteIcon style={{ color: '#059669' }} /> },
-        { id: 'observability', label: 'Observability & Telemetry', icon: <TimelineIcon style={{ color: '#7c3aed' }} /> },
-        { id: 'sre', label: 'Site Reliability & Health', icon: <HealingIcon style={{ color: '#0284c7' }} /> },
-        { id: 'jira', label: 'Jira Agile Backlog', icon: <CheckCircleIcon style={{ color: '#2563eb' }} /> },
-        { id: 'github', label: 'GitHub CI/CD', icon: <GitHubIcon /> },
-      ];
-    }
-    // Platform Engineer (Admin) - All 10 Command Center tabs
     return [
-      { id: 'overview', label: 'Overview', icon: <LayersIcon /> },
-      { id: 'automation', label: 'Automation & Golden Paths', icon: <PlayCircleFilledWhiteIcon style={{ color: '#059669' }} /> },
-      { id: 'observability', label: 'Observability & Telemetry', icon: <TimelineIcon style={{ color: '#7c3aed' }} /> },
-      { id: 'sre', label: 'Site Reliability & Health', icon: <HealingIcon style={{ color: '#0284c7' }} /> },
-      { id: 'cloud-native', label: 'Cloud Native Infrastructure', icon: <CloudQueueIcon style={{ color: '#0078d4' }} /> },
-      { id: 'security', label: 'DevSecOps & Compliance', icon: <SecurityIcon style={{ color: '#059669' }} /> },
-      { id: 'finops', label: 'FinOps & AI Governance', icon: <BubbleChartIcon style={{ color: '#ec4899' }} /> },
-      { id: 'governance', label: 'Design & Architecture Standards', icon: <MenuBookIcon style={{ color: '#0f766e' }} /> },
-      { id: 'jira', label: 'Jira Agile Backlog', icon: <CheckCircleIcon style={{ color: '#2563eb' }} /> },
-      { id: 'github', label: 'GitHub CI/CD', icon: <GitHubIcon /> },
+      { id: 'overview', label: 'Command Center', icon: <LayersIcon /> },
+      { id: 'cloud-finops', label: 'Cloud & FinOps', icon: <CloudQueueIcon style={{ color: '#0078d4' }} /> },
+      { id: 'reliability-security', label: 'Reliability & Security', icon: <SecurityIcon style={{ color: '#059669' }} /> },
+      { id: 'devops-delivery', label: 'DevOps & Delivery', icon: <CheckCircleIcon style={{ color: '#2563eb' }} /> },
     ];
   }, [role]);
 
@@ -1726,10 +1701,10 @@ export const IntegrationsDashboardPage = () => {
                     <Button
                       size="small"
                       color="primary"
-                      onClick={() => setSelectedMainTab(8)}
+                      onClick={() => setSelectedMainTab(3)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
-                      View Tickets Tab →
+                      View Delivery Tab →
                     </Button>
                   </Card>
                 </Grid>
@@ -1746,10 +1721,10 @@ export const IntegrationsDashboardPage = () => {
                     <Button
                       size="small"
                       color="primary"
-                      onClick={() => setSelectedMainTab(9)}
+                      onClick={() => setSelectedMainTab(3)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
-                      View GitHub Tab →
+                      View Repositories →
                     </Button>
                   </Card>
                 </Grid>
@@ -1758,18 +1733,18 @@ export const IntegrationsDashboardPage = () => {
                 <Grid item xs={12} sm={6} md={3}>
                   <Card className={classes.statCard}>
                     <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
-                      Datadog Telemetry
+                      Cloud Infrastructure
                     </Typography>
-                    <Typography className={classes.statNumber} style={{ color: '#7c3aed' }}>
-                      Live APM
+                    <Typography className={classes.statNumber} style={{ color: '#0078d4' }}>
+                      Azure Native
                     </Typography>
                     <Button
                       size="small"
                       color="primary"
-                      onClick={() => setSelectedMainTab(2)}
+                      onClick={() => setSelectedMainTab(1)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
-                      View Datadog Tab →
+                      View Cloud Resources →
                     </Button>
                   </Card>
                 </Grid>
@@ -1786,10 +1761,10 @@ export const IntegrationsDashboardPage = () => {
                     <Button
                       size="small"
                       color="primary"
-                      onClick={() => setSelectedMainTab(6)}
+                      onClick={() => setSelectedMainTab(1)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
-                      View AI Cost Tab →
+                      View Cloud & FinOps →
                     </Button>
                   </Card>
                 </Grid>
@@ -1839,10 +1814,10 @@ export const IntegrationsDashboardPage = () => {
                         size="small"
                         variant="contained"
                         color="primary"
-                        onClick={() => setSelectedMainTab(8)}
+                        onClick={() => setSelectedMainTab(3)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
-                        Open Jira Dashboard
+                        Open Jira Delivery
                       </Button>
                     </Box>
                   </CardContent>
@@ -1871,34 +1846,34 @@ export const IntegrationsDashboardPage = () => {
                         size="small"
                         variant="contained"
                         color="primary"
-                        onClick={() => setSelectedMainTab(9)}
+                        onClick={() => setSelectedMainTab(3)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
-                        Open GitHub Dashboard
+                        Open Repositories & CI/CD
                       </Button>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
 
-              {/* Datadog Card */}
+              {/* Reliability & Security Card */}
               <Grid item xs={12} sm={6} md={4}>
                 <Card className={classes.card}>
                   <CardContent>
                     <Box className={classes.cardHeader}>
-                      <Box className={classes.iconBox} style={{ backgroundColor: '#f3e8ff', color: '#7c3aed' }}>
-                        <TimelineIcon />
+                      <Box className={classes.iconBox} style={{ backgroundColor: '#eff6ff', color: '#059669' }}>
+                        <SecurityIcon />
                       </Box>
                       <Box flex={1}>
-                        <Typography className={classes.cardTitle}>Datadog Observability</Typography>
-                        <Chip label="Live & Active" size="small" className={classes.statusBadgeActive} />
+                        <Typography className={classes.cardTitle}>Reliability & Governance</Typography>
+                        <Chip label="Compliant" size="small" className={classes.statusBadgeActive} />
                       </Box>
                     </Box>
                     <Typography className={classes.cardDesc}>
-                      Embedded interactive monitors, APM traces, and live operational logs streaming.
+                      SRE availability SLAs, branch policy compliance audits, and CIS security benchmarks.
                     </Typography>
                     <Box className={classes.cardFooter}>
-                      <Typography variant="caption" style={{ fontWeight: 600 }}>v4.1.2</Typography>
+                      <Typography variant="caption" style={{ fontWeight: 600 }}>100% Policy Pass</Typography>
                       <Button
                         size="small"
                         variant="contained"
@@ -1906,45 +1881,45 @@ export const IntegrationsDashboardPage = () => {
                         onClick={() => setSelectedMainTab(2)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
-                        Open Datadog Canvas
+                        Open Reliability Center
                       </Button>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
 
-              {/* Azure AI Foundry Card */}
+              {/* Azure AI Foundry & Cloud Card */}
               <Grid item xs={12} sm={6} md={4}>
                 <Card className={classes.card}>
                   <CardContent>
                     <Box className={classes.cardHeader}>
-                      <Box className={classes.iconBox} style={{ backgroundColor: '#fdf2f8', color: '#ec4899' }}>
-                        <BubbleChartIcon fontSize="medium" />
+                      <Box className={classes.iconBox} style={{ backgroundColor: '#fdf2f8', color: '#0078d4' }}>
+                        <CloudQueueIcon fontSize="medium" />
                       </Box>
                       <Box flex={1}>
-                        <Typography className={classes.cardTitle}>Azure AI Foundry</Typography>
+                        <Typography className={classes.cardTitle}>Cloud & FinOps Governance</Typography>
                         <Chip
-                          label={azureAiData?.models?.length ? `${azureAiData.models.length} Models Live` : 'Live Telemetry'}
+                          label={azureAiData?.models?.length ? `${azureAiData.models.length} Models Live` : 'Azure Native'}
                           size="small"
                           className={classes.statusBadgeActive}
                         />
                       </Box>
                     </Box>
                     <Typography className={classes.cardDesc}>
-                      Prompt/Completion token velocity, inference latency, unit cost curves, and rightsizing guardrails.
+                      Full subscription inventory, Azure App Services, actual spend vs monthly budget, and AI token cost analytics.
                     </Typography>
                     <Box className={classes.cardFooter}>
                       <Typography variant="caption" style={{ fontWeight: 600 }}>
-                        {azureAiData?.totalTokensProcessed || '0 Tokens'}
+                        {currentAzureSpend}
                       </Typography>
                       <Button
                         size="small"
                         variant="contained"
                         color="primary"
-                        onClick={() => setSelectedMainTab(6)}
+                        onClick={() => setSelectedMainTab(1)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
-                        Open AI Dashboard
+                        Open Cloud & FinOps
                       </Button>
                     </Box>
                   </CardContent>
@@ -1986,15 +1961,38 @@ export const IntegrationsDashboardPage = () => {
           </Box>
         )}
 
-        {availableTabs[selectedMainTab]?.id === 'automation' && <AutomationGoldenPathsView />}
-        {availableTabs[selectedMainTab]?.id === 'observability' && <DatadogLiveDashboardView />}
-        {availableTabs[selectedMainTab]?.id === 'sre' && <SreHealthView />}
-        {availableTabs[selectedMainTab]?.id === 'cloud-native' && <AzureTabContent isStandalone={true} />}
-        {availableTabs[selectedMainTab]?.id === 'security' && <DevSecOpsView />}
-        {availableTabs[selectedMainTab]?.id === 'finops' && <AzureAiFoundryDashboardView />}
-        {availableTabs[selectedMainTab]?.id === 'governance' && <ArchitectureGovernanceView />}
-        {availableTabs[selectedMainTab]?.id === 'jira' && <JiraLiveDashboardView />}
-        {availableTabs[selectedMainTab]?.id === 'github' && <GitHubLiveDashboardView />}
+        {/* Tab 2: Cloud & FinOps (Azure Infrastructure + Cost Management & AI Foundry) */}
+        {availableTabs[selectedMainTab]?.id === 'cloud-finops' && (
+          <Box p={1}>
+            <AzureTabContent isStandalone={true} />
+            <Box mt={3}>
+              <AzureAiFoundryDashboardView />
+            </Box>
+          </Box>
+        )}
+
+        {/* Tab 3: Reliability & Security (SRE Health + DevSecOps Compliance + Standards) */}
+        {availableTabs[selectedMainTab]?.id === 'reliability-security' && (
+          <Box p={1}>
+            <SreHealthView />
+            <Box mt={3}>
+              <DevSecOpsView />
+            </Box>
+            <Box mt={3}>
+              <ArchitectureGovernanceView />
+            </Box>
+          </Box>
+        )}
+
+        {/* Tab 4: DevOps & Delivery (Jira Sprints + GitHub Repos & Workflows) */}
+        {availableTabs[selectedMainTab]?.id === 'devops-delivery' && (
+          <Box p={1}>
+            <JiraLiveDashboardView />
+            <Box mt={3}>
+              <GitHubLiveDashboardView />
+            </Box>
+          </Box>
+        )}
       </Card>
     </Container>
   );
