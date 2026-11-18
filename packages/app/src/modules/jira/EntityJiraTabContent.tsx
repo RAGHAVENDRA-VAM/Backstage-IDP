@@ -116,10 +116,12 @@ export const EntityJiraTabContent = () => {
 
   const entityName = entity?.metadata?.name || '';
   const entityTitle = entity?.metadata?.title || entityName;
-  const projectKey = entity?.metadata?.annotations?.['jira/project-key'] ||
+  const initialProjectKey = entity?.metadata?.annotations?.['jira/project-key'] ||
     (entityName.toLowerCase().includes('risk') ? 'RISK' : 'SCRUM');
 
-  const isRisk = projectKey === 'RISK' || entityName.toLowerCase().includes('risk');
+  const [selectedProject, setSelectedProject] = useState<string>(initialProjectKey);
+  const projectKey = selectedProject;
+  const isRisk = projectKey === 'RISK';
 
   // Query real Jira issues directly for this specific projectKey
   const { value, loading, error, retry } = useAsync(async () => {
@@ -145,7 +147,19 @@ export const EntityJiraTabContent = () => {
         <Box display="flex" alignItems="center" style={{ gap: 12 }}>
           <Chip label="Jira Cloud" color="primary" size="small" style={{ fontWeight: 700 }} />
           <Chip label="Instance: valuemomentum-tsc" size="small" variant="outlined" />
-          <Chip label={`Project: ${projectKey}`} size="small" variant="outlined" />
+          <TextField
+            select
+            size="small"
+            variant="outlined"
+            label="Jira Project"
+            value={selectedProject}
+            onChange={e => setSelectedProject(e.target.value)}
+            style={{ minWidth: 210, backgroundColor: '#ffffff', borderRadius: 4 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="SCRUM">Claims Portal (SCRUM)</option>
+            <option value="RISK">Risk Analysis (RISK)</option>
+          </TextField>
           <Chip label="Realtime Sync: Active" size="small" style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', fontWeight: 600 }} />
         </Box>
         <Box display="flex" alignItems="center" style={{ gap: 12 }}>

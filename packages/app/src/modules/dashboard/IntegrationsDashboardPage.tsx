@@ -238,23 +238,20 @@ const useStyles = makeStyles(theme => ({
 const JiraLiveDashboardView = () => {
   const classes = useStyles();
   const [filterQuery, setFilterQuery] = useState('');
-  const [domainFilter, setDomainFilter] = useState<'all' | 'claims' | 'risk'>('all');
+  const [selectedProject, setSelectedProject] = useState<string>('all');
 
   const { value, loading, error, retry } = useAsync(async () => {
-    const res = await fetch('/api/integrations-proxy/jira/issues');
+    const url = selectedProject === 'all'
+      ? '/api/integrations-proxy/jira/issues'
+      : `/api/integrations-proxy/jira/issues?project=${encodeURIComponent(selectedProject)}`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
-  }, []);
+  }, [selectedProject]);
 
   const issues = value?.issues || [];
 
-  const domainIssues = domainFilter === 'risk'
-    ? issues.filter((i: any) => /risk|liability|damage|evaluation|severity|escalation|assessment/i.test(i.summary))
-    : domainFilter === 'claims'
-    ? issues.filter((i: any) => /claim|fnol|intake|adjuster|representative|coverage|payment|reserve|document|workspace/i.test(i.summary))
-    : issues;
-
-  const filtered = domainIssues.filter((i: any) =>
+  const filtered = issues.filter((i: any) =>
     i.key.toLowerCase().includes(filterQuery.toLowerCase()) ||
     i.summary.toLowerCase().includes(filterQuery.toLowerCase()) ||
     i.status.toLowerCase().includes(filterQuery.toLowerCase()) ||
@@ -277,15 +274,15 @@ const JiraLiveDashboardView = () => {
             select
             size="small"
             variant="outlined"
-            label="Component Scope"
-            value={domainFilter}
-            onChange={e => setDomainFilter(e.target.value as any)}
-            style={{ minWidth: 200 }}
+            label="Jira Project"
+            value={selectedProject}
+            onChange={e => setSelectedProject(e.target.value)}
+            style={{ minWidth: 230 }}
             SelectProps={{ native: true }}
           >
-            <option value="all">All Components ({issues.length})</option>
-            <option value="claims">Claims UI Tickets</option>
-            <option value="risk">Risk Analysis Tickets</option>
+            <option value="all">All Projects (SCRUM & RISK)</option>
+            <option value="SCRUM">Claims Portal (SCRUM)</option>
+            <option value="RISK">Risk Analysis (RISK)</option>
           </TextField>
           <TextField
             variant="outlined"
@@ -323,26 +320,36 @@ const JiraLiveDashboardView = () => {
         <Grid item xs={12} sm={4}>
           <Card className={classes.statCard}>
             <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
-              Total Active Issues
+              Active Project Issues
             </Typography>
             <Typography className={classes.statNumber} style={{ color: '#2563eb' }}>
               {issues.length}
             </Typography>
             <Typography variant="caption" color="textSecondary">
-              In Review & Sprints
+              {selectedProject === 'all'
+                ? 'Across All Projects'
+                : selectedProject === 'SCRUM'
+                ? 'SCRUM Project Backlog'
+                : 'RISK Analysis Backlog'}
             </Typography>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
           <Card className={classes.statCard}>
             <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
-              Primary Domain
+              Target Domain Focus
             </Typography>
             <Typography className={classes.statNumber} style={{ fontSize: '1.6rem', color: '#0d9488' }}>
-              FNOL & Intake
+              {selectedProject === 'RISK'
+                ? 'Risk & Liability'
+                : selectedProject === 'SCRUM'
+                ? 'Claims & FNOL'
+                : 'Claims & Risk Engine'}
             </Typography>
             <Typography variant="caption" color="textSecondary">
-              Claim registration & assignment
+              {selectedProject === 'RISK'
+                ? 'Casualty risk & policy assessments'
+                : 'Claim registration & intake workflow'}
             </Typography>
           </Card>
         </Grid>
