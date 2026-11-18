@@ -215,9 +215,6 @@ export const EntityAdoTabContent = ({
   const [createItemNotice, setCreateItemNotice] = useState<string | null>(null);
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 
-  // Available ADO organizations
-  const availableOrgs = ['ValueMomentum-DCS'];
-
   // Parse annotations: dev.azure.com/project-repo format is "Org/Project/Repo"
   const projectRepo = entity?.metadata?.annotations?.['dev.azure.com/project-repo'] || '';
   const parts = projectRepo.split('/');
@@ -231,6 +228,18 @@ export const EntityAdoTabContent = ({
   const project = selectedProject;
   const repo = defaultRepo;
 
+  // Dynamically fetch all ADO organizations accessible via the backend proxy
+  const { value: orgsData } = useAsync(async () => {
+    const baseUrl = await discoveryApi.getBaseUrl('ado-proxy');
+    const res = await fetch(`${baseUrl}/organizations`);
+    if (!res.ok) return { organizations: [{ name: defaultOrg }] };
+    return await res.json();
+  }, [discoveryApi, defaultOrg]);
+
+  const availableOrgs = (orgsData?.organizations && orgsData.organizations.length > 0)
+    ? orgsData.organizations.map((o: any) => o.name || o)
+    : [defaultOrg];
+
   // Dynamically fetch projects for the currently selected organization
   const { value: projectsData } = useAsync(async () => {
     if (!org) return { projects: [] };
@@ -243,6 +252,13 @@ export const EntityAdoTabContent = ({
   const availableProjects = (projectsData?.projects && projectsData.projects.length > 0)
     ? projectsData.projects.map((p: any) => p.name)
     : ['DOJO - POC', 'DCS Assets', 'Agent Marketplace', 'VM-AI-DevSecops-Agents'];
+
+  // Automatically update selected project if current selection is not in newly loaded projects
+  React.useEffect(() => {
+    if (availableProjects.length > 0 && !availableProjects.includes(selectedProject)) {
+      setSelectedProject(availableProjects[0]);
+    }
+  }, [availableProjects, selectedProject]);
 
   const { value, loading, error, retry } = useAsync(async () => {
     const baseUrl = await discoveryApi.getBaseUrl('ado-proxy');

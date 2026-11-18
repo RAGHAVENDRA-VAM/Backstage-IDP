@@ -34,6 +34,58 @@ export const adoProxyPlugin = createBackendPlugin({
           return token;
         };
 
+        // Query all Azure DevOps Organizations accessible by the configured PAT/identity
+        router.get('/organizations', async (_req, res) => {
+          try {
+            const token = getAdoToken();
+            if (!token) {
+              res.status(500).json({ error: 'No ADO token configured' });
+              return;
+            }
+
+            const authHeader = `Basic ${Buffer.from(`:${token}`).toString('base64')}`;
+            const orgsSet = new Set<string>(['ValueMomentum-DCS']);
+
+            // 1. Try Azure DevOps ConnectionData & Accounts API
+            try {
+              const connRes = await fetch('https://app.vssps.visualstudio.com/_apis/connectionData?api-version=7.1-preview.1', {
+                headers: { 'Authorization': authHeader }
+              });
+              if (connRes.ok) {
+                const connData = await connRes.json();
+                const memberId = connData.authenticatedUser?.id;
+                if (memberId) {
+                  const accRes = await fetch(`https://app.vssps.visualstudio.com/_apis/accounts?memberId=${memberId}&api-version=7.1-preview.1`, {
+                    headers: { 'Authorization': authHeader }
+                  });
+                  if (accRes.ok) {
+                    const accData = await accRes.json();
+                    (accData.value || []).forEach((acc: any) => {
+                      if (acc.accountName) orgsSet.add(acc.accountName);
+                    });
+                  }
+                }
+              }
+            } catch (e: any) {
+              console.warn('Accounts API lookup notice:', e.message);
+            }
+
+            // 2. Also check common enterprise org patterns or configured orgs
+            const configuredOrg = config.getOptionalString('integrations.azure[0].organization');
+            if (configuredOrg) orgsSet.add(configuredOrg);
+
+            const organizations = Array.from(orgsSet).map(name => ({
+              name,
+              displayName: name,
+            }));
+
+            res.json({ organizations });
+          } catch (e: any) {
+            console.error('ADO organizations proxy error:', e);
+            res.status(500).json({ error: e.message });
+          }
+        });
+
         router.get('/projects', async (req, res) => {
           const { organization } = req.query;
 
