@@ -227,8 +227,18 @@ export const azureDeployProxyPlugin = createBackendPlugin({
         });
 
         // 4b. Azure FinOps & Cost Management Query API
+        let cachedCostResult: any = null;
+        let cachedCostTime = 0;
+        const COST_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minute cache to protect ARM rate limits
+
         router.get('/cost-analysis', async (_req, res) => {
           try {
+            const now = Date.now();
+            if (cachedCostResult && (now - cachedCostTime) < COST_CACHE_TTL_MS) {
+              res.json(cachedCostResult);
+              return;
+            }
+
             const sub = process.env.AZURE_SUBSCRIPTION_ID || config.getOptionalString('azure.subscriptionId');
             if (!sub) {
               res.status(500).json({ error: 'AZURE_SUBSCRIPTION_ID is not configured' });
@@ -378,7 +388,7 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                 // Ignore transient Advisor error
               }
 
-              res.json({
+              const finalPayload = {
                 currency,
                 subscriptionId: sub,
                 billingPeriod: 'Current Month (Month-to-Date)',
@@ -394,7 +404,18 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                 potentialMonthlySavings: totalPotentialSavings > 0
                   ? (currency === 'INR' ? Math.round(totalPotentialSavings * 84) : Math.round(totalPotentialSavings))
                   : 0,
-              });
+              };
+
+              cachedCostResult = finalPayload;
+              cachedCostTime = Date.now();
+
+              res.json(finalPayload);
+              return;
+            }
+
+            // If transient rate limit hit but we have previously cached live data, return cached data!
+            if (cachedCostResult) {
+              res.json(cachedCostResult);
               return;
             }
 
