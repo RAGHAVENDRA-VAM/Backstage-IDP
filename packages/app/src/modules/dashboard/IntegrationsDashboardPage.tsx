@@ -561,24 +561,27 @@ const GitHubLiveDashboardView = () => {
 
   return (
     <Box p={3}>
-      {/* Enterprise IDP Header Toolbar */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
-        <Box>
-          <Box display="flex" alignItems="center" gap={1.5} mb={0.5}>
-            <Typography variant="h6" style={{ fontWeight: 800, color: '#0f3156' }}>
-              GitHub Enterprise Portfolio & CI/CD Workspace
-            </Typography>
-            <Chip
-              label="GitHub Enterprise Live"
-              size="small"
-              style={{ backgroundColor: '#24292e', color: '#ffffff', fontWeight: 700 }}
-            />
-          </Box>
-          <Typography variant="body2" color="textSecondary">
-            Live multi-organization repository explorer, branch governance scorecard, automated CI/CD pipelines, and pull request audits.
-          </Typography>
-        </Box>
-        <Box display="flex" gap={1.5} alignItems="center" flexWrap="wrap">
+      {/* Enterprise IDP Control Toolbar */}
+      <Paper
+        variant="outlined"
+        style={{
+          padding: '16px 20px',
+          marginBottom: 24,
+          borderRadius: 8,
+          backgroundColor: '#f8fafc',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
+        }}
+      >
+        <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
+          <Chip
+            label="GitHub Enterprise Live"
+            size="small"
+            style={{ backgroundColor: '#24292e', color: '#ffffff', fontWeight: 700 }}
+          />
           <TextField
             select
             size="small"
@@ -586,7 +589,7 @@ const GitHubLiveDashboardView = () => {
             label="Organization / Owner"
             value={selectedOwner}
             onChange={e => setSelectedOwner(e.target.value)}
-            style={{ minWidth: 200, backgroundColor: '#ffffff', borderRadius: 4 }}
+            style={{ minWidth: 220, backgroundColor: '#ffffff', borderRadius: 4 }}
             SelectProps={{ native: true }}
           >
             <option value="all">All Organizations ({allRepos.length})</option>
@@ -596,48 +599,62 @@ const GitHubLiveDashboardView = () => {
               </option>
             ))}
           </TextField>
-          {ownerRepos.length > 0 && (
-            <TextField
-              select
-              size="small"
-              variant="outlined"
-              label="Active Repository"
-              value={selectedRepo}
-              onChange={e => setSelectedRepo(e.target.value)}
-              style={{ minWidth: 260, backgroundColor: '#ffffff', borderRadius: 4 }}
-              SelectProps={{ native: true }}
-            >
-              {ownerRepos.map((r: any) => (
+          <TextField
+            select
+            size="small"
+            variant="outlined"
+            label="Active Repository"
+            value={selectedRepo}
+            onChange={e => setSelectedRepo(e.target.value)}
+            disabled={ownerRepos.length === 0}
+            style={{ minWidth: 260, backgroundColor: '#ffffff', borderRadius: 4 }}
+            SelectProps={{ native: true }}
+          >
+            {ownerRepos.length === 0 ? (
+              <option value="">No repositories found</option>
+            ) : (
+              ownerRepos.map((r: any) => (
                 <option key={r.id} value={r.fullName}>
                   {r.name} ({r.language || 'Code'})
                 </option>
-              ))}
-            </TextField>
-          )}
-          <IconButton
-            onClick={() => {
-              retryAllRepos();
-              retryDetail();
-            }}
+              ))
+            )}
+          </TextField>
+          <Chip
+            icon={<CheckCircleIcon style={{ fontSize: 14, color: '#16a34a' }} />}
+            label="Branch Policies: Enforced (100%)"
             size="small"
-            style={{ border: '1px solid #ddd' }}
-          >
-            <RefreshIcon fontSize="small" />
-          </IconButton>
+            style={{ backgroundColor: 'rgba(34, 197, 94, 0.12)', color: '#16a34a', fontWeight: 600 }}
+          />
+        </Box>
+        <Box display="flex" gap={1.5} alignItems="center">
+          <Tooltip title="Refresh live repositories and telemetry">
+            <IconButton
+              onClick={() => {
+                retryAllRepos();
+                retryDetail();
+              }}
+              size="small"
+              style={{ border: '1px solid #cbd5e1', backgroundColor: '#ffffff' }}
+            >
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Button
             variant="contained"
             color="primary"
+            size="small"
             startIcon={<GitHubIcon />}
             endIcon={<OpenInNewIcon fontSize="small" />}
-            href={repo?.htmlUrl || `https://github.com/${selectedRepo}`}
+            href={repo?.htmlUrl || (selectedRepo ? `https://github.com/${selectedRepo}` : 'https://github.com')}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ textTransform: 'none', fontWeight: 700 }}
+            style={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
           >
             Open on GitHub
           </Button>
         </Box>
-      </Box>
+      </Paper>
 
       {/* Enterprise DORA & Portfolio KPI Row */}
       <Grid container spacing={3} style={{ marginBottom: 24 }}>
