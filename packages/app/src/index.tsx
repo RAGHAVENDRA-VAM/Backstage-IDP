@@ -3,34 +3,41 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import '@backstage/ui/css/styles.css';
 
-// Automatically reorder catalog tabs to: Overview, Jira, GitHub Actions, Pull Requests, Azure, Datadog, TechDocs
+// Automatically reorder catalog tabs to standard enterprise lifecycle sequence:
+// 1. Overview -> 2. Jira -> 3. GitHub Actions -> 4. Pull Requests -> 5. Azure DevOps -> 6. Azure -> 7. Datadog -> 8. TechDocs / Docs -> 9. Dependencies
 if (typeof window !== 'undefined') {
   const desiredTabOrder = [
     'overview',
     'jira',
     'github-actions',
     'pull-requests',
+    'azure-devops',
     'azure',
     'datadog',
     'docs',
+    'dependencies',
   ];
 
   const getTabKey = (el: HTMLElement) => {
     const href = (el.getAttribute('href') || el.querySelector('a')?.getAttribute('href') || '').toLowerCase();
     const text = (el.textContent || '').trim().toLowerCase();
 
+    // Check Azure DevOps first to prevent colliding with Azure
+    if (href.includes('azure-devops') || text.includes('azure devops') || text.includes('ado')) return 'azure-devops';
     // Check GitHub Actions
     if (href.includes('github-actions') || text.includes('github action') || text.includes('actions') || text === 'github') return 'github-actions';
     // Check Pull Requests
     if (href.includes('pull-requests') || text.includes('pull request') || text.includes('pulls') || text === 'pr' || text === 'prs') return 'pull-requests';
     // Check Jira
     if (href.includes('jira') || text.includes('jira')) return 'jira';
-    // Check Azure
+    // Check Azure Cloud
     if (href.includes('azure') || text.includes('azure')) return 'azure';
     // Check Datadog
     if (href.includes('datadog') || text.includes('datadog')) return 'datadog';
     // Check TechDocs / Docs
     if (href.includes('docs') || text.includes('techdocs') || text === 'docs') return 'docs';
+    // Check Dependencies
+    if (href.includes('dependencies') || text.includes('dependencies') || text.includes('dependency')) return 'dependencies';
     // Overview
     if (text.includes('overview') || href.endsWith('/component/' + href.split('/').pop()) || href.endsWith('/api/' + href.split('/').pop())) return 'overview';
 
