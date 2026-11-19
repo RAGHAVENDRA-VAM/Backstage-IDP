@@ -71,6 +71,17 @@ spec:
               - github.com
             allowedOwners:
               - RAGHAVENDRA-VAM
+              - mohansai001
+              - Hari-var
+              - vamsi560
+              - sriharshasure1
+              - Sapireddy555
+              - vanand614
+              - InapuriMonish1
+              - rithvik-2004-cmd
+              - CloudTSC
+              - shashanktu
+
 
   steps:
     - id: fetch-base
