@@ -24,8 +24,11 @@ spec:
         organization:
           title: ADO Organization Name
           type: string
-          description: e.g., 'my-org' in dev.azure.com/my-org
-          ui:autofocus: true
+          description: Choose your Azure DevOps organization
+          enum:
+            - ValueMomentum-DCS
+            - ValueMomentum
+          default: ValueMomentum-DCS
         project:
           title: ADO Project Name
           type: string

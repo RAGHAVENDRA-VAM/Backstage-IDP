@@ -98,6 +98,8 @@ spec:
           ui:options:
             allowedHosts:
               - github.com
+            allowedOwners:
+              - RAGHAVENDRA-VAM
 
   steps:
     - id: read-secrets

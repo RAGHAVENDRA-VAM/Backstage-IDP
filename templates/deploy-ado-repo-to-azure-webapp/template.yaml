@@ -25,9 +25,11 @@ spec:
         organization:
           title: Azure DevOps Organization
           type: string
-          description: Your Azure DevOps organization name (e.g. dev.azure.com/my-org)
-          default: 'ValueMomentum'
-          ui:autofocus: true
+          description: Choose your Azure DevOps organization
+          enum:
+            - ValueMomentum-DCS
+            - ValueMomentum
+          default: ValueMomentum-DCS
         project:
           title: Azure DevOps Project
           type: string
