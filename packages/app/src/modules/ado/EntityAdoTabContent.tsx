@@ -198,7 +198,7 @@ export const EntityAdoTabContent = ({
     entity = null;
   }
   const discoveryApi = useApi(discoveryApiRef);
-  const [activeTab, setActiveTab] = useState<'pipelines' | 'pullrequests' | 'kanban' | 'packages'>('pipelines');
+  const [activeTab, setActiveTab] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshIndex, setRefreshIndex] = useState(0);
 
@@ -579,17 +579,17 @@ export const EntityAdoTabContent = ({
           textColor="primary"
           onChange={(_, newVal) => setActiveTab(newVal)}
         >
-          <Tab icon={<PlayCircleOutlineIcon />} label={`Pipelines (${runs.length})`} value="pipelines" style={{ textTransform: 'none', fontWeight: 600 }} />
-          <Tab icon={<CallSplitIcon />} label={`Pull Requests (${prs.length})`} value="pullrequests" style={{ textTransform: 'none', fontWeight: 600 }} />
-          <Tab icon={<AssignmentIcon />} label={`Live Kanban Board (${workItems.length})`} value="kanban" style={{ textTransform: 'none', fontWeight: 600 }} />
-          <Tab icon={<ArchiveIcon />} label={`Artifacts & Feeds (${packages.length})`} value="packages" style={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab icon={<PlayCircleOutlineIcon />} label={`Pipelines (${runs.length})`} value={0} style={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab icon={<CallSplitIcon />} label={`Pull Requests (${prs.length})`} value={1} style={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab icon={<AssignmentIcon />} label={`Live Kanban Board (${workItems.length})`} value={2} style={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab icon={<ArchiveIcon />} label={`Artifacts & Feeds (${packages.length})`} value={3} style={{ textTransform: 'none', fontWeight: 600 }} />
         </Tabs>
       </Paper>
 
       {/* Filter and Search Section */}
       <div className={classes.filterSection}>
         <TextField
-          placeholder={`Filter ${activeTab} by name, branch, or author...`}
+          placeholder={`Filter by name, branch, or author...`}
           variant="outlined"
           size="small"
           value={searchTerm}
@@ -609,7 +609,7 @@ export const EntityAdoTabContent = ({
       </div>
 
       {/* Active Sub-tab Views */}
-      {activeTab === 'pipelines' && (
+      {activeTab === 0 && (
         <TableContainer component={Paper} className={classes.tablePaper}>
           <Table className={classes.table}>
             <TableHead className={classes.tableHead}>
@@ -722,7 +722,7 @@ export const EntityAdoTabContent = ({
         </TableContainer>
       )}
 
-      {activeTab === 'pullrequests' && (
+      {activeTab === 1 && (
         <TableContainer component={Paper} className={classes.tablePaper}>
           <Table className={classes.table}>
             <TableHead className={classes.tableHead}>
@@ -808,7 +808,7 @@ export const EntityAdoTabContent = ({
         </TableContainer>
       )}
 
-      {activeTab === 'kanban' && (
+      {activeTab === 2 && (
         /* Live Azure DevOps Native Kanban Board */
         <Box>
           {loading ? (
@@ -907,7 +907,7 @@ export const EntityAdoTabContent = ({
         </Box>
       )}
 
-      {activeTab === 'packages' && (
+      {activeTab === 3 && (
         /* Azure Artifacts & Package Feeds */
         <Box>
           {loading ? (
