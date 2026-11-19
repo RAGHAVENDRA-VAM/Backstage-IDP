@@ -442,46 +442,37 @@ export const EntityAdoTabContent = ({
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" style={{ gap: 16 }}>
         <Box display="flex" alignItems="center" style={{ gap: 12 }}>
           <Chip label="Azure DevOps" color="primary" size="small" style={{ fontWeight: 700 }} />
-          {isStandalone ? (
-            <>
-              <TextField
-                select
-                size="small"
-                variant="outlined"
-                label="Organization"
-                value={org}
-                onChange={e => {
-                  setSelectedOrg(e.target.value);
-                  setSelectedProject('DOJO - POC');
-                }}
-                style={{ minWidth: 200, backgroundColor: '#ffffff', borderRadius: 4 }}
-                SelectProps={{ native: true }}
-              >
-                {availableOrgs.map(o => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </TextField>
-              <TextField
-                select
-                size="small"
-                variant="outlined"
-                label="ADO Project"
-                value={project}
-                onChange={e => setSelectedProject(e.target.value)}
-                style={{ minWidth: 210, backgroundColor: '#ffffff', borderRadius: 4 }}
-                SelectProps={{ native: true }}
-              >
-                {availableProjects.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </TextField>
-            </>
-          ) : (
-            <>
-              <Chip label={`Org: ${org}`} size="small" variant="outlined" />
-              <Chip label={`Project: ${project}`} size="small" variant="outlined" />
-            </>
-          )}
+          <TextField
+            select
+            size="small"
+            variant="outlined"
+            label="Organization"
+            value={org}
+            onChange={e => {
+              setSelectedOrg(e.target.value);
+              setSelectedProject('DOJO - POC');
+            }}
+            style={{ minWidth: 190, backgroundColor: '#ffffff', borderRadius: 4 }}
+            SelectProps={{ native: true }}
+          >
+            {availableOrgs.map(o => (
+              <option key={o} value={o}>{o}</option>
+            ))}
+          </TextField>
+          <TextField
+            select
+            size="small"
+            variant="outlined"
+            label="ADO Project"
+            value={project}
+            onChange={e => setSelectedProject(e.target.value)}
+            style={{ minWidth: 200, backgroundColor: '#ffffff', borderRadius: 4 }}
+            SelectProps={{ native: true }}
+          >
+            {availableProjects.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </TextField>
           <Chip
             icon={<SecurityIcon style={{ fontSize: 14, color: '#16a34a' }} />}
             label={`Branch Policy: Compliant (${policyScore})`}
@@ -617,15 +608,8 @@ export const EntityAdoTabContent = ({
         </Typography>
       </div>
 
-      {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" p={6}>
-          <CircularProgress size={36} />
-        </Box>
-      ) : error ? (
-        <Box p={3} bgcolor="#fee2e2" color="#991b1b" borderRadius={4}>
-          <Typography variant="body1">Error fetching Azure DevOps data: {error.message}</Typography>
-        </Box>
-      ) : activeTab === 'pipelines' ? (
+      {/* Active Sub-tab Views */}
+      {activeTab === 'pipelines' && (
         <TableContainer component={Paper} className={classes.tablePaper}>
           <Table className={classes.table}>
             <TableHead className={classes.tableHead}>
@@ -641,7 +625,13 @@ export const EntityAdoTabContent = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredRuns.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" style={{ padding: 40 }}>
+                    <CircularProgress size={32} />
+                  </TableCell>
+                </TableRow>
+              ) : filteredRuns.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center" style={{ padding: 40 }}>
                     <Typography variant="body2" color="textSecondary">
@@ -730,7 +720,9 @@ export const EntityAdoTabContent = ({
             </TableBody>
           </Table>
         </TableContainer>
-      ) : activeTab === 'pullrequests' ? (
+      )}
+
+      {activeTab === 'pullrequests' && (
         <TableContainer component={Paper} className={classes.tablePaper}>
           <Table className={classes.table}>
             <TableHead className={classes.tableHead}>
@@ -746,7 +738,13 @@ export const EntityAdoTabContent = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredPRs.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" style={{ padding: 40 }}>
+                    <CircularProgress size={32} />
+                  </TableCell>
+                </TableRow>
+              ) : filteredPRs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center" style={{ padding: 40 }}>
                     <Typography variant="body2" color="textSecondary">
@@ -808,10 +806,16 @@ export const EntityAdoTabContent = ({
             </TableBody>
           </Table>
         </TableContainer>
-      ) : activeTab === 'kanban' ? (
+      )}
+
+      {activeTab === 'kanban' && (
         /* Live Azure DevOps Native Kanban Board */
         <Box>
-          {workItems.length === 0 ? (
+          {loading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" p={6}>
+              <CircularProgress size={36} />
+            </Box>
+          ) : workItems.length === 0 ? (
             <Paper variant="outlined" style={{ padding: 40, textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: 8 }}>
               <AssignmentIcon style={{ fontSize: 44, color: '#94a3b8', marginBottom: 12 }} />
               <Typography variant="h6" style={{ fontWeight: 700, color: '#1e293b' }}>
@@ -901,54 +905,72 @@ export const EntityAdoTabContent = ({
             </Grid>
           )}
         </Box>
-      ) : (
+      )}
+
+      {activeTab === 'packages' && (
         /* Azure Artifacts & Package Feeds */
         <Box>
-          <Grid container spacing={3}>
-            {packages.map((pkg: any) => (
-              <Grid item xs={12} md={4} key={pkg.id}>
-                <Card className={classes.statCard}>
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
-                    <Box>
-                      <Typography variant="subtitle1" style={{ fontWeight: 700 }}>
-                        {pkg.name}
-                      </Typography>
-                      <Chip label={pkg.protocol} size="small" color="primary" style={{ marginTop: 4, height: 20, fontSize: '0.7rem' }} />
+          {loading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" p={6}>
+              <CircularProgress size={36} />
+            </Box>
+          ) : packages.length === 0 ? (
+            <Paper variant="outlined" style={{ padding: 40, textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: 8 }}>
+              <ArchiveIcon style={{ fontSize: 44, color: '#94a3b8', marginBottom: 12 }} />
+              <Typography variant="h6" style={{ fontWeight: 700, color: '#1e293b' }}>
+                No Artifact Feeds Found
+              </Typography>
+              <Typography variant="body2" color="textSecondary" style={{ maxWidth: 500, margin: '8px auto 20px' }}>
+                No published npm, NuGet, or Maven packages registered for this project in Azure Artifacts.
+              </Typography>
+            </Paper>
+          ) : (
+            <Grid container spacing={3}>
+              {packages.map((pkg: any) => (
+                <Grid item xs={12} md={4} key={pkg.id}>
+                  <Card className={classes.statCard}>
+                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
+                      <Box>
+                        <Typography variant="subtitle1" style={{ fontWeight: 700 }}>
+                          {pkg.name}
+                        </Typography>
+                        <Chip label={pkg.protocol} size="small" color="primary" style={{ marginTop: 4, height: 20, fontSize: '0.7rem' }} />
+                      </Box>
+                      <Chip label={`v${pkg.latestVersion}`} size="small" variant="outlined" style={{ fontWeight: 700 }} />
                     </Box>
-                    <Chip label={`v${pkg.latestVersion}`} size="small" variant="outlined" style={{ fontWeight: 700 }} />
-                  </Box>
-                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
-                    Published on {new Date(pkg.publishedDate).toLocaleDateString()} • {pkg.downloads.toLocaleString()} internal downloads
-                  </Typography>
-                  <Box
-                    p={1.5}
-                    bgcolor="#0f172a"
-                    color="#38bdf8"
-                    borderRadius={4}
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    style={{ fontFamily: 'Consolas, monospace', fontSize: '0.78rem' }}
-                  >
-                    <code>{pkg.installSnippet}</code>
-                    <Tooltip title={copiedSnippet === pkg.id ? 'Copied!' : 'Copy install command'}>
-                      <IconButton
-                        size="small"
-                        style={{ color: '#fff' }}
-                        onClick={() => {
-                          navigator.clipboard?.writeText(pkg.installSnippet);
-                          setCopiedSnippet(pkg.id);
-                          setTimeout(() => setCopiedSnippet(null), 2000);
-                        }}
-                      >
-                        <FileCopyIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                    <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
+                      Published on {new Date(pkg.publishedDate).toLocaleDateString()} • {pkg.downloads.toLocaleString()} internal downloads
+                    </Typography>
+                    <Box
+                      p={1.5}
+                      bgcolor="#0f172a"
+                      color="#38bdf8"
+                      borderRadius={4}
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      style={{ fontFamily: 'Consolas, monospace', fontSize: '0.78rem' }}
+                    >
+                      <code>{pkg.installSnippet}</code>
+                      <Tooltip title={copiedSnippet === pkg.id ? 'Copied!' : 'Copy install command'}>
+                        <IconButton
+                          size="small"
+                          style={{ color: '#fff' }}
+                          onClick={() => {
+                            navigator.clipboard?.writeText(pkg.installSnippet);
+                            setCopiedSnippet(pkg.id);
+                            setTimeout(() => setCopiedSnippet(null), 2000);
+                          }}
+                        >
+                          <FileCopyIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
         </Box>
       )}
 
