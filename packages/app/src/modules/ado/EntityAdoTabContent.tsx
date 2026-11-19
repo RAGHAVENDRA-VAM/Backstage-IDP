@@ -77,6 +77,12 @@ const useStyles = makeStyles(theme => ({
     borderRadius: theme.shape.borderRadius,
     border: `1px solid ${theme.palette.divider}`,
     backgroundColor: theme.palette.background.paper,
+    boxShadow: theme.shadows[1],
+  },
+  tabIndicator: {
+    height: 3,
+    borderRadius: '3px 3px 0 0',
+    backgroundColor: '#0284c7',
   },
   filterSection: {
     display: 'flex',
@@ -578,11 +584,12 @@ export const EntityAdoTabContent = ({
           indicatorColor="primary"
           textColor="primary"
           onChange={(_, newVal) => setActiveTab(newVal)}
+          TabIndicatorProps={{ className: classes.tabIndicator }}
         >
-          <Tab icon={<PlayCircleOutlineIcon />} label={`Pipelines (${runs.length})`} value={0} style={{ textTransform: 'none', fontWeight: 600 }} />
-          <Tab icon={<CallSplitIcon />} label={`Pull Requests (${prs.length})`} value={1} style={{ textTransform: 'none', fontWeight: 600 }} />
-          <Tab icon={<AssignmentIcon />} label={`Live Kanban Board (${workItems.length})`} value={2} style={{ textTransform: 'none', fontWeight: 600 }} />
-          <Tab icon={<ArchiveIcon />} label={`Artifacts & Feeds (${packages.length})`} value={3} style={{ textTransform: 'none', fontWeight: 600 }} />
+          <Tab icon={<PlayCircleOutlineIcon />} label={`Pipelines (${runs.length})`} value={0} style={{ textTransform: 'none', fontWeight: 600, minHeight: 48 }} />
+          <Tab icon={<CallSplitIcon />} label={`Pull Requests (${prs.length})`} value={1} style={{ textTransform: 'none', fontWeight: 600, minHeight: 48 }} />
+          <Tab icon={<AssignmentIcon />} label={`Live Kanban Board (${workItems.length})`} value={2} style={{ textTransform: 'none', fontWeight: 600, minHeight: 48 }} />
+          <Tab icon={<ArchiveIcon />} label={`Artifacts & Feeds (${packages.length})`} value={3} style={{ textTransform: 'none', fontWeight: 600, minHeight: 48 }} />
         </Tabs>
       </Paper>
 

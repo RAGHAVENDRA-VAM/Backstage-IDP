@@ -42,18 +42,21 @@ if (typeof window !== 'undefined') {
 
   const orderTabs = () => {
     if (isReordering) return;
-    // Only reorder entity catalog tabs to avoid tampering with custom page tabs like /dashboard
+    // Only reorder entity catalog header tabs to avoid tampering with in-page sub-tabs or /dashboard
     if (!window.location.pathname.includes('/catalog/')) return;
-    const tabHeaders = document.querySelectorAll('[role="tablist"], .MuiTabs-flexContainer, nav[aria-label*="tab"], .MuiTabs-root .MuiTabs-scroller > div');
+    const tabHeaders = document.querySelectorAll('header [role="tablist"], nav.MuiTabs-root [role="tablist"], [data-testid="header-tabs"] [role="tablist"]');
     tabHeaders.forEach(tabList => {
-      let tabs = Array.from(tabList.children) as HTMLElement[];
-      // If the tabList has a nested flex container holding the links, target that
+      // Safety check: ensure these are top-level entity navigation tabs (each containing <a> with href)
+      const tabs = Array.from(tabList.children) as HTMLElement[];
+      const hasLinks = tabs.some(t => t.tagName === 'A' || t.querySelector('a') || t.getAttribute('href'));
+      if (!hasLinks || tabs.length < 3) return;
+
       const innerFlex = tabList.querySelector('.MuiTabs-flexContainer') as HTMLElement;
       const targetContainer = innerFlex || tabList;
-      tabs = Array.from(targetContainer.children) as HTMLElement[];
+      const currentTabs = Array.from(targetContainer.children) as HTMLElement[];
 
-      if (tabs.length >= 3) {
-        const sorted = [...tabs].sort((a, b) => {
+      if (currentTabs.length >= 3) {
+        const sorted = [...currentTabs].sort((a, b) => {
           const aKey = getTabKey(a);
           const bKey = getTabKey(b);
           const aIdx = desiredTabOrder.indexOf(aKey) !== -1 ? desiredTabOrder.indexOf(aKey) : 99;
@@ -62,7 +65,7 @@ if (typeof window !== 'undefined') {
         });
 
         // Only touch the DOM if order actually differs
-        const needsReorder = tabs.some((tab, idx) => tab !== sorted[idx]);
+        const needsReorder = currentTabs.some((tab, idx) => tab !== sorted[idx]);
         if (needsReorder) {
           isReordering = true;
           try {
