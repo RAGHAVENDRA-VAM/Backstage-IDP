@@ -69,7 +69,7 @@ async function getCognitiveCredentials(): Promise<{ endpoint: string; key: strin
             cachedCognitiveKey = {
               key: apiKey,
               endpoint: 'https://devops-maf3.cognitiveservices.azure.com',
-              deployment: 'Kimi-K2.6',
+              deployment: 'gpt-5-mini',
               expiresAt: Date.now() + 3600 * 1000, // cache for 1 hour
             };
             return {
