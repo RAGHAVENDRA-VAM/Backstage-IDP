@@ -51,6 +51,7 @@ import { githubReadmeModule } from './modules/github-readme';
 import { customTranslationsModule } from './modules/translations';
 import { dashboardModule } from './modules/dashboard';
 import { azureCatalogModule } from './modules/azure';
+import { awsCatalogModule } from './modules/aws';
 import { aiModule } from './modules/ai';
 
 export default createApp({
@@ -63,6 +64,7 @@ export default createApp({
     aiModule,
     customCatalogTabsModule,
     azureCatalogModule,
+    awsCatalogModule,
     datadogConvertedPlugin,
     techdocsPlugin,
     signInModule, 

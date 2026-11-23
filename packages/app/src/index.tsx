@@ -4,7 +4,7 @@ import App from './App';
 import '@backstage/ui/css/styles.css';
 
 // Automatically reorder catalog tabs to standard enterprise lifecycle sequence:
-// 1. Overview -> 2. Jira -> 3. GitHub Actions -> 4. Pull Requests -> 5. Azure DevOps -> 6. Azure -> 7. Datadog -> 8. TechDocs / Docs -> 9. Dependencies
+// 1. Overview -> 2. Jira -> 3. GitHub Actions -> 4. Pull Requests -> 5. Azure DevOps -> 6. Azure -> 7. AWS -> 8. Datadog -> 9. TechDocs / Docs -> 10. Dependencies
 if (typeof window !== 'undefined') {
   const desiredTabOrder = [
     'overview',
@@ -13,6 +13,7 @@ if (typeof window !== 'undefined') {
     'pull-requests',
     'azure-devops',
     'azure',
+    'aws',
     'datadog',
     'docs',
     'dependencies',
@@ -32,6 +33,8 @@ if (typeof window !== 'undefined') {
     if (href.includes('jira') || text.includes('jira')) return 'jira';
     // Check Azure Cloud
     if (href.includes('azure') || text.includes('azure')) return 'azure';
+    // Check AWS Cloud
+    if (href.includes('aws') || text.includes('aws') || text.includes('amazon')) return 'aws';
     // Check Datadog
     if (href.includes('datadog') || text.includes('datadog')) return 'datadog';
     // Check TechDocs / Docs

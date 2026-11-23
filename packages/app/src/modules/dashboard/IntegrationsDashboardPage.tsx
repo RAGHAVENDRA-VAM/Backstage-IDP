@@ -55,6 +55,8 @@ import { AzureTabContent } from '../azure/AzureTabContent';
 import { AzureAiFoundryDashboardView } from '../azure/AzureAiFoundryDashboardView';
 import { EnterpriseFinopsDashboardView } from '../finops/EnterpriseFinopsDashboardView';
 import { EntityAdoTabContent } from '../ado/EntityAdoTabContent';
+import { AwsCloudDashboardView } from '../aws/AwsCloudDashboardView';
+import { AwsFinopsBedrockDashboardView } from '../aws/AwsFinopsBedrockDashboardView';
 import { AutomationGoldenPathsView } from './AutomationGoldenPathsView';
 import { SreHealthView } from './SreHealthView';
 import { DevSecOpsView } from './DevSecOpsView';
@@ -1982,8 +1984,10 @@ export const IntegrationsDashboardPage = () => {
       { id: 'jira', label: 'Jira Dashboard', icon: <CheckCircleIcon style={{ color: '#2563eb' }} /> },
       { id: 'ado', label: 'ADO Dashboard', icon: <CloudQueueIcon style={{ color: '#0078d4' }} /> },
       { id: 'github', label: 'GitHub Dashboard', icon: <GitHubIcon style={{ color: '#0f172a' }} /> },
-      { id: 'cloud', label: 'Cloud Dashboard', icon: <StorageIcon style={{ color: '#0284c7' }} /> },
-      { id: 'finops', label: 'FinOps Dashboard', icon: <AttachMoneyIcon style={{ color: '#16a34a' }} /> },
+      { id: 'cloud', label: 'Azure Cloud Dashboard', icon: <StorageIcon style={{ color: '#0078d4' }} /> },
+      { id: 'finops', label: 'Azure FinOps Dashboard', icon: <AttachMoneyIcon style={{ color: '#16a34a' }} /> },
+      { id: 'aws-cloud', label: 'AWS Cloud Dashboard', icon: <CloudQueueIcon style={{ color: '#ff9900' }} /> },
+      { id: 'aws-finops', label: 'AWS FinOps & Bedrock', icon: <BubbleChartIcon style={{ color: '#ff9900' }} /> },
       { id: 'datadog', label: 'Datadog Dashboard', icon: <TimelineIcon style={{ color: '#7c3aed' }} /> },
     ];
   }, []);
@@ -2116,7 +2120,7 @@ export const IntegrationsDashboardPage = () => {
                       Cloud Infrastructure
                     </Typography>
                     <Typography className={classes.statNumber} style={{ color: '#0078d4' }}>
-                      Azure Native
+                      Azure & AWS
                     </Typography>
                     <Button
                       size="small"
@@ -2124,7 +2128,7 @@ export const IntegrationsDashboardPage = () => {
                       onClick={() => setSelectedMainTab(4)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
-                      View Cloud Dashboard →
+                      View Azure Cloud →
                     </Button>
                   </Card>
                 </Grid>
@@ -2133,7 +2137,7 @@ export const IntegrationsDashboardPage = () => {
                 <Grid item xs={12} sm={6} md={3}>
                   <Card className={classes.statCard}>
                     <Typography variant="overline" color="textSecondary" style={{ fontWeight: 700 }}>
-                      Cloud FinOps Run-rate
+                      Azure FinOps Run-rate
                     </Typography>
                     <Typography className={classes.statNumber} style={{ color: '#9333ea' }}>
                       {currentAzureSpend}
@@ -2144,7 +2148,7 @@ export const IntegrationsDashboardPage = () => {
                       onClick={() => setSelectedMainTab(5)}
                       style={{ textTransform: 'none', fontWeight: 700, paddingLeft: 0, justifyContent: 'flex-start' }}
                     >
-                      View FinOps Dashboard →
+                      View Azure FinOps →
                     </Button>
                   </Card>
                 </Grid>
@@ -2293,14 +2297,14 @@ export const IntegrationsDashboardPage = () => {
                         onClick={() => setSelectedMainTab(4)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
-                        Open Cloud Dashboard
+                        Open Azure Cloud
                       </Button>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
 
-              {/* FinOps Card */}
+              {/* Azure FinOps Card */}
               <Grid item xs={12} sm={6} md={4}>
                 <Card className={classes.card}>
                   <CardContent>
@@ -2309,7 +2313,7 @@ export const IntegrationsDashboardPage = () => {
                         <AttachMoneyIcon fontSize="medium" />
                       </Box>
                       <Box flex={1}>
-                        <Typography className={classes.cardTitle}>FinOps & Spend Governance</Typography>
+                        <Typography className={classes.cardTitle}>Azure FinOps & Spend Governance</Typography>
                         <Chip
                           label={azureAiData?.models?.length ? `${azureAiData.models.length} Models Live` : 'Budget Active'}
                           size="small"
@@ -2331,7 +2335,81 @@ export const IntegrationsDashboardPage = () => {
                         onClick={() => setSelectedMainTab(5)}
                         style={{ textTransform: 'none', fontWeight: 700 }}
                       >
-                        Open FinOps Dashboard
+                        Open Azure FinOps
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* AWS Cloud Card */}
+              <Grid item xs={12} sm={6} md={4}>
+                <Card className={classes.card}>
+                  <CardContent>
+                    <Box className={classes.cardHeader}>
+                      <Box className={classes.iconBox} style={{ backgroundColor: '#fff7ed', color: '#ff9900' }}>
+                        <CloudQueueIcon fontSize="medium" />
+                      </Box>
+                      <Box flex={1}>
+                        <Typography className={classes.cardTitle}>AWS Cloud & Containers</Typography>
+                        <Chip
+                          label="Multi-Cloud"
+                          size="small"
+                          style={{ backgroundColor: 'rgba(255, 153, 0, 0.15)', color: '#ea580c', fontWeight: 700 }}
+                        />
+                      </Box>
+                    </Box>
+                    <Typography className={classes.cardDesc}>
+                      Amazon ECS Fargate tasks, Lambda serverless, S3 encrypted storage vaults, and CloudWatch log streaming.
+                    </Typography>
+                    <Box className={classes.cardFooter}>
+                      <Typography variant="caption" style={{ fontWeight: 600 }}>
+                        AWS us-east-1
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => setSelectedMainTab(6)}
+                        style={{ textTransform: 'none', fontWeight: 700, backgroundColor: '#ff9900', color: '#ffffff' }}
+                      >
+                        Open AWS Cloud
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* AWS FinOps & Bedrock Card */}
+              <Grid item xs={12} sm={6} md={4}>
+                <Card className={classes.card}>
+                  <CardContent>
+                    <Box className={classes.cardHeader}>
+                      <Box className={classes.iconBox} style={{ backgroundColor: '#eef2ff', color: '#6366f1' }}>
+                        <BubbleChartIcon fontSize="medium" />
+                      </Box>
+                      <Box flex={1}>
+                        <Typography className={classes.cardTitle}>AWS FinOps & Bedrock GenAI</Typography>
+                        <Chip
+                          label="Claude 3.7 Live"
+                          size="small"
+                          style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#4f46e5', fontWeight: 700 }}
+                        />
+                      </Box>
+                    </Box>
+                    <Typography className={classes.cardDesc}>
+                      Amazon Bedrock LLM unit economics (Claude 3.7/3.5, Titan, Llama 3.3), token velocity, and Cost Explorer budget.
+                    </Typography>
+                    <Box className={classes.cardFooter}>
+                      <Typography variant="caption" style={{ fontWeight: 600 }}>
+                        $3,140.85 / mo
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => setSelectedMainTab(7)}
+                        style={{ textTransform: 'none', fontWeight: 700, backgroundColor: '#6366f1', color: '#ffffff' }}
+                      >
+                        Open AWS FinOps
                       </Button>
                     </Box>
                   </CardContent>
@@ -2394,21 +2472,35 @@ export const IntegrationsDashboardPage = () => {
           </Box>
         )}
 
-        {/* Tab 4: Cloud Dashboard */}
+        {/* Tab 4: Azure Cloud Dashboard */}
         {availableTabs[selectedMainTab]?.id === 'cloud' && (
           <Box p={1}>
             <AzureTabContent isStandalone={true} initialTab={0} hideFinops={true} />
           </Box>
         )}
 
-        {/* Tab 5: FinOps Dashboard */}
+        {/* Tab 5: Azure FinOps Dashboard */}
         {availableTabs[selectedMainTab]?.id === 'finops' && (
           <Box p={1}>
             <EnterpriseFinopsDashboardView />
           </Box>
         )}
 
-        {/* Tab 6: Datadog Dashboard */}
+        {/* Tab 6: AWS Cloud Dashboard */}
+        {availableTabs[selectedMainTab]?.id === 'aws-cloud' && (
+          <Box p={1}>
+            <AwsCloudDashboardView />
+          </Box>
+        )}
+
+        {/* Tab 7: AWS FinOps & Bedrock Dashboard */}
+        {availableTabs[selectedMainTab]?.id === 'aws-finops' && (
+          <Box p={1}>
+            <AwsFinopsBedrockDashboardView />
+          </Box>
+        )}
+
+        {/* Tab 8: Datadog Dashboard */}
         {availableTabs[selectedMainTab]?.id === 'datadog' && (
           <Box p={1}>
             <DatadogLiveDashboardView />

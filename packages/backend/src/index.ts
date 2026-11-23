@@ -214,14 +214,16 @@ backend.add(import('@backstage/plugin-signals-backend'));
 // MCP Actions
 backend.add(import('@backstage/plugin-mcp-actions-backend'));
 
-// Azure DevOps proxy
+// Azure DevOps and Cloud proxies
 import { adoProxyPlugin } from './modules/adoProxy';
 import { azureDeployProxyPlugin } from './modules/azureDeployProxy';
+import { awsDeployProxyPlugin } from './modules/awsDeployProxy';
 import { integrationsProxyPlugin } from './modules/integrationsProxy';
 import { aiAssistantProxyPlugin } from './modules/aiAssistantProxy';
 
 backend.add(adoProxyPlugin);
 backend.add(azureDeployProxyPlugin);
+backend.add(awsDeployProxyPlugin);
 backend.add(integrationsProxyPlugin);
 backend.add(aiAssistantProxyPlugin);
 
