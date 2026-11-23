@@ -309,6 +309,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/client-cloudwatch@npm:^3.1169.0":
+  version: 3.1169.0
+  resolution: "@aws-sdk/client-cloudwatch@npm:3.1169.0"
+  dependencies:
+    "@aws-sdk/core": "npm:^3.981.0"
+    "@aws-sdk/credential-provider-node": "npm:^3.972.97"
+    "@aws-sdk/types": "npm:^3.975.1"
+    "@smithy/core": "npm:^3.40.0"
+    "@smithy/fetch-http-handler": "npm:^5.8.1"
+    "@smithy/middleware-compression": "npm:^4.6.2"
+    "@smithy/node-http-handler": "npm:^4.14.2"
+    "@smithy/types": "npm:^4.20.0"
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/3a6fcfdb19fed9efd7d7dd9bce07780fad7eba28d9b82f6a2c7bfdf56c0a21a4c6394c6ba51bc852d3ca371865465b66b108170b6477d6b25521ad2a950bd6e7
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/client-codecommit@npm:^3.350.0":
   version: 3.1127.0
   resolution: "@aws-sdk/client-codecommit@npm:3.1127.0"
@@ -10816,6 +10833,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@smithy/middleware-compression@npm:^4.6.2":
+  version: 4.6.2
+  resolution: "@smithy/middleware-compression@npm:4.6.2"
+  dependencies:
+    "@smithy/core": "npm:^3.33.2"
+    "@smithy/types": "npm:^4.17.2"
+    fflate: "npm:0.8.3"
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/047ad94949471b887ebc207cf243020fec9c6b87029c234c369d6bd3dd990e3f23b29247c499cf81c7431002aa6e62f36f427d1a16e9e8f9726be8a0ae2b50b9
+  languageName: node
+  linkType: hard
+
 "@smithy/node-http-handler@npm:^3.0.0":
   version: 3.3.3
   resolution: "@smithy/node-http-handler@npm:3.3.3"
@@ -14973,6 +15002,7 @@ __metadata:
   resolution: "backend@workspace:packages/backend"
   dependencies:
     "@aws-sdk/client-bedrock": "npm:^3.1169.0"
+    "@aws-sdk/client-cloudwatch": "npm:^3.1169.0"
     "@aws-sdk/client-cloudwatch-logs": "npm:^3.1169.0"
     "@aws-sdk/client-cost-explorer": "npm:^3.1169.0"
     "@aws-sdk/client-ec2": "npm:^3.1169.0"
@@ -19490,6 +19520,13 @@ __metadata:
   version: 4.2.3
   resolution: "fecha@npm:4.2.3"
   checksum: 10c0/0e895965959cf6a22bb7b00f0bf546f2783836310f510ddf63f463e1518d4c96dec61ab33fdfd8e79a71b4856a7c865478ce2ee8498d560fe125947703c9b1cf
+  languageName: node
+  linkType: hard
+
+"fflate@npm:0.8.3":
+  version: 0.8.3
+  resolution: "fflate@npm:0.8.3"
+  checksum: 10c0/eab181ca37f5348ae76d4b6f840e0026e30220e33153289ac942222d8b9638237d486507dbcc09878d724095bd354993a2ee48bbee99c8f2c6440d4448719aa7
   languageName: node
   linkType: hard
 
