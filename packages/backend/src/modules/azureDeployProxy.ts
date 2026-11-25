@@ -306,11 +306,18 @@ export const azureDeployProxyPlugin = createBackendPlugin({
               let totalCost = 0;
               const serviceMap: Record<string, number> = {};
               const dailyMap: Record<string, number> = {};
-              let currency = 'USD';
+              let rawCurrency = 'USD';
+
+              // Exchange rate if Azure subscription billing is in INR: convert to USD ($1 ≈ ₹84.50)
+              const INR_TO_USD_RATE = 1 / 84.5;
 
               rows.forEach(([cost, usageDate, service, curr]: any[]) => {
-                if (curr) currency = curr;
-                const numCost = Number(cost) || 0;
+                if (curr) rawCurrency = curr;
+                let numCost = Number(cost) || 0;
+                // If billing currency is INR, normalize to USD
+                if (rawCurrency === 'INR' || curr === 'INR') {
+                  numCost = numCost * INR_TO_USD_RATE;
+                }
                 totalCost += numCost;
                 serviceMap[service] = (serviceMap[service] || 0) + numCost;
                 const dStr = String(usageDate);
@@ -341,7 +348,7 @@ export const azureDeployProxyPlugin = createBackendPlugin({
               const dailyBurn = totalCost / daysCount;
               const daysInMonth = 31;
               const projectedEnd = dailyBurn * daysInMonth;
-              const budgetMonthly = currency === 'INR' ? 20000.00 : 2000.00;
+              const budgetMonthly = 2000.00;
               const percentBudget = Math.round((totalCost / budgetMonthly) * 100);
 
               // Fetch real Azure Advisor Cost & HighAvailability Recommendations live!
@@ -361,15 +368,16 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                   advisorRecommendations = rawRecs.slice(0, 15).map((r: any, idx: number) => {
                     const p = r.properties || {};
                     const ext = p.extendedProperties || {};
-                    const rawSavings = parseFloat(ext.savingsAmount || '0');
+                    let rawSavings = parseFloat(ext.savingsAmount || '0');
+                    if (rawCurrency === 'INR') {
+                      rawSavings = rawSavings * INR_TO_USD_RATE;
+                    }
                     const targetResource = p.impactedValue || p.impactedField || 'Azure Subscription';
                     
                     let displaySavings = '';
                     if (rawSavings > 0) {
                       totalPotentialSavings += rawSavings;
-                      displaySavings = currency === 'INR'
-                        ? `₹${Math.round(rawSavings * 84).toLocaleString()}/mo`
-                        : `$${rawSavings.toFixed(2)}/mo`;
+                      displaySavings = `$${rawSavings.toFixed(2)}/mo`;
                     } else {
                       displaySavings = p.category === 'Cost' ? 'Rightsizing Opportunity' : 'High Availability SLA';
                     }
@@ -398,7 +406,8 @@ export const azureDeployProxyPlugin = createBackendPlugin({
               }
 
               const finalPayload = {
-                currency,
+                currency: 'USD',
+                rawBillingCurrency: rawCurrency,
                 subscriptionId: sub,
                 billingPeriod: 'Current Month (Month-to-Date)',
                 usedLiveApi: true,
@@ -411,7 +420,7 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                 dailySpendingTrend: dailyTrendEntries,
                 recommendations: advisorRecommendations,
                 potentialMonthlySavings: totalPotentialSavings > 0
-                  ? (currency === 'INR' ? Math.round(totalPotentialSavings * 84) : Math.round(totalPotentialSavings))
+                  ? Math.round(totalPotentialSavings)
                   : 0,
               };
 
@@ -951,7 +960,7 @@ export const azureDeployProxyPlugin = createBackendPlugin({
                   ddsource: 'azure.finops',
                   ddtags: 'env:production,service:azure-cost-management,subscription:46269e09-e1e1',
                   hostname: 'azure-cost-management',
-                  message: `[FinOpsTelemetry] Subscription actual burn: ₹290.41/day - Budget adherence index: 100%`,
+                  message: `[FinOpsTelemetry] Subscription actual burn: $3.45/day - Budget adherence index: 100%`,
                   service: 'azure-finops',
                   status: 'info',
                 },

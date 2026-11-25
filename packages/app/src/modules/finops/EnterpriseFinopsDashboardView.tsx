@@ -113,16 +113,16 @@ export const EnterpriseFinopsDashboardView = () => {
     return await res.json();
   }, []);
 
-  const currency = costData?.currency === 'INR' ? '₹' : '$';
-  const currentSpend = costData?.currentSpend !== undefined ? costData.currentSpend : 4880.01;
-  const budget = costData?.budget || (currency === '₹' ? 20000 : 2000);
-  const percentOfBudget = costData?.percentOfBudget || Math.round((currentSpend / budget) * 100);
-  const projectedMonthEnd = costData?.projectedMonthEnd !== undefined ? costData.projectedMonthEnd : 8898.84;
-  const dailyBurnRate = costData?.dailyBurnRate !== undefined ? costData.dailyBurnRate : 287.06;
+  const currency = '$';
+  const currentSpend = costData?.currentSpend !== undefined ? costData.currentSpend : 0;
+  const budget = costData?.budget || 2000;
+  const percentOfBudget = costData?.percentOfBudget || (budget > 0 ? Math.round((currentSpend / budget) * 100) : 0);
+  const projectedMonthEnd = costData?.projectedMonthEnd !== undefined ? costData.projectedMonthEnd : 0;
+  const dailyBurnRate = costData?.dailyBurnRate !== undefined ? costData.dailyBurnRate : 0;
   const recommendations = costData?.recommendations || [];
   const serviceBreakdown = costData?.serviceBreakdown || [];
   const dailySpendingTrend = costData?.dailySpendingTrend || [];
-  const potentialSavings = costData?.potentialMonthlySavings || 1042;
+  const potentialSavings = costData?.potentialMonthlySavings || 0;
 
   const aiModels = aiCostData?.models || [];
   const totalAiSpendFormatted = aiCostData?.totalAiSpendFormatted || '$0.00';

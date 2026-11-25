@@ -653,12 +653,12 @@ export const AzureTabContent = ({
                         Current Spend (MTD)
                       </Typography>
                       <Typography className={classes.statNumber} style={{ color: '#0f3156' }}>
-                        {costData?.currency === 'INR' ? '₹' : '$'}{costData?.currentSpend !== undefined ? costData.currentSpend.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00'}
+                        ${costData?.currentSpend !== undefined ? costData.currentSpend.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00'}
                       </Typography>
                       <Box mt={1}>
                         <Box display="flex" justifyContent="space-between" mb={0.5}>
                           <Typography variant="caption" color="textSecondary">
-                            Budget: {costData?.currency === 'INR' ? '₹' : '$'}{costData?.budget?.toLocaleString() || '0'}
+                            Budget: ${costData?.budget?.toLocaleString() || '0'}
                           </Typography>
                           <Typography variant="caption" style={{ fontWeight: 700, color: '#059669' }}>
                             {costData?.percentOfBudget || 0}%
@@ -679,7 +679,7 @@ export const AzureTabContent = ({
                         Forecasted Month-End
                       </Typography>
                       <Typography className={classes.statNumber} style={{ color: '#0284c7' }}>
-                        {costData?.currency === 'INR' ? '₹' : '$'}{costData?.projectedMonthEnd?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '1,680.50'}
+                        ${costData?.projectedMonthEnd !== undefined ? costData.projectedMonthEnd.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00'}
                       </Typography>
                       <Typography variant="caption" style={{ color: '#059669', fontWeight: 600 }}>
                         Within monthly budget (-16.0% buffer)
@@ -693,7 +693,7 @@ export const AzureTabContent = ({
                         Daily Burn Rate
                       </Typography>
                       <Typography className={classes.statNumber} style={{ color: '#7c3aed' }}>
-                        {costData?.currency === 'INR' ? '₹' : '$'}{costData?.dailyBurnRate?.toFixed(2) || '41.52'} / day
+                        ${costData?.dailyBurnRate !== undefined ? costData.dailyBurnRate.toFixed(2) : '0.00'} / day
                       </Typography>
                       <Typography variant="caption" color="textSecondary">
                         Average 24h consumption
@@ -708,7 +708,7 @@ export const AzureTabContent = ({
                       </Typography>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Typography className={classes.statNumber} style={{ color: '#059669' }}>
-                          {costData?.currency === 'INR' ? '₹' : '$'}{costData?.potentialMonthlySavings?.toFixed(2) || '305.50'}
+                          ${costData?.potentialMonthlySavings !== undefined ? costData.potentialMonthlySavings.toFixed(2) : '0.00'}
                         </Typography>
                         <EcoIcon style={{ color: '#059669', fontSize: 24 }} />
                       </Box>
@@ -756,7 +756,7 @@ export const AzureTabContent = ({
                                   {s.percentage}%
                                 </Typography>
                                 <Typography variant="body2" style={{ fontWeight: 700, minWidth: 70, textAlign: 'right' }}>
-                                  {costData?.currency === 'INR' ? '₹' : '$'}{s.cost.toFixed(2)}
+                                  ${s.cost.toFixed(2)}
                                 </Typography>
                               </Box>
                             </Box>
@@ -786,14 +786,14 @@ export const AzureTabContent = ({
                           <Chip label="Current Month" size="small" style={{ backgroundColor: '#e0f2fe', color: '#0369a1', fontWeight: 700 }} />
                         </Box>
                         <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
-                          Day-by-day Azure consumption pattern with average {costData?.currency === 'INR' ? '₹' : '$'}{costData?.dailyBurnRate ? costData.dailyBurnRate.toFixed(2) : '0.00'} daily baseline.
+                          Day-by-day Azure consumption pattern with average ${costData?.dailyBurnRate ? costData.dailyBurnRate.toFixed(2) : '0.00'} daily baseline.
                         </Typography>
                       </Box>
 
                       {/* SVG Line / Area Graph */}
                       {(() => {
                         const trendData: Array<{ day: string; cost: number }> = costData?.dailySpendingTrend || [];
-                        const currSymbol = costData?.currency === 'INR' ? '₹' : '$';
+                        const currSymbol = '$';
 
                         if (trendData.length === 0) {
                           return (

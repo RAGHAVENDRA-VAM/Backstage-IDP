@@ -74,7 +74,7 @@ export const DatadogLogsCard = () => {
           ddsource: 'azure.finops',
           ddtags: 'env:production,service:azure-finops,subscription:46269e09-e1e1',
           hostname: 'azure-cost-governance',
-          message: `[FinOps-Alert] Daily budget velocity verification passed. Projected savings: ₹1,042/month`,
+          message: `[FinOps-Alert] Daily budget velocity verification passed. Projected savings: $125.00/month`,
           service: 'azure-finops',
           status: 'info',
         },

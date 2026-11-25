@@ -160,7 +160,7 @@ export const AzureAiFoundryDashboardView = () => {
                 <Box mt={1}>
                   <Box display="flex" justifyContent="space-between" mb={0.5}>
                     <Typography variant="caption" color="textSecondary">
-                      Budget: {aiData?.currency === 'INR' ? '₹25,000' : '$300.00'}
+                      Budget: $300.00
                     </Typography>
                     <Typography variant="caption" style={{ fontWeight: 700, color: '#059669' }}>
                       {aiData?.percentOfBudget || 0}% Used
