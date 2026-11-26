@@ -391,20 +391,6 @@ export const AcmeAiFloatingWidget: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Prompt Chips */}
-          <div className={classes.chipContainer}>
-            {quickPrompts.map(prompt => (
-              <Chip
-                key={prompt}
-                label={prompt}
-                size="small"
-                variant="outlined"
-                className={classes.quickChip}
-                onClick={() => handleSend(prompt)}
-              />
-            ))}
-          </div>
-
           {/* Input Area */}
           <div className={classes.inputArea}>
             <TextField

@@ -460,43 +460,6 @@ Database connection failed: KnexTimeoutError: Knex: Timeout acquiring a connecti
                 )}
               </div>
 
-              {/* Quick Prompt Suggestions Bar */}
-              <Box
-                display="flex"
-                alignItems="center"
-                gap={1}
-                p={1.5}
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                  borderTop: '1px solid rgba(0, 0, 0, 0.06)',
-                  overflowX: 'auto',
-                }}
-              >
-                <Typography variant="caption" style={{ fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap', marginLeft: 4 }}>
-                  Quick Inquiries:
-                </Typography>
-                {[
-                  'How do I deploy a new microservice to Azure?',
-                  'Who owns the Claims UI and risk-analysis services?',
-                  'What are our container security and quality gates?',
-                  'Analyze Azure West US 3 environment health',
-                ].map((prompt, i) => (
-                  <Chip
-                    key={i}
-                    label={prompt}
-                    size="small"
-                    clickable
-                    onClick={() => handleSendChat(prompt)}
-                    style={{
-                      backgroundColor: '#f1f5f9',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.8rem',
-                      fontWeight: 500,
-                    }}
-                  />
-                ))}
-              </Box>
-
               <div className={classes.inputArea}>
                 <TextField
                   fullWidth
