@@ -111,6 +111,23 @@ spec:
     email: pankajk@valuemomentum.com
   memberOf: [platform-engineering]
 ---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: saurav.roy
+  title: Saurav Roy
+  description: Platform Engineer (Admin)
+  annotations:
+    github.com/user-login: saurav.roy
+  links:
+    - url: mailto:Saurav.Roy@valuemomentum.com
+      title: Email
+spec:
+  profile:
+    displayName: Saurav Roy
+    email: Saurav.Roy@valuemomentum.com
+  memberOf: [platform-engineering]
+---
 # DEVELOPER WORKSPACE
 apiVersion: backstage.io/v1alpha1
 kind: User
